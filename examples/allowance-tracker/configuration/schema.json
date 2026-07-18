@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Allowance Tracker configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "household_mode",
+    "child_access",
+    "approval_required",
+    "currency",
+    "recurring_allowance",
+    "chore_rewards",
+    "overdue_policy",
+    "balance_visibility",
+    "transaction_corrections"
+  ],
+  "properties": {
+    "household_mode": {
+      "enum": ["single-guardian", "multiple-guardians"]
+    },
+    "child_access": {
+      "enum": ["parent-managed", "child-sign-in"]
+    },
+    "approval_required": {
+      "type": "boolean"
+    },
+    "currency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "display_name", "decimal_places"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{2,7}$" },
+        "display_name": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "decimal_places": { "type": "integer", "minimum": 0, "maximum": 2 }
+      }
+    },
+    "recurring_allowance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "cadence", "weekday"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cadence": { "enum": ["weekly", "biweekly", "monthly"] },
+        "weekday": { "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] }
+      }
+    },
+    "chore_rewards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow_zero_value", "allow_negative_adjustments", "allow_negative_balances"],
+      "properties": {
+        "allow_zero_value": { "type": "boolean" },
+        "allow_negative_adjustments": { "type": "boolean" },
+        "allow_negative_balances": { "type": "boolean" }
+      }
+    },
+    "overdue_policy": {
+      "enum": ["remain-available", "expire"]
+    },
+    "balance_visibility": {
+      "enum": ["guardians-only", "child-own-balance"]
+    },
+    "transaction_corrections": {
+      "const": "append-only-adjustments"
+    }
+  }
+}

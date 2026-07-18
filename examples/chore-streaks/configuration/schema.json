@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Chore Streaks configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "qualification",
+    "daily_target",
+    "day_boundary",
+    "include_zero_reward",
+    "show_longest"
+  ],
+  "properties": {
+    "qualification": {
+      "const": "approved"
+    },
+    "daily_target": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "day_boundary": {
+      "enum": ["household-local", "utc"]
+    },
+    "include_zero_reward": {
+      "type": "boolean"
+    },
+    "show_longest": {
+      "type": "boolean"
+    }
+  }
+}

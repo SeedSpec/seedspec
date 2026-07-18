@@ -1,0 +1,22 @@
+protocol_version: "0.1"
+id: org.example.chain-provider
+name: Chain Provider
+version: "0.1.0-alpha.1"
+kind: feature
+definition:
+  entrypoint: definition/feature.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities: []
+provides:
+  capabilities:
+    - id: org.example.chain.ready
+      version: "1.0.0"
+      contract: capabilities/ready.md
+compatibility:
+  scope: generic
+extensions:
+  org.example.conformance-marker:
+    preserved: true

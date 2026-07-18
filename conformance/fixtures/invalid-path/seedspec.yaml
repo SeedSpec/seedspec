@@ -1,0 +1,12 @@
+protocol_version: "0.1"
+id: org.example.invalid-path
+name: Invalid Path
+version: "0.1.0-alpha.1"
+kind: application
+definition:
+  entrypoint: ../outside.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []

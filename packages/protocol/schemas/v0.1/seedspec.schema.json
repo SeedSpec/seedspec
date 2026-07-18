@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/v0.1/seedspec.schema.json",
+  "title": "SeedSpec package Manifest 0.1 Alpha",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "id",
+    "name",
+    "version",
+    "kind",
+    "definition",
+    "configuration",
+    "provides"
+  ],
+  "properties": {
+    "protocol_version": { "const": "0.1" },
+    "id": { "$ref": "#/$defs/namespacedId" },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "version": { "$ref": "#/$defs/semver" },
+    "kind": { "enum": ["application", "feature"] },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "license": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "homepage": { "type": "string", "format": "uri" },
+        "repository": { "type": "string", "format": "uri" },
+        "documentation": { "type": "string", "format": "uri" }
+      }
+    },
+    "definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entrypoint"],
+      "properties": {
+        "entrypoint": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "example"],
+      "properties": {
+        "schema": { "$ref": "#/$defs/relativePath" },
+        "example": { "$ref": "#/$defs/relativePath" },
+        "guide": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "requires": { "$ref": "#/$defs/requirementDeclaration" },
+    "provides": { "$ref": "#/$defs/provisionDeclaration" },
+    "conflicts": { "$ref": "#/$defs/conflictDeclaration" },
+    "decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/decision" }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "acceptance": { "$ref": "#/$defs/relativePath" },
+        "integration": { "$ref": "#/$defs/relativePath" },
+        "evals": { "$ref": "#/$defs/relativePath" },
+        "examples": { "$ref": "#/$defs/relativePath" },
+        "reference": { "$ref": "#/$defs/relativePath" },
+        "deployment": { "$ref": "#/$defs/relativePath" },
+        "maintenance": { "$ref": "#/$defs/relativePath" },
+        "migration": { "$ref": "#/$defs/relativePath" },
+        "compatibility": { "$ref": "#/$defs/relativePath" },
+        "assets": { "$ref": "#/$defs/relativePath" },
+        "security": { "$ref": "#/$defs/relativePath" },
+        "generation_report": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifactRelationship" }
+    },
+    "compatibility": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope"],
+          "properties": { "scope": { "const": "generic" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope", "domain"],
+          "properties": {
+            "scope": { "const": "domain" },
+            "domain": { "$ref": "#/$defs/namespacedId" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope", "applications"],
+          "properties": {
+            "scope": { "const": "application" },
+            "applications": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/namespacedId" }
+            }
+          }
+        }
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/namespacedId" },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "namespacedId": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 160,
+      "pattern": "^[a-z0-9]+(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+    },
+    "localId": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*/?$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "capabilityVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "capabilityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "tested_against"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "tested_against": { "$ref": "#/$defs/capabilityVersion" }
+      }
+    },
+    "capabilityProvision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "contract"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "version": { "$ref": "#/$defs/capabilityVersion" },
+        "contract": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "requirementDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilities"],
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityRequirement" }
+        }
+      }
+    },
+    "provisionDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilities"],
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityProvision" }
+        }
+      }
+    },
+    "conflictItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "reason"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "conflictDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "packages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conflictItem" }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conflictItem" }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "required"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "question": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "required": { "type": "boolean" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "type": { "$ref": "#/$defs/namespacedId" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "url": { "type": "string", "format": "uri" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "media_type": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "format_version": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "conforms_to": { "type": "string", "format": "uri" },
+        "concerns": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/namespacedId" }
+        }
+      },
+      "oneOf": [
+        { "required": ["path"], "not": { "required": ["url"] } },
+        { "required": ["url"], "not": { "required": ["path"] } }
+      ]
+    },
+    "artifactRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "type", "to"],
+      "properties": {
+        "from": { "$ref": "#/$defs/localId" },
+        "type": { "$ref": "#/$defs/namespacedId" },
+        "to": { "$ref": "#/$defs/localId" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "const": "feature" } },
+        "required": ["kind"]
+      },
+      "then": { "required": ["requires", "compatibility"] }
+    }
+  ]
+}

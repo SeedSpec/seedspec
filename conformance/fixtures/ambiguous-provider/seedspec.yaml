@@ -1,0 +1,19 @@
+protocol_version: "0.1"
+id: org.example.ambiguous-provider
+name: Ambiguous Provider
+version: "0.1.0-alpha.1"
+kind: feature
+definition:
+  entrypoint: definition/feature.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities: []
+provides:
+  capabilities:
+    - id: org.seedspec.core.actors
+      version: "1.1.0"
+      contract: capabilities/actors.md
+compatibility:
+  scope: generic

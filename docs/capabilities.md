@@ -1,0 +1,60 @@
+# Capability authoring and evolution
+
+Capabilities let independently published packages compose around observable product contracts without agreeing on source code or infrastructure.
+
+## Choosing an identifier
+
+Use a reverse-DNS namespace controlled by the capability steward. Prefer a domain concept over an implementation artifact:
+
+```text
+org.seedspec.core.transactions
+org.seedspec.finance.savings-goals
+```
+
+Avoid names such as `transaction-api`, `postgres-ledger`, `balance-screen`, or `react-goals` unless the capability genuinely promises that technical surface.
+
+The owner of an ID is responsible for publishing its contract, evolving it consistently, and preventing two unrelated meanings from sharing one version line.
+
+## Writing a contract
+
+A useful contract states:
+
+- the product concepts available to consumers;
+- identity and ownership boundaries;
+- authorization expectations;
+- observable operations and state transitions;
+- invariants and atomicity;
+- idempotency and concurrency behavior;
+- failure behavior;
+- historical or deletion behavior;
+- what remains a host integration choice.
+
+It need not define endpoints, method signatures, tables, or UI. A consumer should be able to say what behavior it needs without knowing how the provider realizes it.
+
+## Versioning
+
+Use:
+
+- patch for clarifications and compatible corrections;
+- minor for additive optional behavior that does not invalidate existing consumers;
+- major when a consumer may need different product behavior or integration.
+
+A provider publishes one exact current contract revision. A consumer records the exact revision it has actually been designed or evaluated against through `tested_against`.
+
+Revision equality is useful testing evidence. A difference does not prohibit integration: it creates a review signal for the implementing agent. The agent should read available contract history and the current application, plan around semantic differences, preserve local terminology, and verify the composed use case.
+
+## Provider ambiguity
+
+`capability-graph-v1` permits only one selected provider for an ID. This is conservative: choosing between providers can change product behavior even if both claim compatible versions.
+
+A future composition algorithm may support explicit provider selection or replacement. Until then, packages that intentionally substitute for one another should not be selected together.
+
+## Capability review checklist
+
+- Is the ID namespaced and owned?
+- Is the capability a durable product contract rather than an implementation module?
+- Does the contract name its ID and version?
+- Are authorization, retries, concurrency, and failure behavior clear where consequential?
+- Does the version change match the semantic change?
+- Does each `tested_against` revision represent real design or testing evidence?
+- Would an agent understand how to find contract history and record a local semantic mapping?

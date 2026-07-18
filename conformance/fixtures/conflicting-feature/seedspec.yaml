@@ -1,0 +1,20 @@
+protocol_version: "0.1"
+id: org.example.conflicting-feature
+name: Conflicting Feature
+version: "0.1.0-alpha.1"
+kind: feature
+definition:
+  entrypoint: definition/feature.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities: []
+provides:
+  capabilities: []
+conflicts:
+  packages:
+    - id: org.seedspec.examples.allowance-tracker
+      reason: This fixture exists to prove declared package conflicts are enforced.
+compatibility:
+  scope: generic

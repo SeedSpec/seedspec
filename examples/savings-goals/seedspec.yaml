@@ -1,0 +1,44 @@
+protocol_version: "0.1"
+id: org.seedspec.savings-goals
+name: Savings Goals
+version: "0.1.0-alpha.1"
+kind: feature
+description: Let an actor reserve or track part of a balance toward named targets and see progress.
+
+metadata:
+  license: Apache-2.0
+
+definition:
+  entrypoint: definition/feature.md
+
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+
+requires:
+  capabilities:
+    - id: org.seedspec.core.actors
+      tested_against: "1.0.0"
+    - id: org.seedspec.core.balances
+      tested_against: "1.0.0"
+    - id: org.seedspec.core.transactions
+      tested_against: "1.0.0"
+
+provides:
+  capabilities:
+    - id: org.seedspec.finance.savings-goals
+      version: "1.0.0"
+      contract: capabilities/savings-goals.md
+    - id: org.seedspec.finance.goal-allocations
+      version: "1.0.0"
+      contract: capabilities/goal-allocations.md
+    - id: org.seedspec.finance.goal-progress
+      version: "1.0.0"
+      contract: capabilities/goal-progress.md
+
+compatibility:
+  scope: generic
+
+components:
+  integration: integration/
+  acceptance: acceptance/

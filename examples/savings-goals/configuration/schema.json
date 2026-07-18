@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Savings Goals configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "allocation_mode",
+    "allocation_approval",
+    "withdrawal_approval",
+    "max_active_goals",
+    "allow_overfunding",
+    "completion_behavior",
+    "completion_funds",
+    "deletion_funds"
+  ],
+  "properties": {
+    "allocation_mode": { "enum": ["reserved", "tracked"] },
+    "allocation_approval": { "enum": ["owner", "authority-required"] },
+    "withdrawal_approval": { "enum": ["owner", "authority-required"] },
+    "max_active_goals": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "allow_overfunding": { "type": "boolean" },
+    "completion_behavior": { "enum": ["mark-reached", "auto-close"] },
+    "completion_funds": { "enum": ["keep-reserved", "return-available", "record-spending"] },
+    "deletion_funds": { "enum": ["return-available", "transfer-to-balance"] }
+  }
+}

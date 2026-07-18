@@ -1,0 +1,61 @@
+protocol_version: "0.1"
+id: org.seedspec.examples.allowance-tracker
+name: Allowance Tracker
+version: "0.1.0-alpha.1"
+kind: application
+description: Help a household assign chores, approve completed work, and maintain a trustworthy allowance balance.
+
+metadata:
+  license: Apache-2.0
+
+definition:
+  entrypoint: definition/app.md
+
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+  guide: configuration/guide.md
+
+provides:
+  capabilities:
+    - id: org.seedspec.core.households
+      version: "1.0.0"
+      contract: capabilities/households.md
+    - id: org.seedspec.core.actors
+      version: "1.0.0"
+      contract: capabilities/actors.md
+    - id: org.seedspec.core.chores
+      version: "1.1.0"
+      contract: capabilities/chores.md
+    - id: org.seedspec.core.assignments
+      version: "1.0.0"
+      contract: capabilities/assignments.md
+    - id: org.seedspec.core.approvals
+      version: "1.0.0"
+      contract: capabilities/approvals.md
+    - id: org.seedspec.core.balances
+      version: "1.0.0"
+      contract: capabilities/balances.md
+    - id: org.seedspec.core.transactions
+      version: "1.0.0"
+      contract: capabilities/transactions.md
+
+components:
+  acceptance: acceptance/
+  reference: reference/
+
+artifacts:
+  - id: product-spec
+    type: org.seedspec.artifact.product-spec
+    path: intent/allowance-tracker.product-spec.md
+    label: Allowance Tracker ProductSpec
+    description: An optional, more rigorous expression of the application's product intent.
+    media_type: text/markdown
+    format_version: "0.1"
+    conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/d286a8e9a7a83e0be15a0d9c360c549590134440/SPEC.md
+    concerns:
+      - org.seedspec.concern.intent
+
+extensions:
+  org.seedspec.examples.catalog:
+    audience: families

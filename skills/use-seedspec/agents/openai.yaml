@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use a SeedSpec"
+  short_description: "Guide a SeedSpec from package to implementation handoff"
+  default_prompt: "Use $use-seedspec to inspect this SeedSpec, explain my choices, discover compatible features, and prepare a safe implementation handoff."

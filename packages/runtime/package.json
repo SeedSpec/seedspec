@@ -1,0 +1,28 @@
+{
+  "name": "@seedspec/runtime",
+  "version": "0.1.0-alpha.1",
+  "description": "Reference JavaScript runtime for the SeedSpec Protocol",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@seedspec/protocol": "0.1.0-alpha.1",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.8.0"
+  },
+  "optionalDependencies": {
+    "@productspec/parser": "^0.26.0"
+  },
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,18 @@
+protocol_version: "0.1"
+id: org.example.invalid-tested-against
+name: Invalid Tested Against
+version: "0.1.0-alpha.1"
+kind: feature
+definition:
+  entrypoint: definition/feature.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities:
+    - id: org.example.capability.range
+      tested_against: latest
+provides:
+  capabilities: []
+compatibility:
+  scope: generic

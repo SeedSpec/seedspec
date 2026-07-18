@@ -1,0 +1,18 @@
+protocol_version: "0.1"
+id: org.example.duplicate-capability
+name: Duplicate Capability
+version: "0.1.0-alpha.1"
+kind: application
+definition:
+  entrypoint: definition/app.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities:
+    - id: org.example.capability.same
+      version: "1.0.0"
+      contract: capabilities/one.md
+    - id: org.example.capability.same
+      version: "2.0.0"
+      contract: capabilities/two.md

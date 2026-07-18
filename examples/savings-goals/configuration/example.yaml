@@ -1,0 +1,8 @@
+allocation_mode: reserved
+allocation_approval: owner
+withdrawal_approval: authority-required
+max_active_goals: 5
+allow_overfunding: false
+completion_behavior: mark-reached
+completion_funds: keep-reserved
+deletion_funds: return-available

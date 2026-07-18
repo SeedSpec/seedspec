@@ -1,0 +1,19 @@
+{
+  "name": "@seedspec/cli",
+  "version": "0.1.0-alpha.1",
+  "description": "Command-line interface for the SeedSpec Protocol",
+  "type": "module",
+  "bin": {
+    "seedspec": "./bin/seedspec.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@seedspec/runtime": "0.1.0-alpha.1"
+  },
+  "license": "Apache-2.0"
+}

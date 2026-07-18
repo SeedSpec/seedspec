@@ -1,0 +1,18 @@
+protocol_version: "0.1"
+id: org.example.revision-review
+name: Revision Review
+version: "0.1.0-alpha.1"
+kind: feature
+definition:
+  entrypoint: definition/feature.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities:
+    - id: org.seedspec.core.actors
+      tested_against: "2.0.0"
+provides:
+  capabilities: []
+compatibility:
+  scope: generic

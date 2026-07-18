@@ -1,0 +1,15 @@
+protocol_version: "0.1"
+id: org.example.missing-contract
+name: Missing Contract
+version: "0.1.0-alpha.1"
+kind: application
+definition:
+  entrypoint: definition/app.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities:
+    - id: org.example.capability.undocumented
+      version: "1.0.0"
+      contract: capabilities/not-here.md

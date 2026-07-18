@@ -1,0 +1,12 @@
+protocol_version: "0.1"
+id: org.example.missing-definition
+name: Missing Definition
+version: "0.1.0-alpha.1"
+kind: application
+definition:
+  entrypoint: definition/not-here.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []

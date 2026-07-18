@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/v0.1/resolved-config.schema.json",
+  "title": "Resolved SeedSpec Configuration 0.1 Alpha",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "application", "features", "decisions", "technical_preferences"],
+  "properties": {
+    "protocol_version": { "const": "0.1" },
+    "application": { "$ref": "#/$defs/packageConfiguration" },
+    "features": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/namespacedId" },
+      "additionalProperties": { "$ref": "#/$defs/packageConfiguration" }
+    },
+    "decisions": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:\\.[a-z0-9][a-z0-9-]*){2,}/[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "technical_preferences": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "namespacedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+    },
+    "packageConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["package", "values"],
+      "properties": {
+        "package": { "$ref": "#/$defs/namespacedId" },
+        "values": { "type": "object" }
+      }
+    }
+  }
+}

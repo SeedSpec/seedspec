@@ -1,0 +1,217 @@
+suite_version: "1.1.0"
+protocol_version: "0.1"
+
+cases:
+  - id: validate-allowance-application
+    description: A complete application with contracts and a namespaced extension is valid.
+    operation: validate
+    package: ../examples/allowance-tracker
+    expect:
+      result: pass
+
+  - id: validate-savings-feature
+    description: A feature with tested-against capability revisions is valid.
+    operation: validate
+    package: ../examples/savings-goals
+    expect:
+      result: pass
+
+  - id: validate-chore-streaks-feature
+    description: A feature can carry tested-against evidence and integration guidance.
+    operation: validate
+    package: ../examples/chore-streaks
+    expect:
+      result: pass
+
+  - id: reject-unsupported-protocol
+    operation: validate
+    package: fixtures/unsupported-protocol
+    expect:
+      result: fail
+      code: UNSUPPORTED_PROTOCOL_VERSION
+
+  - id: reject-unknown-core-field
+    operation: validate
+    package: fixtures/invalid-unknown-field
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: reject-unnamespaced-package-id
+    operation: validate
+    package: fixtures/invalid-id
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: reject-nonportable-path
+    operation: validate
+    package: fixtures/invalid-path
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: reject-unsafe-unreferenced-content
+    description: Every package entry is checked even when the manifest does not reference it.
+    operation: validate
+    package: fixtures/unsafe-content
+    expect:
+      result: fail
+      code: UNSAFE_PACKAGE_CONTENT
+
+  - id: reject-duplicate-capability
+    operation: validate
+    package: fixtures/duplicate-capability
+    expect:
+      result: fail
+      code: INVALID_MANIFEST_SEMANTICS
+
+  - id: reject-invalid-tested-against
+    operation: validate
+    package: fixtures/invalid-tested-against
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: reject-missing-capability-contract
+    operation: validate
+    package: fixtures/missing-contract
+    expect:
+      result: fail
+      code: INVALID_REFERENCES
+
+  - id: reject-unknown-artifact-relationship-target
+    description: Artifact relationships can only connect artifact IDs declared in the same package.
+    operation: validate
+    package: fixtures/invalid-artifact-relationship
+    expect:
+      result: fail
+      code: INVALID_MANIFEST_SEMANTICS
+
+  - id: package-digest-is-stable
+    operation: digest-stability
+    package: ../examples/allowance-tracker
+    expect:
+      result: pass
+      digest: sha256:d3303a5c6feccd7e936a9b64e186a6ed2c78722044c7e84008d0a3539dd29084
+
+  - id: resolve-allowance-with-savings-goals
+    description: The primary application and portable feature produce a ready project.
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - ../examples/savings-goals
+    expect:
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.seedspec.savings-goals
+
+  - id: resolve-order-independent-feature-graph
+    description: A consumer supplied before its provider is topologically ordered.
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/chain-consumer
+      - fixtures/chain-provider
+    expect:
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.chain-provider
+        - org.example.chain-consumer
+      preserved_extension:
+        package: org.example.chain-provider
+        key: org.example.conformance-marker
+
+  - id: reject-missing-provider
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - ../packages/runtime/test/fixtures/unmet-feature
+    expect:
+      result: fail
+      code: MISSING_CAPABILITIES
+
+  - id: flag-capability-revision-review
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/revision-review
+    expect:
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.revision-review
+      review_count: 1
+
+  - id: reject-ambiguous-provider
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/ambiguous-provider
+    expect:
+      result: fail
+      code: AMBIGUOUS_CAPABILITY_PROVIDER
+
+  - id: reject-duplicate-package-selection
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/chain-provider
+      - fixtures/chain-provider
+    expect:
+      result: fail
+      code: DUPLICATE_FEATURE
+
+  - id: reject-declared-conflict
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/conflicting-feature
+    expect:
+      result: fail
+      code: DECLARED_CONFLICT
+
+  - id: reject-capability-cycle
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/cycle-a
+      - fixtures/cycle-b
+    expect:
+      result: fail
+      code: CAPABILITY_CYCLE
+
+  - id: preserve-required-decision
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/decision-feature
+    expect:
+      result: pass
+      project_status: needs-decisions
+      feature_order:
+        - org.example.decision-feature
+
+  - id: accept-decision-answer
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/decision-feature
+    decisions: fixtures/decision-answers.yaml
+    expect:
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.decision-feature
+
+  - id: reject-invalid-decision-answer
+    operation: resolve
+    application: ../examples/allowance-tracker
+    features:
+      - fixtures/decision-feature
+    decisions: fixtures/invalid-decision-answers.yaml
+    expect:
+      result: fail
+      code: INVALID_DECISIONS

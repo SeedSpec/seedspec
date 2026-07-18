@@ -1,0 +1,5 @@
+qualification: approved
+daily_target: 1
+day_boundary: household-local
+include_zero_reward: true
+show_longest: true

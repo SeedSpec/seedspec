@@ -1,0 +1,12 @@
+protocol_version: "0.1"
+id: unnamespaced
+name: Invalid ID
+version: "0.1.0-alpha.1"
+kind: application
+definition:
+  entrypoint: definition/app.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []

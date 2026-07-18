@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/v0.1/lock.schema.json",
+  "title": "SeedSpec Dependency Lock 0.1 Alpha",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "resolution_algorithm", "application", "features", "capabilities", "requirements"],
+  "properties": {
+    "protocol_version": { "const": "0.1" },
+    "resolution_algorithm": { "const": "capability-graph-v1" },
+    "application": { "$ref": "#/$defs/lockedPackage" },
+    "features": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lockedPackage" }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resolvedCapability" }
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirementBinding" }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "lockedPackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "kind", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "version": { "$ref": "#/$defs/semver" },
+        "kind": { "enum": ["application", "feature"] },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "resolvedCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "provider"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "version": { "$ref": "#/$defs/capabilityVersion" },
+        "provider": { "$ref": "#/$defs/lockedPackage" }
+      }
+    },
+    "requirementBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consumer",
+        "capability",
+        "tested_against",
+        "provider",
+        "provided_version",
+        "status"
+      ],
+      "properties": {
+        "consumer": { "$ref": "#/$defs/namespacedId" },
+        "capability": { "$ref": "#/$defs/namespacedId" },
+        "tested_against": { "$ref": "#/$defs/capabilityVersion" },
+        "provider": { "$ref": "#/$defs/lockedPackage" },
+        "provided_version": { "$ref": "#/$defs/capabilityVersion" },
+        "status": { "enum": ["aligned", "review"] }
+      }
+    },
+    "namespacedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "capabilityVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    }
+  }
+}

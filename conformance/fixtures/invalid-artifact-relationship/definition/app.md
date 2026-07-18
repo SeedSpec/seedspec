@@ -1,0 +1,1 @@
+# Invalid artifact relationship fixture

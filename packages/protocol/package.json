@@ -1,0 +1,18 @@
+{
+  "name": "@seedspec/protocol",
+  "version": "0.1.0-alpha.1",
+  "description": "Canonical schemas and metadata for the SeedSpec Protocol",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./schemas/*": "./schemas/*"
+  },
+  "files": [
+    "schemas",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "Apache-2.0"
+}
