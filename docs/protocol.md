@@ -270,6 +270,8 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 .seedspec/
 ├── project.yaml
 ├── agent-guide.md
+├── components.yaml
+├── components/
 ├── artifacts.yaml
 ├── artifacts/
 ├── implementation-notes.md
@@ -282,7 +284,9 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 
 `project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records decision status, `aligned` or `review` integration status, exact package references, and handoff file locations.
 
-`artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata and relationships. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path. Remote URLs remain URLs and are not fetched. Materialization preserves access for downstream tools without activating an artifact-specific workflow.
+`components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
+
+`artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata, relationships, and deterministic review timing. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path. Remote URLs remain URLs and are not fetched. Materialization preserves access for downstream tools without activating an artifact-specific workflow.
 
 `dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic feature order, capability providers, each consumer's `tested_against` revision, the selected provider revision, and the resulting review status.
 

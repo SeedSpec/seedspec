@@ -261,6 +261,16 @@ test("Allowance Tracker resolves without features", async (t) => {
     (capability) => capability.id === "org.seedspec.core.chores"
   ));
   assert.equal(result.artifactIndex.artifacts.length, 1);
+  assert.ok(result.componentIndex.components.some(
+    (component) => component.name === "reference" && component.review === "before-planning"
+  ));
+  assert.ok(await readFile(
+    path.join(
+      result.workspace,
+      "components/org.seedspec.examples.allowance-tracker/reference/capabilities/chores-1.0.0.md"
+    ),
+    "utf8"
+  ));
   assert.ok(await readFile(
     path.join(result.workspace, result.artifactIndex.artifacts[0].path),
     "utf8"
@@ -297,6 +307,7 @@ test("Allowance Tracker composes with Savings Goals into a stable workspace", as
     "verification-report.md",
     "resolved-spec.md",
     "resolved-config.yaml",
+    "components.yaml",
     "artifacts.yaml",
     "dependencies.lock.yaml",
     "features/org.seedspec.savings-goals/source.yaml",
@@ -347,6 +358,7 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
   const validateProject = await compileProtocolSchema("project.schema.json");
   const validateLock = await compileProtocolSchema("lock.schema.json");
   const validateResolvedConfiguration = await compileProtocolSchema("resolved-config.schema.json");
+  const validateComponentIndex = await compileProtocolSchema("component-index.schema.json");
   const validateArtifactIndex = await compileProtocolSchema("artifact-index.schema.json");
   const project = parseYaml(await readFile(path.join(result.workspace, "project.yaml"), "utf8"));
   const lock = parseYaml(await readFile(path.join(result.workspace, "dependencies.lock.yaml"), "utf8"));
@@ -356,6 +368,9 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
   const artifactIndex = parseYaml(
     await readFile(path.join(result.workspace, "artifacts.yaml"), "utf8")
   );
+  const componentIndex = parseYaml(
+    await readFile(path.join(result.workspace, "components.yaml"), "utf8")
+  );
 
   assert.equal(validateProject(project), true, formatSchemaErrors(validateProject.errors).join("\n"));
   assert.equal(validateLock(lock), true, formatSchemaErrors(validateLock.errors).join("\n"));
@@ -363,6 +378,11 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
     validateResolvedConfiguration(resolvedConfiguration),
     true,
     formatSchemaErrors(validateResolvedConfiguration.errors).join("\n")
+  );
+  assert.equal(
+    validateComponentIndex(componentIndex),
+    true,
+    formatSchemaErrors(validateComponentIndex.errors).join("\n")
   );
   assert.equal(
     validateArtifactIndex(artifactIndex),

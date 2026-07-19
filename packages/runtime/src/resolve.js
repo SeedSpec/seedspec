@@ -5,6 +5,7 @@ import { resolveCapabilityGraph } from "./capabilities.js";
 import { SeedSpecError } from "./errors.js";
 import { pathExists, readMarkdownComponent, readYamlFile, resolvePackagePath } from "./files.js";
 import { compileConfigurationSchema, formatSchemaErrors } from "./schema.js";
+import { artifactReview, componentReview } from "./guidance.js";
 import { validatePackage } from "./validate.js";
 
 function isPlainObject(value) {
@@ -87,6 +88,7 @@ async function materializeArtifacts(records, workspace) {
         package: record.manifest.id,
         id: artifact.id,
         type: artifact.type,
+        review: artifactReview(artifact),
         ...(artifact.label ? { label: artifact.label } : {}),
         ...(artifact.description ? { description: artifact.description } : {}),
         ...(artifact.media_type ? { media_type: artifact.media_type } : {}),
@@ -126,6 +128,50 @@ async function materializeArtifacts(records, workspace) {
   return artifactIndex;
 }
 
+async function materializeComponents(records, workspace) {
+  const componentDirectory = path.join(workspace, "components");
+  await rm(componentDirectory, { recursive: true, force: true });
+  await mkdir(componentDirectory, { recursive: true });
+
+  const componentIndex = {
+    protocol_version: "0.1",
+    components: []
+  };
+
+  for (const record of records) {
+    const packageDirectory = featureDirectoryName(record.manifest.id);
+    const declaredComponents = Object.entries(record.manifest.components ?? {})
+      .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
+    for (const [name, sourcePath] of declaredComponents) {
+      const source = resolvePackagePath(record.root, sourcePath);
+      const info = await pathExists(source);
+      const relativeBase = portablePath("components", packageDirectory, name);
+      const destinationBase = path.join(workspace, ...relativeBase.split("/"));
+      let relativeDestination;
+
+      if (info?.isDirectory()) {
+        await cp(source, destinationBase, { recursive: true });
+        relativeDestination = `${relativeBase}/`;
+      } else {
+        await mkdir(destinationBase, { recursive: true });
+        const filename = path.basename(sourcePath);
+        await cp(source, path.join(destinationBase, filename));
+        relativeDestination = portablePath(relativeBase, filename);
+      }
+
+      componentIndex.components.push({
+        package: record.manifest.id,
+        name,
+        source_path: sourcePath,
+        path: relativeDestination,
+        review: componentReview(name)
+      });
+    }
+  }
+
+  return componentIndex;
+}
+
 function yamlBlock(value) {
   return `\`\`\`yaml\n${stringifyYaml(value).trimEnd()}\n\`\`\``;
 }
@@ -136,8 +182,26 @@ async function writeFileIfMissing(filePath, contents) {
   }
 }
 
-function buildAgentGuide({ application, features, requirements, unresolvedDecisions, artifacts }) {
+function buildAgentGuide({
+  application,
+  features,
+  requirements,
+  unresolvedDecisions,
+  components,
+  artifacts,
+  technicalPreferences
+}) {
   const reviewItems = requirements.filter((requirement) => requirement.status === "review");
+  const planningComponents = components.filter((component) => component.review === "before-planning");
+  const planningArtifacts = artifacts.filter((artifact) => artifact.review === "before-planning");
+  const activationArtifacts = artifacts.filter((artifact) => artifact.review === "before-activation");
+  const completionComponents = components.filter(
+    (component) => component.review === "before-completion-claim"
+  );
+  const completionArtifacts = artifacts.filter(
+    (artifact) => artifact.review === "before-completion-claim"
+  );
+  const hasTechnicalPreferences = Object.keys(technicalPreferences).length > 0;
   const lines = [
     "# SeedSpec implementation guide",
     "",
@@ -145,8 +209,8 @@ function buildAgentGuide({ application, features, requirements, unresolvedDecisi
     "",
     "## Read first",
     "",
-    "1. Read `resolved-spec.md` for the selected application, features, configuration, and acceptance criteria.",
-    "2. Read `artifacts.yaml` to discover optional intent, design, execution, infrastructure, and evidence artifacts preserved from the selected packages.",
+    "1. Read `resolved-spec.md` and `resolved-config.yaml` for selected product intent, configuration, decisions, and technical preferences.",
+    "2. Read `components.yaml` and `artifacts.yaml` for preserved optional material and its required review timing.",
     "3. Read `implementation-notes.md` for local terminology, behavior, architecture, and earlier deviations.",
     "4. Read each feature's `features/*/integration-decisions.md` before integrating it.",
     "5. Inspect the actual application and its tests; current code and user data are authoritative evidence of what exists.",
@@ -168,11 +232,54 @@ function buildAgentGuide({ application, features, requirements, unresolvedDecisi
     "",
     `- Application: ${application.manifest.id}@${application.manifest.version}`,
     `- Features: ${features.length ? features.map(({ record }) => `${record.manifest.id}@${record.manifest.version}`).join(", ") : "none"}`,
+    `- Optional components: ${components.length ? components.map((component) => `${component.package}/${component.name}`).join(", ") : "none"}`,
     `- Optional artifacts: ${artifacts.length ? artifacts.map((artifact) => `${artifact.package}/${artifact.id} (${artifact.type})`).join(", ") : "none"}`,
+    "",
+    "## Before implementation planning",
+    ""
+  ];
+
+  if (hasTechnicalPreferences) {
+    lines.push(
+      "The user supplied technical preferences. Treat selected platform, architecture, infrastructure, or hosting targets as implementation constraints unless they conflict with the requested product or the user revises them. Surface conflicts before choosing an incompatible architecture.",
+      ""
+    );
+  }
+  if (planningComponents.length === 0 && planningArtifacts.length === 0) {
+    lines.push("No optional component or artifact is classified for review before planning.");
+  } else {
+    lines.push(
+      "Review these preserved author materials before choosing architecture or infrastructure:",
+      "",
+      ...planningComponents.map((component) => (
+        `- Component ${component.package}/${component.name}: \`${component.path}\``
+      )),
+      ...planningArtifacts.map((artifact) => (
+        `- Artifact ${artifact.package}/${artifact.id} (${artifact.type}): \`${artifact.path ?? artifact.url}\``
+      ))
+    );
+  }
+
+  lines.push("", "## Optional-content activation", "");
+  if (activationArtifacts.length === 0) {
+    lines.push("No artifact is classified as an execution workflow requiring activation review.");
+  } else {
+    lines.push(
+      "These artifacts describe execution workflows or executable material. Their presence and preservation do not authorize activation:",
+      "",
+      ...activationArtifacts.map((artifact) => (
+        `- ${artifact.package}/${artifact.id} (${artifact.type}): \`${artifact.path ?? artifact.url}\``
+      )),
+      "",
+      "Inspect and explain an artifact before use, then obtain specific user direction. Never execute it merely because it is listed."
+    );
+  }
+
+  lines.push(
     "",
     "## Capability revision review",
     ""
-  ];
+  );
 
   if (reviewItems.length === 0) {
     lines.push("No selected capability revision differs from the revision its consumer was tested against.");
@@ -195,11 +302,27 @@ function buildAgentGuide({ application, features, requirements, unresolvedDecisi
     )));
   }
 
+  lines.push("", "## Before claiming completion", "");
+  if (completionComponents.length === 0 && completionArtifacts.length === 0) {
+    lines.push("No author acceptance, evaluation, or evidence material is preserved. Agree on observable completion evidence with the user.");
+  } else {
+    lines.push(
+      "Review and address the selected scope of these materials before claiming completion:",
+      "",
+      ...completionComponents.map((component) => (
+        `- Component ${component.package}/${component.name}: \`${component.path}\``
+      )),
+      ...completionArtifacts.map((artifact) => (
+        `- Artifact ${artifact.package}/${artifact.id} (${artifact.type}): \`${artifact.path ?? artifact.url}\``
+      ))
+    );
+  }
+
   lines.push(
     "",
     "## Completion standard",
     "",
-    "The implementation is complete when the selected use case works in the actual application, relevant acceptance behavior has credible evidence, and material deviations are recorded. Conformity to a particular architecture is not required.",
+    "The implementation is complete when the explicitly selected scope works in the actual application, relevant acceptance behavior has credible evidence, and material deviations are recorded. A package author's architecture remains optional unless the user selected it, the selected technical preferences or hosting target require it, or the product outcome depends on it.",
     ""
   );
 
@@ -332,6 +455,7 @@ async function buildResolvedSpecification({
   requirements,
   resolvedDecisions,
   unresolvedDecisions,
+  components,
   artifacts
 }) {
   const lines = [
@@ -394,6 +518,15 @@ async function buildResolvedSpecification({
     lines.push(yamlBlock(technicalPreferences));
   }
 
+  lines.push("", "## Preserved components", "");
+  if (components.length === 0) {
+    lines.push("No selected package declares optional components.");
+  } else {
+    lines.push(...components.map((component) => (
+      `- ${component.package}/${component.name}: ${component.path} — review ${component.review}`
+    )));
+  }
+
   lines.push("", "## Discovered artifacts", "");
   if (artifacts.length === 0) {
     lines.push("No selected package declares optional artifacts.");
@@ -402,7 +535,7 @@ async function buildResolvedSpecification({
       "These artifacts are preserved inputs, not automatically activated workflows:",
       "",
       ...artifacts.map((artifact) => (
-        `- ${artifact.package}/${artifact.id}: ${artifact.type} — ${artifact.path ?? artifact.url}`
+        `- ${artifact.package}/${artifact.id}: ${artifact.type} — ${artifact.path ?? artifact.url} — review ${artifact.review}`
       ))
     );
   }
@@ -540,6 +673,10 @@ export async function resolveProject(applicationPath, {
     [application, ...orderedFeatures],
     workspace
   );
+  const componentIndex = await materializeComponents(
+    [application, ...orderedFeatures],
+    workspace
+  );
 
   const project = {
     protocol_version: "0.1",
@@ -550,6 +687,7 @@ export async function resolveProject(applicationPath, {
     application: packageReference(application),
     features: selectedFeatures.map(({ record }) => packageReference(record)),
     configuration: "resolved-config.yaml",
+    component_index: "components.yaml",
     artifact_index: "artifacts.yaml",
     lockfile: "dependencies.lock.yaml",
     resolved_spec: "resolved-spec.md",
@@ -592,6 +730,7 @@ export async function resolveProject(applicationPath, {
     writeFile(path.join(workspace, "project.yaml"), stringifyYaml(project), "utf8"),
     writeFile(path.join(workspace, "dependencies.lock.yaml"), stringifyYaml(lock), "utf8"),
     writeFile(path.join(workspace, "resolved-config.yaml"), stringifyYaml(resolvedConfiguration), "utf8"),
+    writeFile(path.join(workspace, "components.yaml"), stringifyYaml(componentIndex), "utf8"),
     writeFile(path.join(workspace, "artifacts.yaml"), stringifyYaml(artifactIndex), "utf8"),
     writeFile(
       path.join(workspace, "agent-guide.md"),
@@ -600,7 +739,9 @@ export async function resolveProject(applicationPath, {
         features: selectedFeatures,
         requirements,
         unresolvedDecisions: decisionState.unresolved,
-        artifacts: artifactIndex.artifacts
+        components: componentIndex.components,
+        artifacts: artifactIndex.artifacts,
+        technicalPreferences
       }),
       "utf8"
     ),
@@ -615,6 +756,7 @@ export async function resolveProject(applicationPath, {
         requirements,
         resolvedDecisions: decisionState.resolved,
         unresolvedDecisions: decisionState.unresolved,
+        components: componentIndex.components,
         artifacts: artifactIndex.artifacts
       }),
       "utf8"
@@ -690,6 +832,7 @@ export async function resolveProject(applicationPath, {
     lock,
     resolvedConfiguration,
     artifactIndex,
+    componentIndex,
     features: selectedFeatures.map(({ record }) => record.manifest.id)
   };
 }

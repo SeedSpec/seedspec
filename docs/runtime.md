@@ -41,6 +41,8 @@ The resulting workspace is:
 .seedspec/
 ├── project.yaml
 ├── agent-guide.md
+├── components.yaml
+├── components/
 ├── artifacts.yaml
 ├── artifacts/
 ├── implementation-notes.md

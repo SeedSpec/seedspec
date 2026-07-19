@@ -11,6 +11,7 @@
     "application",
     "features",
     "configuration",
+    "component_index",
     "artifact_index",
     "lockfile",
     "resolved_spec",
@@ -30,6 +31,7 @@
       "items": { "$ref": "#/$defs/packageRef" }
     },
     "configuration": { "const": "resolved-config.yaml" },
+    "component_index": { "const": "components.yaml" },
     "artifact_index": { "const": "artifacts.yaml" },
     "lockfile": { "const": "dependencies.lock.yaml" },
     "resolved_spec": { "const": "resolved-spec.md" },
