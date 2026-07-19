@@ -28,6 +28,7 @@
         },
         "project_status": { "enum": ["ready", "needs-input"] },
         "configuration_status": { "enum": ["selected", "review"] },
+        "completion_scope_status": { "enum": ["recorded", "review"] },
         "review_count": { "type": "integer", "minimum": 0 },
         "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
         "preserved_extension": {

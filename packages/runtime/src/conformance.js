@@ -75,21 +75,35 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         path.join(result.workspace, "artifacts.yaml"),
         "Resolved artifact index"
       );
+      const completionScope = await readYamlFile(
+        path.join(result.workspace, "completion-scope.yaml"),
+        "Resolved completion scope"
+      );
+      const verificationState = await readYamlFile(
+        path.join(result.workspace, "verification-state.yaml"),
+        "Verification state"
+      );
       const validateProject = await compileProtocolSchema("project.schema.json");
       const validateLock = await compileProtocolSchema("lock.schema.json");
       const validateResolvedConfiguration = await compileProtocolSchema("resolved-config.schema.json");
       const validateArtifactIndex = await compileProtocolSchema("artifact-index.schema.json");
+      const validateCompletionScope = await compileProtocolSchema("completion-scope.schema.json");
+      const validateVerificationState = await compileProtocolSchema("verification-state.schema.json");
       if (!validateProject(project)
         || !validateLock(lock)
         || !validateResolvedConfiguration(resolvedConfiguration)
-        || !validateArtifactIndex(artifactIndex)) {
+        || !validateArtifactIndex(artifactIndex)
+        || !validateCompletionScope(completionScope)
+        || !validateVerificationState(verificationState)) {
         throw new SeedSpecError("Resolution produced non-conforming structured state", {
           code: "CONFORMANCE_ASSERTION_FAILED",
           details: [
             ...formatSchemaErrors(validateProject.errors),
             ...formatSchemaErrors(validateLock.errors),
             ...formatSchemaErrors(validateResolvedConfiguration.errors),
-            ...formatSchemaErrors(validateArtifactIndex.errors)
+            ...formatSchemaErrors(validateArtifactIndex.errors),
+            ...formatSchemaErrors(validateCompletionScope.errors),
+            ...formatSchemaErrors(validateVerificationState.errors)
           ]
         });
       }
@@ -105,6 +119,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         featureOrder: result.features,
         projectStatus: result.project.status,
         configurationStatus: result.project.configuration_status,
+        completionScopeStatus: result.project.completion_scope_status,
         reviewCount: result.lock.reviews.length,
         sourceExtensions
       };
@@ -142,6 +157,13 @@ function assertExpectedOutput(testCase, output) {
     && output.configurationStatus !== testCase.expect.configuration_status) {
     throw new SeedSpecError(
       `Configuration status mismatch; expected ${testCase.expect.configuration_status}, received ${output.configurationStatus}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (testCase.expect.completion_scope_status
+    && output.completionScopeStatus !== testCase.expect.completion_scope_status) {
+    throw new SeedSpecError(
+      `Completion scope status mismatch; expected ${testCase.expect.completion_scope_status}, received ${output.completionScopeStatus}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }

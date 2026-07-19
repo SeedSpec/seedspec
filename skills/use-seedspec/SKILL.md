@@ -114,6 +114,7 @@ Gather only choices that materially affect product behavior. Treat `configuratio
 
 - chosen features;
 - one explicit `example` or complete `custom` configuration selection for every selected package;
+- an explicit completion scope covering every selected package, using author acceptance material or project-local observable criteria;
 - answers to declared product decisions;
 - artifact dispositions;
 - already-known technical preferences.
@@ -126,12 +127,13 @@ Run `resolve` with the selected inputs. For example:
 $SEEDSPEC resolve <application-path> \
   --feature <feature-path> \
   --configuration-selections <configuration-selections.yaml> \
+  --completion-scope <completion-scope.yaml> \
   --artifact-selections <artifact-selections.yaml> \
   --technical-preferences <technical-preferences.yaml> \
   --output <project-path>
 ```
 
-If the resolved project reports `needs-input`, inspect `configuration_status` and unresolved required decisions. Do not implement unreviewed example values as if they were selected. If `artifact_status` is `review`, distinguish unreviewed artifacts from explicitly deferred ones and surface only those that become consequential. If `declaration_status` is `review`, inspect the real code for equivalent concepts and resolve the recorded capability, conflict, or cycle concerns in the integration plan. They are not automatic rejection gates.
+If the resolved project reports `needs-input`, inspect `configuration_status` and unresolved required decisions. Do not implement unreviewed example values as if they were selected. `completion_scope_status: review` does not block planning, but it does block an honest completion claim; record scope before concluding the work. If `artifact_status` is `review`, distinguish unreviewed artifacts from explicitly deferred ones and surface only those that become consequential. If `declaration_status` is `review`, inspect the real code for equivalent concepts and resolve the recorded capability, conflict, or cycle concerns in the integration plan. They are not automatic rejection gates.
 
 ### 7. Prepare the implementation agent
 
@@ -151,6 +153,11 @@ Ask the user about their implementation ecosystem only when it becomes relevant:
 
 ### 8. Close the loop
 
-During implementation, preserve established behavior and terminology unless the user requests a migration. Record material mappings and deviations in `.seedspec/implementation-notes.md`, and acceptance evidence in `.seedspec/verification-report.md`.
+During implementation, preserve established behavior and terminology unless the user requests a migration. Record material mappings and deviations in `.seedspec/implementation-notes.md`, detailed acceptance evidence in `.seedspec/verification-report.md`, and concise per-scope results in `.seedspec/verification-state.yaml`.
+
+Run `seedspec completion <project-path>` before making a completion claim. Treat
+`scope-review`, `not-started`, `in-progress`, `failed`, and
+`verified-with-gaps` literally. A ready handoff is not verified software, and a
+verified result is only as broad as the recorded scope.
 
 When the user later asks for a new feature, repeat discovery and resolution against current code as evidence. Artifact relationships and package digests help trace what changed, but they do not make the original SeedSpec a permanent control plane.

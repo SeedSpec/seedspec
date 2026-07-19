@@ -8,6 +8,7 @@
     "protocol_version",
     "status",
     "configuration_status",
+    "completion_scope_status",
     "declaration_status",
     "artifact_status",
     "application",
@@ -20,6 +21,8 @@
     "agent_guide",
     "implementation_notes",
     "verification_report",
+    "completion_scope",
+    "verification_state",
     "resolved_decisions",
     "unresolved_decisions"
   ],
@@ -27,6 +30,7 @@
     "protocol_version": { "const": "0.1" },
     "status": { "enum": ["ready", "needs-input"] },
     "configuration_status": { "enum": ["selected", "review"] },
+    "completion_scope_status": { "enum": ["recorded", "review"] },
     "declaration_status": { "enum": ["no-declared-concerns", "review"] },
     "artifact_status": { "enum": ["recorded", "review"] },
     "application": { "$ref": "#/$defs/packageRef" },
@@ -42,6 +46,8 @@
     "agent_guide": { "const": "agent-guide.md" },
     "implementation_notes": { "const": "implementation-notes.md" },
     "verification_report": { "const": "verification-report.md" },
+    "completion_scope": { "const": "completion-scope.yaml" },
+    "verification_state": { "const": "verification-state.yaml" },
     "resolved_decisions": {
       "type": "array",
       "items": { "$ref": "#/$defs/resolvedDecision" }

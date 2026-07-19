@@ -14,11 +14,12 @@ seedspec artifacts <path> [--json]
 seedspec adapters [--json]
 seedspec validate-artifact <path> <artifact-id> [--json]
 seedspec discover-features <application-path> --catalog <path> [--catalog <path>] [--json]
-seedspec resolve <application-path> [--feature <feature-path>] [--configuration-selections <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
+seedspec resolve <application-path> [--feature <feature-path>] [--configuration-selections <yaml>] [--completion-scope <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
 seedspec init application [--output <path>]
 seedspec init feature [--output <path>]
 seedspec conformance [cases.yaml]
 seedspec verify-lock <project-path> --package <path> [--package <path>]
+seedspec completion <project-path> [--json]
 ```
 
 `prompt` prints a short, agent-agnostic instruction that a package distributor or buyer can give to an implementation agent. It delegates the detailed workflow to version-compatible official tooling rather than embedding a long marketplace-maintained prompt.
@@ -27,7 +28,13 @@ seedspec verify-lock <project-path> --package <path> [--package <path>]
 
 `begin` marks `configuration.example` as review-required. The example is author material, not a selected default.
 
-`resolve` accepts repeated `--feature` options, one `--configuration-selections` document covering every selected package, product-decision answers through `--decisions`, separate `--technical-preferences`, and `--artifact-selections` for selected, declined, or deferred artifacts. A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
+`resolve` accepts repeated `--feature` options, one `--configuration-selections` document covering every selected package, an optional `--completion-scope`, product-decision answers through `--decisions`, separate `--technical-preferences`, and `--artifact-selections` for selected, declined, or deferred artifacts. A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Completion scope is independent: uncovered selected packages produce `completion_scope_status: review` but do not change input readiness. Artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
+
+`completion` validates the resolved scope and structured verification state,
+checks their digest and exact item coverage, and derives `scope-review`,
+`not-started`, `in-progress`, `failed`, `verified-with-gaps`, or `verified`. It
+does not run application tests; the implementation agent records truthful
+results and evidence first.
 
 Technical preferences may include provider-neutral `implementation_targets` with namespaced kind and target IDs plus validated references to selected package guidance. Referenced artifacts must be selected. The generated guide surfaces targets before architecture planning but does not claim that the final application is compatible or deployable.
 
@@ -49,6 +56,8 @@ The resulting workspace is:
 ├── artifacts/
 ├── implementation-notes.md
 ├── verification-report.md
+├── completion-scope.yaml
+├── verification-state.yaml
 ├── resolved-spec.md
 ├── resolved-config.yaml
 ├── dependencies.lock.yaml

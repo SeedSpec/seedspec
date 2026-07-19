@@ -9,9 +9,11 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   beginPackage,
+  completionScopeDigest,
   discoverFeatures,
   formatBuyerAgentPrompt,
   inspectPackage,
+  inspectProjectCompletion,
   initPackage,
   listArtifactAdapters,
   listPackageArtifacts,
@@ -181,7 +183,7 @@ test("begin reports when a package has no author acceptance material", async (t)
   assert.ok(beginning.notices.some((notice) => notice.code === "NO_DECLARED_ACCEPTANCE"));
   assert.match(
     beginning.next_actions.find((action) => action.id === "agree-completion-scope").action,
-    /Agree with the user/
+    /Record observable project-local completion criteria/
   );
 });
 
@@ -682,6 +684,148 @@ test("configuration selections reject missing, duplicate, and unselected package
   }
 });
 
+test("completion scope stays independent from implementation readiness", async (t) => {
+  const output = await temporaryDirectory(t);
+  const configurationSelectionsPath = await writeExampleConfigurationSelections(
+    output,
+    [allowance]
+  );
+  const result = await resolveProject(allowance, {
+    outputDirectory: output,
+    configurationSelectionsPath
+  });
+  const completion = await inspectProjectCompletion(output);
+
+  assert.equal(result.project.status, "ready");
+  assert.equal(result.project.completion_scope_status, "review");
+  assert.deepEqual(result.completionScope.uncovered_packages, [
+    "org.seedspec.examples.allowance-tracker"
+  ]);
+  assert.equal(completion.status, "scope-review");
+  assert.equal(completion.state.status, "not-started");
+  const cli = path.join(root, "packages/cli/bin/seedspec.js");
+  const command = await execFileAsync(process.execPath, [cli, "completion", output]);
+  assert.match(command.stdout, /Completion status: scope-review/);
+});
+
+test("completion checking derives verified-with-gaps from scoped evidence", async (t) => {
+  const output = await temporaryDirectory(t);
+  const configurationSelectionsPath = await writeExampleConfigurationSelections(
+    output,
+    [allowance, savings]
+  );
+  const completionScopePath = path.join(output, "completion-input.yaml");
+  await writeFile(completionScopePath, stringifyYaml({
+    protocol_version: "0.1",
+    items: [
+      {
+        kind: "component",
+        id: "allowance-acceptance",
+        package: "org.seedspec.examples.allowance-tracker",
+        component: "acceptance",
+        selection: "all"
+      },
+      {
+        kind: "component",
+        id: "savings-acceptance",
+        package: "org.seedspec.savings-goals",
+        component: "acceptance",
+        selection: "subset",
+        included_references: ["1"],
+        deferred_references: ["2"]
+      }
+    ]
+  }), "utf8");
+
+  const result = await resolveProject(allowance, {
+    featurePaths: [savings],
+    outputDirectory: output,
+    configurationSelectionsPath,
+    completionScopePath
+  });
+  assert.equal(result.project.completion_scope_status, "recorded");
+  const statePath = path.join(result.workspace, "verification-state.yaml");
+  const state = parseYaml(await readFile(statePath, "utf8"));
+  state.status = "verified-with-gaps";
+  state.items = state.items.map((item) => ({
+    ...item,
+    result: "pass",
+    evidence: [`test evidence for ${item.id}`]
+  }));
+  await writeFile(statePath, stringifyYaml(state), "utf8");
+
+  const completion = await inspectProjectCompletion(output);
+  assert.equal(completion.status, "verified-with-gaps");
+  assert.equal(completion.state.scope_digest, completionScopeDigest(completion.scope));
+});
+
+test("completion checking rejects overlapping references and stale verification", async (t) => {
+  const output = await temporaryDirectory(t);
+  const configurationSelectionsPath = await writeExampleConfigurationSelections(
+    output,
+    [allowance]
+  );
+  const completionScopePath = path.join(output, "completion-input.yaml");
+  await writeFile(completionScopePath, stringifyYaml({
+    protocol_version: "0.1",
+    items: [{
+      kind: "component",
+      id: "allowance-acceptance",
+      package: "org.seedspec.examples.allowance-tracker",
+      component: "acceptance",
+      selection: "subset",
+      included_references: ["1"],
+      deferred_references: ["1"]
+    }]
+  }), "utf8");
+  await assert.rejects(
+    resolveProject(allowance, {
+      outputDirectory: path.join(output, "invalid-project"),
+      configurationSelectionsPath,
+      completionScopePath
+    }),
+    (error) => error.code === "INVALID_COMPLETION_SCOPE"
+  );
+
+  await writeFile(completionScopePath, stringifyYaml({
+    protocol_version: "0.1",
+    items: [{
+      kind: "component",
+      id: "allowance-acceptance",
+      package: "org.seedspec.examples.allowance-tracker",
+      component: "acceptance",
+      selection: "all"
+    }]
+  }), "utf8");
+  const projectPath = path.join(output, "stale-project");
+  await resolveProject(allowance, {
+    outputDirectory: projectPath,
+    configurationSelectionsPath,
+    completionScopePath
+  });
+
+  await writeFile(completionScopePath, stringifyYaml({
+    protocol_version: "0.1",
+    items: [{
+      kind: "component",
+      id: "allowance-acceptance",
+      package: "org.seedspec.examples.allowance-tracker",
+      component: "acceptance",
+      selection: "subset",
+      included_references: ["1"]
+    }]
+  }), "utf8");
+  await resolveProject(allowance, {
+    outputDirectory: projectPath,
+    configurationSelectionsPath,
+    completionScopePath
+  });
+  await assert.rejects(
+    inspectProjectCompletion(projectPath),
+    (error) => error.code === "STALE_VERIFICATION_STATE"
+  );
+});
+
 test("all structured resolved state conforms to protocol schemas", async (t) => {
   const output = await temporaryDirectory(t);
   const result = await resolveProject(allowance, {
@@ -693,6 +837,8 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
   const validateResolvedConfiguration = await compileProtocolSchema("resolved-config.schema.json");
   const validateComponentIndex = await compileProtocolSchema("component-index.schema.json");
   const validateArtifactIndex = await compileProtocolSchema("artifact-index.schema.json");
+  const validateCompletionScope = await compileProtocolSchema("completion-scope.schema.json");
+  const validateVerificationState = await compileProtocolSchema("verification-state.schema.json");
   const project = parseYaml(await readFile(path.join(result.workspace, "project.yaml"), "utf8"));
   const lock = parseYaml(await readFile(path.join(result.workspace, "dependencies.lock.yaml"), "utf8"));
   const resolvedConfiguration = parseYaml(
@@ -703,6 +849,12 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
   );
   const componentIndex = parseYaml(
     await readFile(path.join(result.workspace, "components.yaml"), "utf8")
+  );
+  const completionScope = parseYaml(
+    await readFile(path.join(result.workspace, "completion-scope.yaml"), "utf8")
+  );
+  const verificationState = parseYaml(
+    await readFile(path.join(result.workspace, "verification-state.yaml"), "utf8")
   );
 
   assert.equal(validateProject(project), true, formatSchemaErrors(validateProject.errors).join("\n"));
@@ -716,6 +868,16 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
     validateComponentIndex(componentIndex),
     true,
     formatSchemaErrors(validateComponentIndex.errors).join("\n")
+  );
+  assert.equal(
+    validateCompletionScope(completionScope),
+    true,
+    formatSchemaErrors(validateCompletionScope.errors).join("\n")
+  );
+  assert.equal(
+    validateVerificationState(verificationState),
+    true,
+    formatSchemaErrors(validateVerificationState.errors).join("\n")
   );
   assert.equal(
     validateArtifactIndex(artifactIndex),

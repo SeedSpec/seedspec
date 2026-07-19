@@ -268,7 +268,43 @@ Unanswered decisions and unselected configuration do not disappear or silently
 become defaults. Execution engines SHOULD refuse consequential implementation
 choices while project status is `needs-input`.
 
-### 9.1 Artifact dispositions
+### 9.1 Completion scope and verification
+
+Implementation readiness and completion are independent. An optional input
+conforming to `completion-scope-input.schema.json` records project-local scope
+items for selected packages.
+
+A component item references the package's declared `acceptance` component and
+selects either all material or a named subset. A subset MUST name included
+references and MAY record deferred or excluded references. A criterion item
+states an observable project-local expectation and marks it `included`,
+`deferred`, or `excluded`.
+
+The runtime MUST validate selected package and component relationships,
+project-local item ID uniqueness, and non-overlapping included, deferred, and
+excluded references. Because acceptance components may be arbitrary Markdown,
+the runtime does not claim that a named reference exists inside the prose.
+
+Every selected package needs at least one included component or criterion item
+for `completion_scope_status: recorded`. Otherwise the resolved scope lists the
+package under `uncovered_packages` and reports `review`. Completion-scope review
+does not change project input readiness, but an implementing agent MUST NOT
+claim verified completion while selected packages remain uncovered.
+
+Resolution creates `verification-state.yaml` only when missing. It binds to a
+canonical digest of `completion-scope.yaml` and creates one result for every
+included criterion or component item. Non-`not-run` results require evidence.
+Runtimes MUST detect a stale scope digest, missing or extra item results, and a
+recorded status that contradicts deterministic derivation.
+
+Core derived completion statuses are `scope-review`, `not-started`,
+`in-progress`, `failed`, `verified-with-gaps`, and `verified`. Any failure yields
+`failed`; unfinished included items yield `not-started` or `in-progress`; a
+partial result or explicit deferral yields `verified-with-gaps`; only all-pass
+evidence with no deferral yields `verified`. Exclusions narrow the stated scope
+and do not themselves create a verification gap.
+
+### 9.2 Artifact dispositions
 
 Artifact discovery, preservation, disposition, review timing, and activation are
 separate concepts.
@@ -290,7 +326,7 @@ load a skill, execute a script or command, fetch a remote URL, invoke an
 adapter, or adopt an external workflow. Those actions require specific user or
 execution-environment direction outside core resolution.
 
-### 9.2 Implementation targets
+### 9.3 Implementation targets
 
 Technical preferences MAY contain `implementation_targets` conforming to
 `technical-preferences.schema.json`. A target declares:
@@ -375,13 +411,15 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 ├── artifacts/
 ├── implementation-notes.md
 ├── verification-report.md
+├── completion-scope.yaml
+├── verification-state.yaml
 ├── resolved-spec.md
 ├── resolved-config.yaml
 ├── dependencies.lock.yaml
 └── features/
 ```
 
-`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records combined readiness, `selected` or `review` configuration status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
+`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records combined readiness, `selected` or `review` configuration status, independent `recorded` or `review` completion-scope status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
 
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
@@ -391,7 +429,14 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 
 `resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, and each configuration's `example-unreviewed`, `example`, or `custom` selection provenance. Answered decisions and technical preferences remain separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 
-`resolved-spec.md` is human- and agent-readable product intent. `agent-guide.md` explains how to interpret it. `implementation-notes.md` and `verification-report.md` are created only when missing so later resolution does not erase project memory.
+`completion-scope.yaml` conforms to `completion-scope.schema.json` and records
+included, deferred, excluded, and uncovered completion context.
+`verification-state.yaml` conforms to `verification-state.schema.json`, remains
+bound to the exact scope digest, and is created only when missing so resolution
+does not erase implementation evidence. `verification-report.md` remains the
+human-readable detailed evidence companion.
+
+`resolved-spec.md` is human- and agent-readable product intent. `agent-guide.md` explains how to interpret it. `implementation-notes.md`, `verification-report.md`, and `verification-state.yaml` are created only when missing so later resolution does not erase project memory. A changed scope intentionally makes preserved verification state stale until an agent reconciles it.
 
 ## 13. Conformance
 

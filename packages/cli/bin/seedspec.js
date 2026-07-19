@@ -13,8 +13,10 @@ import {
   formatBuyerAgentPrompt,
   formatInspection,
   formatPackageBeginning,
+  formatProjectCompletion,
   initPackage,
   inspectPackage,
+  inspectProjectCompletion,
   listArtifactAdapters,
   listPackageArtifacts,
   resolveProject,
@@ -38,6 +40,7 @@ Usage:
   seedspec discover-features <application-path> --catalog <path> [--catalog <path>] [--json]
   seedspec conformance [cases.yaml]
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
+  seedspec completion <project-path> [--json]
   seedspec resolve <application-path> [options]
   seedspec init <application|feature> [--output <path>]
 
@@ -45,6 +48,7 @@ Resolve options:
   --feature <path>                 Add a SeedSpec feature package (repeatable)
   --output <path>                  Project directory; defaults to the current directory
   --configuration-selections <yaml>  Select example or complete custom configuration per package
+  --completion-scope <yaml>         Record the implementation completion scope
   --technical-preferences <yaml>   Record implementation preferences separately
   --artifact-selections <yaml>     Record selected, declined, or deferred artifacts
   --decisions <yaml>               Answer package-declared product decisions
@@ -180,6 +184,7 @@ async function run() {
         "feature",
         "output",
         "configuration-selections",
+        "completion-scope",
         "technical-preferences",
         "artifact-selections",
         "decisions"
@@ -189,11 +194,21 @@ async function run() {
         featurePaths: options.get("feature") ?? [],
         outputDirectory: oneOption(options, "output"),
         configurationSelectionsPath: oneOption(options, "configuration-selections"),
+        completionScopePath: oneOption(options, "completion-scope"),
         technicalPreferencesPath: oneOption(options, "technical-preferences"),
         artifactSelectionsPath: oneOption(options, "artifact-selections"),
         decisionsPath: oneOption(options, "decisions")
       });
       process.stdout.write(`Resolved ${result.project.application.id} with ${result.features.length} feature(s)\nProject status: ${result.project.status}\nWorkspace: ${result.workspace}\n`);
+      break;
+    }
+    case "completion": {
+      rejectUnknownOptions(options, ["json"]);
+      const projectPath = requirePositional(positional, 0, "project path");
+      const result = await inspectProjectCompletion(projectPath);
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatProjectCompletion(result)}\n`);
       break;
     }
     case "init": {

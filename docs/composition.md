@@ -50,6 +50,11 @@ configuration selection or required decision answers produce a valid project
 with `status: needs-input`; they do not disappear into implementation
 assumptions.
 
+Completion scope and verification remain independent from that readiness state.
+A ready project can still have `completion_scope_status: review` or structured
+verification status `not-started`. Package acceptance material becomes part of
+a completion claim only through an explicit scope record.
+
 The dependency lock records exact package digests, deterministic feature order,
 all capability declarations, all provider candidates, revision comparisons, and
 matched conflict or cycle records. It reproduces declaration analysis. It does

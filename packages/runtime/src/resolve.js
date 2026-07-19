@@ -2,6 +2,7 @@ import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 import { analyzeCapabilityDeclarations } from "./capabilities.js";
+import { createInitialVerificationState, resolveCompletionScope } from "./completion.js";
 import { SeedSpecError } from "./errors.js";
 import { pathExists, readMarkdownComponent, readYamlFile, resolvePackagePath } from "./files.js";
 import { compileConfigurationSchema, compileProtocolSchema, formatSchemaErrors } from "./schema.js";
@@ -340,6 +341,7 @@ function buildAgentGuide({
   application,
   features,
   configurationStatus,
+  completionScope,
   requirements,
   reviews,
   unresolvedDecisions,
@@ -413,6 +415,7 @@ function buildAgentGuide({
     "- Translate acceptance criteria into tests appropriate for the chosen stack; do not force a source package's test technology onto the application.",
     "- Record material semantic mappings and deviations in `implementation-notes.md`.",
     "- Record acceptance evidence, remaining gaps, and manual checks in `verification-report.md`.",
+    "- Keep concise per-scope results and evidence references truthful in `verification-state.yaml`.",
     "- Artifact discovery is descriptive, not an instruction to activate the artifact's tooling or lifecycle.",
     "- Artifact disposition records intended use. Even a selected artifact does not authorize loading a skill, running a command, fetching a URL, or invoking an adapter.",
     "- If an artifact format has its own workflow, explain the exact action and obtain specific user direction at activation time. The package author's preference does not override the end user's direction.",
@@ -571,12 +574,41 @@ function buildAgentGuide({
   }
 
   lines.push("", "## Before claiming completion", "");
+  if (completionScope.status === "review") {
+    lines.push(
+      "**Completion scope is not fully recorded. Do not claim this implementation is complete.** Add observable criteria or select author acceptance material for these packages, then rerun resolution:",
+      "",
+      ...completionScope.uncovered_packages.map((packageId) => `- ${packageId}`),
+      ""
+    );
+  } else {
+    lines.push("The current completion claim is limited to these recorded scope items:", "");
+    for (const item of completionScope.items) {
+      if (item.kind === "criterion") {
+        lines.push(`- **${item.disposition.toUpperCase()} ${item.id}** (${item.package}): ${item.statement}`);
+      } else if (item.selection === "all") {
+        lines.push(`- **${item.id}**: all acceptance material from ${item.package}/${item.component}`);
+      } else {
+        lines.push(
+          `- **${item.id}**: selected references from ${item.package}/${item.component}: ${(item.included_references ?? []).join(", ")}`
+        );
+        if (item.deferred_references?.length) {
+          lines.push(`  - Deferred gaps: ${item.deferred_references.join(", ")}`);
+        }
+        if (item.excluded_references?.length) {
+          lines.push(`  - Explicitly outside this scope: ${item.excluded_references.join(", ")}`);
+        }
+      }
+    }
+    lines.push("");
+  }
+
   if (completionComponents.length === 0 && completionArtifacts.length === 0) {
-    lines.push("No author acceptance, evaluation, or evidence material is preserved. Agree on observable completion evidence with the user.");
+    lines.push("No author acceptance, evaluation, or evidence material is preserved. Use the explicit project criteria in `completion-scope.yaml` and attach credible evidence to `verification-state.yaml`.");
   } else {
     if (completionComponents.length > 0 || selectedCompletionArtifacts.length > 0) {
       lines.push(
-        "Review and address the selected scope of these materials before claiming completion:",
+        "These preserved materials may supply acceptance behavior or evidence. `completion-scope.yaml`, not mere presence, determines the current claim:",
         "",
         ...completionComponents.map((component) => (
           `- Component ${component.package}/${component.name}: \`${component.path}\``
@@ -612,7 +644,7 @@ function buildAgentGuide({
     "",
     "## Completion standard",
     "",
-    "The implementation is complete when the explicitly selected scope works in the actual application, relevant acceptance behavior has credible evidence, and material deviations are recorded. A package author's architecture remains optional unless the user selected it, the selected technical preferences or hosting target require it, or the product outcome depends on it.",
+    "Project `status: ready` authorizes implementation planning; it is not a completion claim. The implementation is complete only when the explicitly recorded scope works in the actual application, `verification-state.yaml` truthfully records results and evidence, and material deviations are documented. Run `seedspec completion <project-path>` before claiming verified completion. A package author's architecture remains optional unless the user selected it, the selected technical preferences or hosting target require it, or the product outcome depends on it.",
     ""
   );
 
@@ -665,7 +697,7 @@ Status: not started
 
 const rootAgentInstructions = `# SeedSpec project guidance
 
-Read \`.seedspec/agent-guide.md\` before planning or implementing SeedSpec work. Preserve project-local behavior and terminology, record material deviations in \`.seedspec/implementation-notes.md\`, and record acceptance evidence in \`.seedspec/verification-report.md\`.
+Read \`.seedspec/agent-guide.md\` before planning or implementing SeedSpec work. Preserve project-local behavior and terminology, record material deviations in \`.seedspec/implementation-notes.md\`, record detailed acceptance evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope.
 `;
 
 function normalizeDecisionAnswers(records, suppliedAnswers) {
@@ -740,6 +772,7 @@ async function buildResolvedSpecification({
   application,
   applicationConfiguration,
   applicationConfigurationSelection,
+  completionScope,
   features,
   technicalPreferences,
   capabilities,
@@ -801,6 +834,19 @@ async function buildResolvedSpecification({
 
     const acceptance = await readMarkdownComponent(record, "acceptance");
     if (acceptance) lines.push("", "### Feature acceptance", "", acceptance.trim());
+  }
+
+  lines.push("", "## Completion scope", "");
+  if (completionScope.status === "review") {
+    lines.push(
+      `Review required. No completion scope covers: ${completionScope.uncovered_packages.join(", ")}.`
+    );
+  } else {
+    lines.push(...completionScope.items.map((item) => {
+      if (item.kind === "criterion") return `- ${item.id} (${item.disposition}): ${item.statement}`;
+      if (item.selection === "all") return `- ${item.id}: all of ${item.package}/${item.component}`;
+      return `- ${item.id}: ${item.package}/${item.component} references ${(item.included_references ?? []).join(", ")}`;
+    }));
   }
 
   lines.push("", "## Technical preferences", "");
@@ -891,6 +937,7 @@ export async function resolveProject(applicationPath, {
   featurePaths = [],
   outputDirectory = process.cwd(),
   configurationSelectionsPath,
+  completionScopePath,
   technicalPreferencesPath,
   artifactSelectionsPath,
   decisionsPath
@@ -929,6 +976,7 @@ export async function resolveProject(applicationPath, {
   );
   const applicationSelection = configurationState.selections.get(application.manifest.id);
   const applicationConfiguration = applicationSelection.values;
+  const completionScope = await resolveCompletionScope(completionScopePath, selectedRecords);
 
   const selectedFeatures = [];
   for (const feature of orderedFeatures) {
@@ -989,6 +1037,7 @@ export async function resolveProject(applicationPath, {
     protocol_version: "0.1",
     status,
     configuration_status: configurationState.status,
+    completion_scope_status: completionScope.status,
     declaration_status: reviews.length > 0 ? "review" : "no-declared-concerns",
     artifact_status: artifactIndex.artifacts.some(
       (artifact) => artifact.disposition === "unreviewed"
@@ -1003,6 +1052,8 @@ export async function resolveProject(applicationPath, {
     agent_guide: "agent-guide.md",
     implementation_notes: "implementation-notes.md",
     verification_report: "verification-report.md",
+    completion_scope: "completion-scope.yaml",
+    verification_state: "verification-state.yaml",
     resolved_decisions: decisionState.resolved,
     unresolved_decisions: decisionState.unresolved
   };
@@ -1045,6 +1096,7 @@ export async function resolveProject(applicationPath, {
     writeFile(path.join(workspace, "project.yaml"), stringifyYaml(project), "utf8"),
     writeFile(path.join(workspace, "dependencies.lock.yaml"), stringifyYaml(lock), "utf8"),
     writeFile(path.join(workspace, "resolved-config.yaml"), stringifyYaml(resolvedConfiguration), "utf8"),
+    writeFile(path.join(workspace, "completion-scope.yaml"), stringifyYaml(completionScope), "utf8"),
     writeFile(path.join(workspace, "components.yaml"), stringifyYaml(componentIndex), "utf8"),
     writeFile(path.join(workspace, "artifacts.yaml"), stringifyYaml(artifactIndex), "utf8"),
     writeFile(
@@ -1053,6 +1105,7 @@ export async function resolveProject(applicationPath, {
         application,
         features: selectedFeatures,
         configurationStatus: configurationState.status,
+        completionScope,
         requirements,
         reviews,
         unresolvedDecisions: decisionState.unresolved,
@@ -1068,6 +1121,7 @@ export async function resolveProject(applicationPath, {
         application,
         applicationConfiguration,
         applicationConfigurationSelection: applicationSelection.selection,
+        completionScope,
         features: selectedFeatures,
         technicalPreferences,
         capabilities,
@@ -1085,6 +1139,10 @@ export async function resolveProject(applicationPath, {
   await Promise.all([
     writeFileIfMissing(path.join(workspace, "implementation-notes.md"), initialImplementationNotes),
     writeFileIfMissing(path.join(workspace, "verification-report.md"), initialVerificationReport),
+    writeFileIfMissing(
+      path.join(workspace, "verification-state.yaml"),
+      stringifyYaml(createInitialVerificationState(completionScope))
+    ),
     writeFileIfMissing(path.join(path.resolve(outputDirectory), "AGENTS.md"), rootAgentInstructions)
   ]);
 
@@ -1170,6 +1228,7 @@ export async function resolveProject(applicationPath, {
     resolvedConfiguration,
     artifactIndex,
     componentIndex,
+    completionScope,
     features: selectedFeatures.map(({ record }) => record.manifest.id)
   };
 }

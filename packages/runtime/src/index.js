@@ -15,6 +15,13 @@ export { initPackage } from "./init.js";
 export { computePackageDigest } from "./integrity.js";
 export { verifyProjectLock } from "./lock.js";
 export {
+  completionScopeDigest,
+  createInitialVerificationState,
+  formatProjectCompletion,
+  inspectProjectCompletion,
+  resolveCompletionScope
+} from "./completion.js";
+export {
   analyzeCapabilityDeclarations,
   capabilityMatches,
   resolveCapabilityGraph

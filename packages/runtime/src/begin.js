@@ -48,7 +48,7 @@ export async function beginPackage(inputPath) {
     ...(!acceptance ? [{
       code: "NO_DECLARED_ACCEPTANCE",
       level: "review",
-      message: "The package declares no acceptance component. Agree on an implementation and verification scope before claiming completion."
+      message: "The package declares no acceptance component. Record project-local observable completion criteria before claiming completion."
     }] : []),
     ...(beforePlanning.length ? [{
       code: "GUIDANCE_REQUIRES_EARLY_REVIEW",
@@ -120,15 +120,15 @@ export async function beginPackage(inputPath) {
       {
         id: "agree-completion-scope",
         action: acceptance
-          ? "Treat the declared acceptance material as the default completion scope unless the user explicitly chooses and records a narrower scope."
-          : "Agree with the user on observable completion criteria because the author supplied no acceptance component."
+          ? "Review the declared acceptance material, then explicitly record all or a narrower referenced subset as the completion scope."
+          : "Record observable project-local completion criteria because the author supplied no acceptance component."
       },
       {
         id: "resolve-handoff",
         action: "After those choices are explicit, run seedspec resolve to create the durable implementation handoff."
       }
     ],
-    resolve_command: `seedspec resolve ${JSON.stringify(record.root)} --configuration-selections <configuration-selections.yaml> --output <project-path>`
+    resolve_command: `seedspec resolve ${JSON.stringify(record.root)} --configuration-selections <configuration-selections.yaml> --completion-scope <completion-scope.yaml> --output <project-path>`
   };
 }
 
