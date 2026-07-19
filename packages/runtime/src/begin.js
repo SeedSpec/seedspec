@@ -112,6 +112,12 @@ export async function beginPackage(inputPath) {
         action: "Inventory author-provided components and artifacts. Review relevant architecture, infrastructure, hosting, security, and compatibility material before implementation planning."
       },
       {
+        id: "record-artifact-dispositions",
+        action: artifacts.length
+          ? "Record each consequential artifact the user selected, declined, or explicitly deferred. Omitted artifacts remain unreviewed; selection does not authorize activation."
+          : "No artifact dispositions are needed because the package declares no artifacts."
+      },
+      {
         id: "agree-completion-scope",
         action: acceptance
           ? "Treat the declared acceptance material as the default completion scope unless the user explicitly chooses and records a narrower scope."
@@ -211,7 +217,7 @@ export function formatPackageBeginning(beginning) {
   });
   lines.push(
     "",
-    "After gathering choices, construct configuration, decision, technical-preference, and feature arguments as needed, then resolve the handoff. Starting command shape:",
+    "After gathering choices, construct configuration, decision, technical-preference, artifact-selection, and feature arguments as needed, then resolve the handoff. Starting command shape:",
     "",
     "```text",
     beginning.resolve_command,

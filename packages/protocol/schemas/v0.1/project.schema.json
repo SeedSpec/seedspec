@@ -8,6 +8,7 @@
     "protocol_version",
     "status",
     "integration_status",
+    "artifact_status",
     "application",
     "features",
     "configuration",
@@ -25,6 +26,7 @@
     "protocol_version": { "const": "0.1" },
     "status": { "enum": ["ready", "needs-decisions"] },
     "integration_status": { "enum": ["aligned", "review"] },
+    "artifact_status": { "enum": ["recorded", "review"] },
     "application": { "$ref": "#/$defs/packageRef" },
     "features": {
       "type": "array",

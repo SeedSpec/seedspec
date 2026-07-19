@@ -47,6 +47,7 @@ Resolve options:
   --config <yaml>                  Partial application configuration override
   --feature-config <id>=<yaml>     Partial feature configuration override (repeatable)
   --technical-preferences <yaml>   Record implementation preferences separately
+  --artifact-selections <yaml>     Record selected, declined, or deferred artifacts
   --decisions <yaml>               Answer package-declared product decisions
 `;
 
@@ -188,6 +189,7 @@ async function run() {
         applicationConfigurationPath: oneOption(options, "config"),
         featureConfigurationPaths,
         technicalPreferencesPath: oneOption(options, "technical-preferences"),
+        artifactSelectionsPath: oneOption(options, "artifact-selections"),
         decisionsPath: oneOption(options, "decisions")
       });
       process.stdout.write(`Resolved ${result.project.application.id} with ${result.features.length} feature(s)\nWorkspace: ${result.workspace}\n`);

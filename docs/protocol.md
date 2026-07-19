@@ -223,6 +223,49 @@ Resolution preserves unanswered declarations. A project has:
 
 Unanswered decisions do not disappear and are not silently defaulted. Execution engines SHOULD refuse consequential implementation choices while project status is `needs-decisions`.
 
+### 9.1 Artifact dispositions
+
+Artifact discovery, preservation, disposition, review timing, and activation are
+separate concepts.
+
+An optional artifact-selection input conforms to
+`artifact-selections.schema.json`. It records a package ID, package-local
+artifact ID, and one of:
+
+- `selected`: the user intends the artifact to inform the implementation;
+- `declined`: the user does not want the artifact applied;
+- `deferred`: the user explicitly postponed the choice.
+
+Every declared artifact omitted from the input resolves as `unreviewed`. This is
+not equivalent to an explicit deferral. Unknown selected packages, unknown
+artifact IDs, and duplicate package/artifact entries are invalid.
+
+Disposition is project state, not authority. Even `selected` MUST NOT by itself
+load a skill, execute a script or command, fetch a remote URL, invoke an
+adapter, or adopt an external workflow. Those actions require specific user or
+execution-environment direction outside core resolution.
+
+### 9.2 Implementation targets
+
+Technical preferences MAY contain `implementation_targets` conforming to
+`technical-preferences.schema.json`. A target declares:
+
+- a project-local ID;
+- a namespaced target kind such as `org.seedspec.target.hosting`;
+- a namespaced provider or product target ID; and
+- one or more guidance references to components or artifacts in selected
+  packages.
+
+Every guidance reference MUST resolve. Referenced artifact guidance MUST have a
+`selected` disposition. Component guidance is preserved package context and
+does not require an artifact disposition.
+
+An implementation target is strong user-supplied planning context. It does not
+prove that generated software is compatible with, deployable to, or accepted
+by that target. Providers remain independent of SeedSpec core, and the
+implementing agent remains responsible for applying the guidance to the actual
+implementation.
+
 ## 10. Composition: `capability-graph-v1`
 
 Given one application and zero or more features, conforming runtimes perform these steps in order:
@@ -282,15 +325,15 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 └── features/
 ```
 
-`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records decision status, `aligned` or `review` integration status, exact package references, and handoff file locations.
+`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records decision status, `aligned` or `review` integration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
 
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
-`artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata, relationships, and deterministic review timing. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path. Remote URLs remain URLs and are not fetched. Materialization preserves access for downstream tools without activating an artifact-specific workflow.
+`artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata, relationships, deterministic review timing, and `selected`, `declined`, `deferred`, or `unreviewed` disposition. Execution artifacts also record that activation requires specific user direction. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path regardless of disposition. Remote URLs remain URLs and are not fetched. Materialization preserves auditability and later choice without activating an artifact-specific workflow.
 
 `dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic feature order, capability providers, each consumer's `tested_against` revision, the selected provider revision, and the resulting review status.
 
-`resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, answered decisions, and technical preferences as separate namespaces.
+`resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, answered decisions, and technical preferences as separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 
 `resolved-spec.md` is human- and agent-readable product intent. `agent-guide.md` explains how to interpret it. `implementation-notes.md` and `verification-report.md` are created only when missing so later resolution does not erase project memory.
 

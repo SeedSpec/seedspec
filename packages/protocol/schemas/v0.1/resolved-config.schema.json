@@ -22,7 +22,7 @@
       "additionalProperties": { "type": "string", "minLength": 1 }
     },
     "technical_preferences": {
-      "type": "object"
+      "$ref": "https://seedspec.dev/schemas/v0.1/technical-preferences.schema.json"
     }
   },
   "$defs": {

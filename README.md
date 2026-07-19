@@ -49,7 +49,7 @@ npx seedspec verify-lock .tmp/allowance-composed \
   --package examples/chore-streaks
 ```
 
-Use `--config <yaml>` to override application configuration, `--feature-config <package-id>=<yaml>` for a feature, and `--technical-preferences <yaml>` to record non-product implementation preferences separately.
+Use `--config <yaml>` to override application configuration, `--feature-config <package-id>=<yaml>` for a feature, `--technical-preferences <yaml>` to record non-product implementation preferences separately, and `--artifact-selections <yaml>` to durably mark artifacts selected, declined, or deferred. A selected execution artifact still requires specific user direction before activation.
 
 ## What exists in v0.1 alpha
 
@@ -59,7 +59,7 @@ Use `--config <yaml>` to override application configuration, `--feature-config <
 - Authoring skills for application and feature packages, plus a beginner-facing `use-seedspec` lifecycle skill.
 - A generic artifact model and explicit ProductSpec adapter backed by the official ProductSpec parser.
 - Versioned capability contracts whose `tested_against` revisions create review signals rather than dependency gates.
-- Structured decisions, content-addressed locks, agent handoff guidance, and durable deviation and verification records.
+- Structured decisions, artifact dispositions, validated implementation-target guidance, content-addressed locks, agent handoff guidance, and durable deviation and verification records.
 - Tooling tests and a format conformance suite.
 
 The layers and alpha boundary are summarized in [ARCHITECTURE.md](ARCHITECTURE.md). The protocol's decision principles are recorded in [docs/principles.md](docs/principles.md). The artifact and ProductSpec boundary is documented in [docs/adapters.md](docs/adapters.md). The current format is described in [docs/protocol.md](docs/protocol.md) and [packages/protocol/schemas/v0.1/](packages/protocol/schemas/v0.1/).

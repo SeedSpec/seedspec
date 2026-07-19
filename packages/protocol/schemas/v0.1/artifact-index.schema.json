@@ -32,7 +32,7 @@
     "resolvedArtifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["package", "id", "type", "review"],
+      "required": ["package", "id", "type", "review", "disposition"],
       "properties": {
         "package": { "$ref": "#/$defs/namespacedId" },
         "id": { "$ref": "#/$defs/localId" },
@@ -58,7 +58,12 @@
             "before-completion-claim",
             "when-relevant"
           ]
-        }
+        },
+        "disposition": {
+          "enum": ["selected", "declined", "deferred", "unreviewed"]
+        },
+        "selection_note": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "activation": { "const": "requires-specific-user-direction" }
       },
       "oneOf": [
         { "required": ["path", "source_path"], "not": { "required": ["url"] } },

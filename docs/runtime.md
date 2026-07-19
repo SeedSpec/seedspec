@@ -14,7 +14,7 @@ seedspec artifacts <path> [--json]
 seedspec adapters [--json]
 seedspec validate-artifact <path> <artifact-id> [--json]
 seedspec discover-features <application-path> --catalog <path> [--catalog <path>] [--json]
-seedspec resolve <application-path> [--feature <feature-path>] [--output <path>]
+seedspec resolve <application-path> [--feature <feature-path>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
 seedspec init application [--output <path>]
 seedspec init feature [--output <path>]
 seedspec conformance [cases.yaml]
@@ -27,7 +27,9 @@ seedspec verify-lock <project-path> --package <path> [--package <path>]
 
 Protocol 0.1 names `configuration.example` as an example while the current resolver uses it as its merge baseline. `begin` therefore marks that configuration as review-required instead of implying that the buyer selected it. This alpha behavior remains under protocol review.
 
-`resolve` accepts repeated `--feature` options, an application `--config`, feature overrides through `--feature-config <id>=<path>`, product-decision answers through `--decisions`, and separate `--technical-preferences`. An implementation agent should run it only after completing the configuration, decision, optional-guidance, and completion-scope review surfaced by `begin`.
+`resolve` accepts repeated `--feature` options, an application `--config`, feature overrides through `--feature-config <id>=<path>`, product-decision answers through `--decisions`, separate `--technical-preferences`, and `--artifact-selections` for selected, declined, or deferred artifacts. Artifacts omitted from the selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation. An implementation agent should run resolution only after completing the configuration, decision, optional-guidance, and completion-scope review surfaced by `begin`.
+
+Technical preferences may include provider-neutral `implementation_targets` with namespaced kind and target IDs plus validated references to selected package guidance. Referenced artifacts must be selected. The generated guide surfaces targets before architecture planning but does not claim that the final application is compatible or deployable.
 
 Feature argument order is not semantic. `capability-graph-v1` validates the selected graph, produces deterministic provider-first order, and records capability-revision review signals. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, graph order, providers, and review bindings from explicitly supplied package directories.
 

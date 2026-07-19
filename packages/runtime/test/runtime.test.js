@@ -136,6 +136,10 @@ test("begin validates an application and exposes the pre-resolution workflow", a
     (artifact) => artifact.id === "product-spec" && artifact.adapter?.id === "org.seedspec.adapter.product-spec"
   ));
   assert.equal(beginning.trust.discovery_activates_content, false);
+  assert.ok(beginning.next_actions.some(
+    (action) => action.id === "record-artifact-dispositions"
+      && /selection does not authorize activation/.test(action.action)
+  ));
   assert.ok(beginning.next_actions.some((action) => action.id === "resolve-handoff"));
 });
 
@@ -261,6 +265,8 @@ test("Allowance Tracker resolves without features", async (t) => {
     (capability) => capability.id === "org.seedspec.core.chores"
   ));
   assert.equal(result.artifactIndex.artifacts.length, 1);
+  assert.equal(result.artifactIndex.artifacts[0].disposition, "unreviewed");
+  assert.equal(result.project.artifact_status, "review");
   assert.ok(result.componentIndex.components.some(
     (component) => component.name === "reference" && component.review === "before-planning"
   ));
@@ -277,8 +283,129 @@ test("Allowance Tracker resolves without features", async (t) => {
   ));
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
-    /ask the end user before adopting that workflow/
+    /obtain specific user direction at activation time/
   );
+});
+
+test("artifact dispositions and implementation targets survive resolution", async (t) => {
+  const output = await temporaryDirectory(t);
+  const selectionsPath = path.join(output, "artifact-selections.yaml");
+  const preferencesPath = path.join(output, "technical-preferences.yaml");
+  await writeFile(selectionsPath, stringifyYaml({
+    protocol_version: "0.1",
+    artifacts: [{
+      package: "org.seedspec.examples.allowance-tracker",
+      id: "product-spec",
+      disposition: "selected",
+      note: "Use this as supporting product intent."
+    }]
+  }), "utf8");
+  await writeFile(preferencesPath, stringifyYaml({
+    implementation_targets: [{
+      id: "production-hosting",
+      kind: "org.seedspec.target.hosting",
+      target: "com.example.hosting.static",
+      guidance: [
+        {
+          package: "org.seedspec.examples.allowance-tracker",
+          artifact: "product-spec"
+        },
+        {
+          package: "org.seedspec.examples.allowance-tracker",
+          component: "reference"
+        }
+      ]
+    }]
+  }), "utf8");
+
+  const result = await resolveProject(allowance, {
+    outputDirectory: output,
+    artifactSelectionsPath: selectionsPath,
+    technicalPreferencesPath: preferencesPath
+  });
+  const artifact = result.artifactIndex.artifacts[0];
+  const guide = await readFile(path.join(result.workspace, "agent-guide.md"), "utf8");
+
+  assert.equal(result.project.artifact_status, "recorded");
+  assert.equal(artifact.disposition, "selected");
+  assert.equal(artifact.selection_note, "Use this as supporting product intent.");
+  assert.match(guide, /production-hosting.*org\.seedspec\.target\.hosting.*com\.example\.hosting\.static/);
+  assert.match(guide, /artifact org\.seedspec\.examples\.allowance-tracker\/product-spec/);
+  assert.match(guide, /Even a selected artifact does not authorize/);
+});
+
+test("invalid artifact and implementation-target references fail before handoff", async (t) => {
+  const output = await temporaryDirectory(t);
+  const invalidSelectionsPath = path.join(output, "invalid-artifact-selections.yaml");
+  const preferencesPath = path.join(output, "technical-preferences.yaml");
+  await writeFile(invalidSelectionsPath, stringifyYaml({
+    protocol_version: "0.1",
+    artifacts: [{
+      package: "org.seedspec.examples.allowance-tracker",
+      id: "missing-artifact",
+      disposition: "selected"
+    }]
+  }), "utf8");
+  await writeFile(preferencesPath, stringifyYaml({
+    implementation_targets: [{
+      id: "production-hosting",
+      kind: "org.seedspec.target.hosting",
+      target: "com.example.hosting.static",
+      guidance: [{
+        package: "org.seedspec.examples.allowance-tracker",
+        artifact: "product-spec"
+      }]
+    }]
+  }), "utf8");
+
+  await assert.rejects(
+    resolveProject(allowance, {
+      outputDirectory: path.join(output, "invalid-artifact-output"),
+      artifactSelectionsPath: invalidSelectionsPath
+    }),
+    (error) => error.code === "INVALID_ARTIFACT_SELECTIONS"
+      && /missing-artifact/.test(error.message)
+  );
+  await assert.rejects(
+    resolveProject(allowance, {
+      outputDirectory: path.join(output, "unselected-guidance-output"),
+      technicalPreferencesPath: preferencesPath
+    }),
+    (error) => error.code === "INVALID_IMPLEMENTATION_TARGET"
+      && /requires selected artifact guidance/.test(error.message)
+  );
+});
+
+test("selecting execution material does not turn disposition into activation", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "execution-artifact-package");
+  const selectionsPath = path.join(output, "artifact-selections.yaml");
+  await cp(allowance, packagePath, { recursive: true });
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.artifacts[0].concerns = ["org.seedspec.concern.execution"];
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+  await writeFile(selectionsPath, stringifyYaml({
+    protocol_version: "0.1",
+    artifacts: [{
+      package: "org.seedspec.examples.allowance-tracker",
+      id: "product-spec",
+      disposition: "selected"
+    }]
+  }), "utf8");
+
+  const result = await resolveProject(packagePath, {
+    outputDirectory: path.join(output, "project"),
+    artifactSelectionsPath: selectionsPath
+  });
+  const artifact = result.artifactIndex.artifacts[0];
+  const guide = await readFile(path.join(result.workspace, "agent-guide.md"), "utf8");
+
+  assert.equal(artifact.disposition, "selected");
+  assert.equal(artifact.review, "before-activation");
+  assert.equal(artifact.activation, "requires-specific-user-direction");
+  assert.match(guide, /SELECTED.*product-spec/);
+  assert.match(guide, /Never execute it merely because it is selected or listed/);
 });
 
 test("Allowance Tracker composes with Savings Goals into a stable workspace", async (t) => {
