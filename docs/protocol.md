@@ -138,13 +138,24 @@ Every package declares:
 
 The example MUST validate against the declared schema. Configuration describes product behavior; technical implementation preferences remain separate.
 
-When applying a partial override, the reference resolver uses this recursive merge:
+The example is author-supplied package material. It is not a default selected by
+the user merely because the package was handed to an agent.
 
-1. If base and override values are both mappings, merge their keys recursively.
-2. Otherwise the override replaces the base value.
-3. Arrays are replaced, never concatenated.
-4. Explicit `null` replaces the base value and must then pass the package schema.
-5. The merged result MUST validate before resolution output is written.
+An optional resolution input conforming to
+`configuration-selections.schema.json` records exactly one selection for every
+selected application and feature package:
+
+- `example` selects the package's exact validated example; or
+- `custom` supplies a complete configuration object that MUST validate against
+  the package schema.
+
+Custom values are complete, not partial overrides. A runtime MUST NOT merge
+omitted values from the example. Duplicate entries, entries for unselected
+packages, and a selection file that omits a selected package are invalid.
+
+When no configuration-selection input is supplied, resolution MAY preserve each
+example as `example-unreviewed` so the handoff remains inspectable, but it MUST
+set `configuration_status: review` and MUST NOT report the project as ready.
 
 Application and feature configurations remain namespaced by package ID. A runtime MUST NOT flatten them into one keyspace.
 
@@ -246,10 +257,16 @@ Answers are supplied as a mapping from package ID to decision ID and non-empty s
 
 Resolution preserves unanswered declarations. A project has:
 
-- `status: ready` when no required decision is unanswered;
-- `status: needs-decisions` when at least one required decision is unanswered.
+- `configuration_status: selected` when every package has an explicit
+  configuration selection;
+- `configuration_status: review` when examples are only unreviewed placeholders;
+- `status: ready` only when configuration is selected and no required decision
+  is unanswered; and
+- `status: needs-input` otherwise.
 
-Unanswered decisions do not disappear and are not silently defaulted. Execution engines SHOULD refuse consequential implementation choices while project status is `needs-decisions`.
+Unanswered decisions and unselected configuration do not disappear or silently
+become defaults. Execution engines SHOULD refuse consequential implementation
+choices while project status is `needs-input`.
 
 ### 9.1 Artifact dispositions
 
@@ -364,7 +381,7 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 └── features/
 ```
 
-`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records decision status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
+`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records combined readiness, `selected` or `review` configuration status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
 
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
@@ -372,7 +389,7 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 
 `dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic feature order, every capability declaration, every requirement's declared provider candidates and revision comparisons, and all composition review records. It does not claim a provider is installed or that a capability exists in the actual application.
 
-`resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, answered decisions, and technical preferences as separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
+`resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, and each configuration's `example-unreviewed`, `example`, or `custom` selection provenance. Answered decisions and technical preferences remain separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 
 `resolved-spec.md` is human- and agent-readable product intent. `agent-guide.md` explains how to interpret it. `implementation-notes.md` and `verification-report.md` are created only when missing so later resolution does not erase project memory.
 

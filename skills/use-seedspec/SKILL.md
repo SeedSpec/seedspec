@@ -110,10 +110,10 @@ Remote discovery is a catalog or registry responsibility. If another trusted too
 
 ### 6. Resolve the selected handoff
 
-Gather only choices that materially affect product behavior. Treat the current alpha's `configuration.example` as an author-supplied baseline requiring review, not as a choice the user already made:
+Gather only choices that materially affect product behavior. Treat `configuration.example` as author-supplied material requiring review, not as a choice the user already made:
 
 - chosen features;
-- configuration overrides;
+- one explicit `example` or complete `custom` configuration selection for every selected package;
 - answers to declared product decisions;
 - artifact dispositions;
 - already-known technical preferences.
@@ -125,12 +125,13 @@ Run `resolve` with the selected inputs. For example:
 ```text
 $SEEDSPEC resolve <application-path> \
   --feature <feature-path> \
+  --configuration-selections <configuration-selections.yaml> \
   --artifact-selections <artifact-selections.yaml> \
   --technical-preferences <technical-preferences.yaml> \
   --output <project-path>
 ```
 
-If the resolved project reports `needs-decisions`, explain the unanswered decisions and obtain the user's direction before consequential implementation. If `artifact_status` is `review`, distinguish unreviewed artifacts from explicitly deferred ones and surface only those that become consequential. If `declaration_status` is `review`, inspect the real code for equivalent concepts and resolve the recorded capability, conflict, or cycle concerns in the integration plan. They are not automatic rejection gates.
+If the resolved project reports `needs-input`, inspect `configuration_status` and unresolved required decisions. Do not implement unreviewed example values as if they were selected. If `artifact_status` is `review`, distinguish unreviewed artifacts from explicitly deferred ones and surface only those that become consequential. If `declaration_status` is `review`, inspect the real code for equivalent concepts and resolve the recorded capability, conflict, or cycle concerns in the integration plan. They are not automatic rejection gates.
 
 ### 7. Prepare the implementation agent
 

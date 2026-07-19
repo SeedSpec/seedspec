@@ -7,6 +7,7 @@
   "required": [
     "protocol_version",
     "status",
+    "configuration_status",
     "declaration_status",
     "artifact_status",
     "application",
@@ -24,7 +25,8 @@
   ],
   "properties": {
     "protocol_version": { "const": "0.1" },
-    "status": { "enum": ["ready", "needs-decisions"] },
+    "status": { "enum": ["ready", "needs-input"] },
+    "configuration_status": { "enum": ["selected", "review"] },
     "declaration_status": { "enum": ["no-declared-concerns", "review"] },
     "artifact_status": { "enum": ["recorded", "review"] },
     "application": { "$ref": "#/$defs/packageRef" },
@@ -57,6 +59,7 @@
       },
       "then": {
         "properties": {
+          "configuration_status": { "const": "selected" },
           "unresolved_decisions": {
             "items": {
               "allOf": [
@@ -73,18 +76,27 @@
     },
     {
       "if": {
-        "properties": { "status": { "const": "needs-decisions" } },
+        "properties": { "status": { "const": "needs-input" } },
         "required": ["status"]
       },
       "then": {
-        "properties": {
-          "unresolved_decisions": {
-            "contains": {
-              "properties": { "required": { "const": true } },
-              "required": ["required"]
+        "anyOf": [
+          {
+            "properties": {
+              "configuration_status": { "const": "review" }
+            }
+          },
+          {
+            "properties": {
+              "unresolved_decisions": {
+                "contains": {
+                  "properties": { "required": { "const": true } },
+                  "required": ["required"]
+                }
+              }
             }
           }
-        }
+        ]
       }
     }
   ],

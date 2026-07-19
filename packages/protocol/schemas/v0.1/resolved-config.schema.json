@@ -33,9 +33,10 @@
     "packageConfiguration": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["package", "values"],
+      "required": ["package", "selection", "values"],
       "properties": {
         "package": { "$ref": "#/$defs/namespacedId" },
+        "selection": { "enum": ["example-unreviewed", "example", "custom"] },
         "values": { "type": "object" }
       }
     }

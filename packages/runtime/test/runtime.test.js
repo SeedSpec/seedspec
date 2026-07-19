@@ -37,6 +37,19 @@ async function temporaryDirectory(t) {
   return directory;
 }
 
+async function writeExampleConfigurationSelections(directory, packagePaths, name = "configuration-selections.yaml") {
+  const records = await Promise.all(packagePaths.map(validatePackage));
+  const selectionPath = path.join(directory, name);
+  await writeFile(selectionPath, stringifyYaml({
+    protocol_version: "0.1",
+    packages: records.map((record) => ({
+      package: record.manifest.id,
+      selection: "example"
+    }))
+  }), "utf8");
+  return selectionPath;
+}
+
 test("all complete example packages validate", async () => {
   const application = await validatePackage(allowance);
   const feature = await validatePackage(savings);
@@ -61,8 +74,13 @@ test("all complete example packages validate", async () => {
 
 test("capability revision differences request review without blocking handoff", async (t) => {
   const output = await temporaryDirectory(t);
+  const configurationSelectionsPath = await writeExampleConfigurationSelections(
+    output,
+    [allowance, streaks]
+  );
   const result = await resolveProject(allowance, {
     featurePaths: [streaks],
+    configurationSelectionsPath,
     outputDirectory: output
   });
   const binding = result.lock.requirements.find(
@@ -133,7 +151,7 @@ test("begin validates an application and exposes the pre-resolution workflow", a
 
   assert.equal(beginning.package.id, "org.seedspec.examples.allowance-tracker");
   assert.equal(beginning.configuration.selection_status, "review-required");
-  assert.equal(beginning.configuration.resolution_behavior, "example-used-as-baseline");
+  assert.equal(beginning.configuration.resolution_behavior, "unselected-example-produces-needs-input");
   assert.equal(beginning.acceptance.declared, true);
   assert.ok(beginning.components.some(
     (component) => component.name === "reference" && component.review === "before-planning"
@@ -270,6 +288,9 @@ test("Allowance Tracker resolves without features", async (t) => {
   const project = parseYaml(await readFile(path.join(result.workspace, "project.yaml"), "utf8"));
 
   assert.deepEqual(project.features, []);
+  assert.equal(project.status, "needs-input");
+  assert.equal(project.configuration_status, "review");
+  assert.equal(result.resolvedConfiguration.application.selection, "example-unreviewed");
   assert.equal(result.lock.application.id, "org.seedspec.examples.allowance-tracker");
   assert.ok(result.lock.capabilities.some(
     (capability) => capability.id === "org.seedspec.core.chores"
@@ -294,6 +315,10 @@ test("Allowance Tracker resolves without features", async (t) => {
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
     /obtain specific user direction at activation time/
+  );
+  assert.match(
+    await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
+    /Do not treat the recorded example values as selected product behavior/
   );
 });
 
@@ -462,8 +487,14 @@ test("Allowance Tracker composes with Savings Goals into a stable workspace", as
 
 test("missing required capability declarations produce agent review instead of rejection", async (t) => {
   const output = await temporaryDirectory(t);
+  const unmet = path.join(fixtures, "unmet-feature");
+  const configurationSelectionsPath = await writeExampleConfigurationSelections(
+    output,
+    [allowance, unmet]
+  );
   const result = await resolveProject(allowance, {
-    featurePaths: [path.join(fixtures, "unmet-feature")],
+    featurePaths: [unmet],
+    configurationSelectionsPath,
     outputDirectory: output
   });
   const requirement = result.lock.requirements.find(
@@ -546,17 +577,109 @@ test("ambiguous providers, author conflicts, and cycles resolve as review contex
   }
 });
 
-test("configuration overrides are merged then validated", async (t) => {
+test("configuration selections distinguish examples, complete custom values, and omission", async (t) => {
   const output = await temporaryDirectory(t);
+  const application = await validatePackage(allowance);
+  const examplePath = await writeExampleConfigurationSelections(
+    output,
+    [allowance],
+    "example-selection.yaml"
+  );
+  const exampleResult = await resolveProject(allowance, {
+    outputDirectory: path.join(output, "example-project"),
+    configurationSelectionsPath: examplePath
+  });
+  assert.equal(exampleResult.project.status, "ready");
+  assert.equal(exampleResult.project.configuration_status, "selected");
+  assert.equal(exampleResult.resolvedConfiguration.application.selection, "example");
+
+  const customPath = path.join(output, "custom-selection.yaml");
+  await writeFile(customPath, stringifyYaml({
+    protocol_version: "0.1",
+    packages: [{
+      package: application.manifest.id,
+      selection: "custom",
+      values: {
+        ...application.exampleConfiguration,
+        approval_required: false
+      }
+    }]
+  }), "utf8");
+  const customResult = await resolveProject(allowance, {
+    outputDirectory: path.join(output, "custom-project"),
+    configurationSelectionsPath: customPath
+  });
+  assert.equal(customResult.resolvedConfiguration.application.selection, "custom");
+  assert.equal(customResult.resolvedConfiguration.application.values.approval_required, false);
+
+  const partialPath = path.join(output, "partial-selection.yaml");
+  await writeFile(partialPath, stringifyYaml({
+    protocol_version: "0.1",
+    packages: [{
+      package: application.manifest.id,
+      selection: "custom",
+      values: { approval_required: false }
+    }]
+  }), "utf8");
 
   await assert.rejects(
     resolveProject(allowance, {
-      outputDirectory: output,
-      applicationConfigurationPath: path.join(fixtures, "invalid-allowance-config.yaml")
+      outputDirectory: path.join(output, "partial-project"),
+      configurationSelectionsPath: partialPath
     }),
     (error) => error.code === "INVALID_CONFIGURATION"
-      && error.details.some((detail) => detail.includes("approval_required"))
+      && error.details.some((detail) => detail.includes("required property"))
   );
+});
+
+test("configuration selections reject missing, duplicate, and unselected package entries", async (t) => {
+  const output = await temporaryDirectory(t);
+  const cases = [
+    {
+      name: "missing",
+      input: {
+        protocol_version: "0.1",
+        packages: [{ package: "org.seedspec.examples.allowance-tracker", selection: "example" }]
+      },
+      code: "MISSING_CONFIGURATION_SELECTION"
+    },
+    {
+      name: "duplicate",
+      input: {
+        protocol_version: "0.1",
+        packages: [
+          { package: "org.seedspec.examples.allowance-tracker", selection: "example" },
+          { package: "org.seedspec.examples.allowance-tracker", selection: "example" },
+          { package: "org.seedspec.savings-goals", selection: "example" }
+        ]
+      },
+      code: "INVALID_CONFIGURATION_SELECTIONS"
+    },
+    {
+      name: "unselected",
+      input: {
+        protocol_version: "0.1",
+        packages: [
+          { package: "org.seedspec.examples.allowance-tracker", selection: "example" },
+          { package: "org.example.not-selected", selection: "example" }
+        ]
+      },
+      code: "INVALID_CONFIGURATION_SELECTIONS"
+    }
+  ];
+
+  for (const scenario of cases) {
+    const selectionPath = path.join(output, `${scenario.name}.yaml`);
+    await writeFile(selectionPath, stringifyYaml(scenario.input), "utf8");
+    await assert.rejects(
+      resolveProject(allowance, {
+        featurePaths: [savings],
+        outputDirectory: path.join(output, `${scenario.name}-project`),
+        configurationSelectionsPath: selectionPath
+      }),
+      (error) => error.code === scenario.code
+    );
+  }
 });
 
 test("all structured resolved state conforms to protocol schemas", async (t) => {
@@ -655,6 +778,16 @@ test("CLI failures expose stable protocol error codes", async () => {
       path.join(fixtures, "missing-definition")
     ]),
     (error) => /\[INVALID_REFERENCES\]/.test(error.stderr)
+  );
+  await assert.rejects(
+    execFileAsync(process.execPath, [
+      cli,
+      "resolve",
+      allowance,
+      "--config",
+      path.join(fixtures, "invalid-allowance-config.yaml")
+    ]),
+    (error) => /Unknown option --config/.test(error.stderr)
   );
 });
 

@@ -43,7 +43,7 @@ export async function beginPackage(inputPath) {
     {
       code: "CONFIGURATION_EXAMPLE_REQUIRES_REVIEW",
       level: "review",
-      message: "Protocol 0.1 resolution uses configuration.example as its baseline, but the package describes it as an example. Review it with the user before resolution."
+      message: "The package configuration is an author-supplied example, not a selected default. Review it with the user and record either example or complete custom configuration before implementation."
     },
     ...(!acceptance ? [{
       code: "NO_DECLARED_ACCEPTANCE",
@@ -77,7 +77,7 @@ export async function beginPackage(inputPath) {
       guide: record.manifest.configuration.guide ?? null,
       example_values: record.exampleConfiguration,
       selection_status: "review-required",
-      resolution_behavior: "example-used-as-baseline"
+      resolution_behavior: "unselected-example-produces-needs-input"
     },
     decisions: record.manifest.decisions ?? [],
     components,
@@ -101,7 +101,7 @@ export async function beginPackage(inputPath) {
       },
       {
         id: "review-configuration",
-        action: "Explain the author-supplied configuration example and gather any changes before treating it as selected configuration."
+        action: "Explain the author-supplied configuration example, then record an explicit example or complete custom selection for every selected package."
       },
       {
         id: "answer-decisions",
@@ -128,7 +128,7 @@ export async function beginPackage(inputPath) {
         action: "After those choices are explicit, run seedspec resolve to create the durable implementation handoff."
       }
     ],
-    resolve_command: `seedspec resolve ${JSON.stringify(record.root)} --output <project-path>`
+    resolve_command: `seedspec resolve ${JSON.stringify(record.root)} --configuration-selections <configuration-selections.yaml> --output <project-path>`
   };
 }
 
@@ -158,7 +158,7 @@ export function formatPackageBeginning(beginning) {
     "",
     "## Configuration review",
     "",
-    "Protocol 0.1 currently uses the author-supplied example as the resolution baseline. It is valid package input, but the user has not selected it merely by handing you this package. Explain material choices and gather changes before resolution.",
+    "This author-supplied example is valid package input, but the user has not selected it merely by handing you the package. Explain material choices. Record `selection: example` to choose it exactly or `selection: custom` with a complete configuration object.",
     "",
     "```yaml",
     stringifyYaml(beginning.configuration.example_values).trimEnd(),
@@ -217,7 +217,7 @@ export function formatPackageBeginning(beginning) {
   });
   lines.push(
     "",
-    "After gathering choices, construct configuration, decision, technical-preference, artifact-selection, and feature arguments as needed, then resolve the handoff. Starting command shape:",
+    "After gathering choices, construct configuration-selection, decision, technical-preference, artifact-selection, and feature arguments as needed, then resolve the handoff. Starting command shape:",
     "",
     "```text",
     beginning.resolve_command,

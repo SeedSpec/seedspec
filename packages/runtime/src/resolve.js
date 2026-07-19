@@ -12,16 +12,6 @@ function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function mergeConfiguration(base, override) {
-  if (!isPlainObject(base) || !isPlainObject(override)) return override;
-
-  const result = { ...base };
-  for (const [key, value] of Object.entries(override)) {
-    result[key] = key in result ? mergeConfiguration(result[key], value) : value;
-  }
-  return result;
-}
-
 function validateSelectedConfiguration(packageRecord, configuration) {
   if (!isPlainObject(configuration)) {
     throw new SeedSpecError(`Selected configuration must be an object for ${packageRecord.manifest.id}`, {
@@ -37,12 +27,67 @@ function validateSelectedConfiguration(packageRecord, configuration) {
   }
 }
 
-async function selectConfiguration(packageRecord, overridePath) {
-  if (!overridePath) return packageRecord.exampleConfiguration;
-  const override = await readYamlFile(path.resolve(overridePath), "Configuration override");
-  const selected = mergeConfiguration(packageRecord.exampleConfiguration, override);
-  validateSelectedConfiguration(packageRecord, selected);
-  return selected;
+async function readConfigurationSelections(selectionsPath, records) {
+  if (!selectionsPath) {
+    return {
+      status: "review",
+      selections: new Map(records.map((record) => [record.manifest.id, {
+        selection: "example-unreviewed",
+        values: record.exampleConfiguration
+      }]))
+    };
+  }
+
+  const input = await readYamlFile(
+    path.resolve(selectionsPath),
+    "Configuration selections"
+  );
+  const validate = await compileProtocolSchema("configuration-selections.schema.json");
+  if (!validate(input)) {
+    throw new SeedSpecError("Configuration selections are invalid", {
+      code: "INVALID_CONFIGURATION_SELECTIONS",
+      details: formatSchemaErrors(validate.errors)
+    });
+  }
+
+  const packages = new Map(records.map((record) => [record.manifest.id, record]));
+  const selections = new Map();
+  for (const selection of input.packages) {
+    const record = packages.get(selection.package);
+    if (!record) {
+      throw new SeedSpecError(
+        `Configuration selection references an unselected package: ${selection.package}`,
+        { code: "INVALID_CONFIGURATION_SELECTIONS" }
+      );
+    }
+    if (selections.has(selection.package)) {
+      throw new SeedSpecError(
+        `Configuration selection appears more than once: ${selection.package}`,
+        { code: "INVALID_CONFIGURATION_SELECTIONS" }
+      );
+    }
+
+    const values = selection.selection === "example"
+      ? record.exampleConfiguration
+      : selection.values;
+    validateSelectedConfiguration(record, values);
+    selections.set(selection.package, {
+      selection: selection.selection,
+      values
+    });
+  }
+
+  const missing = records
+    .map((record) => record.manifest.id)
+    .filter((id) => !selections.has(id));
+  if (missing.length > 0) {
+    throw new SeedSpecError("Configuration selections do not cover every selected package", {
+      code: "MISSING_CONFIGURATION_SELECTION",
+      details: missing
+    });
+  }
+
+  return { status: "selected", selections };
 }
 
 function packageReference(record) {
@@ -294,6 +339,7 @@ async function writeFileIfMissing(filePath, contents) {
 function buildAgentGuide({
   application,
   features,
+  configurationStatus,
   requirements,
   reviews,
   unresolvedDecisions,
@@ -350,7 +396,7 @@ function buildAgentGuide({
     "",
     "## Read first",
     "",
-    "1. Read `resolved-spec.md` and `resolved-config.yaml` for selected product intent, configuration, decisions, and technical preferences.",
+    "1. Read `resolved-spec.md` and `resolved-config.yaml` for recorded product intent, configuration, decisions, and technical preferences.",
     "2. Read `components.yaml` and `artifacts.yaml` for preserved optional material and its required review timing.",
     "3. Read `implementation-notes.md` for local terminology, behavior, architecture, and earlier deviations.",
     "4. Read each feature's `features/*/integration-decisions.md` before integrating it.",
@@ -375,6 +421,7 @@ function buildAgentGuide({
     "",
     `- Application: ${application.manifest.id}@${application.manifest.version}`,
     `- Features: ${features.length ? features.map(({ record }) => `${record.manifest.id}@${record.manifest.version}`).join(", ") : "none"}`,
+    `- Configuration: ${configurationStatus === "selected" ? "explicitly selected" : "review required; author examples are present only as unreviewed placeholders"}`,
     `- Optional components: ${components.length ? components.map((component) => `${component.package}/${component.name}`).join(", ") : "none"}`,
     `- Optional artifacts: ${artifacts.length ? artifacts.map((artifact) => `${artifact.package}/${artifact.id} (${artifact.type}; ${artifact.disposition})`).join(", ") : "none"}`,
     "",
@@ -399,6 +446,13 @@ function buildAgentGuide({
     "## Before implementation planning",
     ""
   );
+
+  if (configurationStatus === "review") {
+    lines.push(
+      "**Do not treat the recorded example values as selected product behavior.** No configuration selection was supplied. Review every package configuration with the user, create a complete configuration-selections document, and rerun resolution before consequential implementation.",
+      ""
+    );
+  }
 
   if (hasTechnicalPreferences) {
     lines.push(
@@ -685,6 +739,7 @@ function normalizeDecisionAnswers(records, suppliedAnswers) {
 async function buildResolvedSpecification({
   application,
   applicationConfiguration,
+  applicationConfigurationSelection,
   features,
   technicalPreferences,
   capabilities,
@@ -709,7 +764,7 @@ async function buildResolvedSpecification({
     "",
     "## Product configuration",
     "",
-    `### ${application.manifest.name}`,
+    `### ${application.manifest.name} (${applicationConfigurationSelection})`,
     "",
     yamlBlock(applicationConfiguration),
     "",
@@ -723,7 +778,7 @@ async function buildResolvedSpecification({
     lines.push("", "## Application acceptance", "", applicationAcceptance.trim());
   }
 
-  for (const { record, configuration } of features) {
+  for (const { record, configuration, configurationSelection } of features) {
     lines.push(
       "",
       `## Feature: ${record.manifest.name}`,
@@ -732,7 +787,7 @@ async function buildResolvedSpecification({
       "",
       `Digest: ${record.digest}`,
       "",
-      "### Selected feature configuration",
+      `### Feature configuration (${configurationSelection})`,
       "",
       yamlBlock(configuration),
       "",
@@ -835,8 +890,7 @@ async function buildResolvedSpecification({
 export async function resolveProject(applicationPath, {
   featurePaths = [],
   outputDirectory = process.cwd(),
-  applicationConfigurationPath,
-  featureConfigurationPaths = {},
+  configurationSelectionsPath,
   technicalPreferencesPath,
   artifactSelectionsPath,
   decisionsPath
@@ -868,29 +922,21 @@ export async function resolveProject(applicationPath, {
     application,
     featureRecords
   );
-  const applicationConfiguration = await selectConfiguration(
-    application,
-    applicationConfigurationPath
+  const selectedRecords = [application, ...orderedFeatures];
+  const configurationState = await readConfigurationSelections(
+    configurationSelectionsPath,
+    selectedRecords
   );
-  validateSelectedConfiguration(application, applicationConfiguration);
+  const applicationSelection = configurationState.selections.get(application.manifest.id);
+  const applicationConfiguration = applicationSelection.values;
 
   const selectedFeatures = [];
   for (const feature of orderedFeatures) {
-    const configuration = await selectConfiguration(
-      feature,
-      featureConfigurationPaths[feature.manifest.id]
-    );
-    validateSelectedConfiguration(feature, configuration);
-    selectedFeatures.push({ record: feature, configuration });
-  }
-
-  const unknownFeatureConfigurations = Object.keys(featureConfigurationPaths).filter(
-    (id) => !selectedIds.has(id)
-  );
-  if (unknownFeatureConfigurations.length > 0) {
-    throw new SeedSpecError("Feature configuration supplied for an unselected feature", {
-      code: "UNKNOWN_FEATURE_CONFIGURATION",
-      details: unknownFeatureConfigurations
+    const selection = configurationState.selections.get(feature.manifest.id);
+    selectedFeatures.push({
+      record: feature,
+      configuration: selection.values,
+      configurationSelection: selection.selection
     });
   }
 
@@ -902,7 +948,6 @@ export async function resolveProject(applicationPath, {
       code: "INVALID_TECHNICAL_PREFERENCES"
     });
   }
-  const selectedRecords = [application, ...orderedFeatures];
   const artifactSelections = await readArtifactSelections(
     artifactSelectionsPath,
     selectedRecords
@@ -920,8 +965,9 @@ export async function resolveProject(applicationPath, {
     selectedRecords,
     suppliedDecisions
   );
-  const status = decisionState.unresolved.some((decision) => decision.required)
-    ? "needs-decisions"
+  const status = configurationState.status === "review"
+    || decisionState.unresolved.some((decision) => decision.required)
+    ? "needs-input"
     : "ready";
 
   const workspace = path.join(path.resolve(outputDirectory), ".seedspec");
@@ -942,6 +988,7 @@ export async function resolveProject(applicationPath, {
   const project = {
     protocol_version: "0.1",
     status,
+    configuration_status: configurationState.status,
     declaration_status: reviews.length > 0 ? "review" : "no-declared-concerns",
     artifact_status: artifactIndex.artifacts.some(
       (artifact) => artifact.disposition === "unreviewed"
@@ -972,12 +1019,17 @@ export async function resolveProject(applicationPath, {
     protocol_version: "0.1",
     application: {
       package: application.manifest.id,
+      selection: applicationSelection.selection,
       values: applicationConfiguration
     },
     features: Object.fromEntries(
-      selectedFeatures.map(({ record, configuration }) => [
+      selectedFeatures.map(({ record, configuration, configurationSelection }) => [
         record.manifest.id,
-        { package: record.manifest.id, values: configuration }
+        {
+          package: record.manifest.id,
+          selection: configurationSelection,
+          values: configuration
+        }
       ])
     ),
     decisions: Object.fromEntries(
@@ -1000,6 +1052,7 @@ export async function resolveProject(applicationPath, {
       buildAgentGuide({
         application,
         features: selectedFeatures,
+        configurationStatus: configurationState.status,
         requirements,
         reviews,
         unresolvedDecisions: decisionState.unresolved,
@@ -1014,6 +1067,7 @@ export async function resolveProject(applicationPath, {
       await buildResolvedSpecification({
         application,
         applicationConfiguration,
+        applicationConfigurationSelection: applicationSelection.selection,
         features: selectedFeatures,
         technicalPreferences,
         capabilities,
@@ -1034,7 +1088,7 @@ export async function resolveProject(applicationPath, {
     writeFileIfMissing(path.join(path.resolve(outputDirectory), "AGENTS.md"), rootAgentInstructions)
   ]);
 
-  for (const { record, configuration } of selectedFeatures) {
+  for (const { record, configuration, configurationSelection } of selectedFeatures) {
     const featureDirectory = path.join(featuresDirectory, featureDirectoryName(record.manifest.id));
     await mkdir(featureDirectory, { recursive: true });
     const integration = await readMarkdownComponent(record, "integration");
@@ -1096,7 +1150,15 @@ export async function resolveProject(applicationPath, {
 
     await Promise.all([
       writeFile(path.join(featureDirectory, "source.yaml"), stringifyYaml(source), "utf8"),
-      writeFile(path.join(featureDirectory, "resolved-config.yaml"), stringifyYaml(configuration), "utf8"),
+      writeFile(
+        path.join(featureDirectory, "resolved-config.yaml"),
+        stringifyYaml({
+          package: record.manifest.id,
+          selection: configurationSelection,
+          values: configuration
+        }),
+        "utf8"
+      ),
       writeFile(path.join(featureDirectory, "integration-decisions.md"), integrationRecord, "utf8")
     ]);
   }

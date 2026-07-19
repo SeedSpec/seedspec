@@ -25,7 +25,7 @@ Declaring an artifact does not select its workflow for a future user or implemen
 
 ## Application workflow
 
-Start at the level of detail the user supplies. For shaping or hardening, identify the intended outcome, actors, roles, domain concepts, fundamental workflows, permissions, business rules, state transitions, failure behavior, meaningful configuration candidates, and acceptance criteria. Ask only questions whose answers materially change behavior; infer and record reversible defaults for the rest.
+Start at the level of detail the user supplies. For shaping or hardening, identify the intended outcome, actors, roles, domain concepts, fundamental workflows, permissions, business rules, state transitions, failure behavior, meaningful configuration candidates, and acceptance criteria. Ask only questions whose answers materially change behavior; use reversible values in the package example for the rest without implying that every buyer selected them.
 
 For capture-only work, preserve the original idea, use an empty configuration object when no behavioral choices are known, allow an empty capability list, and record important unknowns without forcing the user through full product discovery.
 

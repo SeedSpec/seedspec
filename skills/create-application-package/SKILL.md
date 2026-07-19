@@ -36,7 +36,7 @@ Separate required core behavior from optional features. Do not fold optional ide
 
 ## 3. Resolve only material ambiguity
 
-Ask a targeted question only when different answers would materially change product behavior, permissions, accounting, irreversible data treatment, or package portability. Group closely related decisions. Continue with clearly recorded, reversible defaults for routine details.
+Ask a targeted question only when different answers would materially change product behavior, permissions, accounting, irreversible data treatment, or package portability. Group closely related decisions. Continue with clearly recorded, reversible example values for routine details; the example is not automatically a buyer-selected default.
 
 Never ask the user to choose manifest syntax, directories, schema mechanics, or implementation technology as part of product discovery.
 

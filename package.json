@@ -12,7 +12,7 @@
     "check:names": "node ./scripts/check-clean-names.mjs",
     "validate:examples": "node ./packages/cli/bin/seedspec.js validate ./examples/allowance-tracker && node ./packages/cli/bin/seedspec.js validate ./examples/savings-goals && node ./packages/cli/bin/seedspec.js validate ./examples/chore-streaks",
     "check": "npm run check:names && npm test && npm run validate:examples",
-    "demo": "node ./packages/cli/bin/seedspec.js resolve ./examples/allowance-tracker --feature ./examples/savings-goals --feature ./examples/chore-streaks --output ./.tmp/allowance-demo",
+    "demo": "node ./packages/cli/bin/seedspec.js resolve ./examples/allowance-tracker --feature ./examples/savings-goals --feature ./examples/chore-streaks --configuration-selections ./examples/configuration-selections/allowance-composed.yaml --output ./.tmp/allowance-demo",
     "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/cases.yaml"
   },
   "engines": {

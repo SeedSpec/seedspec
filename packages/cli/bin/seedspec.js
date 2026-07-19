@@ -44,8 +44,7 @@ Usage:
 Resolve options:
   --feature <path>                 Add a SeedSpec feature package (repeatable)
   --output <path>                  Project directory; defaults to the current directory
-  --config <yaml>                  Partial application configuration override
-  --feature-config <id>=<yaml>     Partial feature configuration override (repeatable)
+  --configuration-selections <yaml>  Select example or complete custom configuration per package
   --technical-preferences <yaml>   Record implementation preferences separately
   --artifact-selections <yaml>     Record selected, declined, or deferred artifacts
   --decisions <yaml>               Answer package-declared product decisions
@@ -83,6 +82,14 @@ function oneOption(options, name) {
   const values = options.get(name) ?? [];
   if (values.length > 1) throw new Error(`Option --${name} may be supplied only once`);
   return values[0];
+}
+
+function rejectUnknownOptions(options, allowed) {
+  const allowedNames = new Set(allowed);
+  const unknown = [...options.keys()].filter((name) => !allowedNames.has(name));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown option --${unknown[0]}`);
+  }
 }
 
 function requirePositional(positional, index, label) {
@@ -169,30 +176,24 @@ async function run() {
       break;
     }
     case "resolve": {
+      rejectUnknownOptions(options, [
+        "feature",
+        "output",
+        "configuration-selections",
+        "technical-preferences",
+        "artifact-selections",
+        "decisions"
+      ]);
       const applicationPath = requirePositional(positional, 0, "application package path");
-      const featureConfigurationPaths = {};
-      for (const value of options.get("feature-config") ?? []) {
-        const separator = value.indexOf("=");
-        if (separator <= 0 || separator === value.length - 1) {
-          throw new Error("--feature-config must use <package-id>=<yaml-path>");
-        }
-        const id = value.slice(0, separator);
-        if (featureConfigurationPaths[id]) {
-          throw new Error(`Feature configuration supplied more than once: ${id}`);
-        }
-        featureConfigurationPaths[id] = value.slice(separator + 1);
-      }
-
       const result = await resolveProject(applicationPath, {
         featurePaths: options.get("feature") ?? [],
         outputDirectory: oneOption(options, "output"),
-        applicationConfigurationPath: oneOption(options, "config"),
-        featureConfigurationPaths,
+        configurationSelectionsPath: oneOption(options, "configuration-selections"),
         technicalPreferencesPath: oneOption(options, "technical-preferences"),
         artifactSelectionsPath: oneOption(options, "artifact-selections"),
         decisionsPath: oneOption(options, "decisions")
       });
-      process.stdout.write(`Resolved ${result.project.application.id} with ${result.features.length} feature(s)\nWorkspace: ${result.workspace}\n`);
+      process.stdout.write(`Resolved ${result.project.application.id} with ${result.features.length} feature(s)\nProject status: ${result.project.status}\nWorkspace: ${result.workspace}\n`);
       break;
     }
     case "init": {

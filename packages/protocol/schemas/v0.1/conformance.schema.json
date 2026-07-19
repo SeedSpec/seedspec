@@ -26,7 +26,8 @@
           "type": "array",
           "items": { "type": "string", "minLength": 5 }
         },
-        "project_status": { "enum": ["ready", "needs-decisions"] },
+        "project_status": { "enum": ["ready", "needs-input"] },
+        "configuration_status": { "enum": ["selected", "review"] },
         "review_count": { "type": "integer", "minimum": 0 },
         "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
         "preserved_extension": {
@@ -61,6 +62,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "decisions": { "type": "string", "minLength": 1 },
+        "configuration_selection": { "enum": ["examples", "omitted"] },
         "expect": { "$ref": "#/$defs/expectation" }
       },
       "allOf": [

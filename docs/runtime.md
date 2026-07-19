@@ -14,7 +14,7 @@ seedspec artifacts <path> [--json]
 seedspec adapters [--json]
 seedspec validate-artifact <path> <artifact-id> [--json]
 seedspec discover-features <application-path> --catalog <path> [--catalog <path>] [--json]
-seedspec resolve <application-path> [--feature <feature-path>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
+seedspec resolve <application-path> [--feature <feature-path>] [--configuration-selections <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
 seedspec init application [--output <path>]
 seedspec init feature [--output <path>]
 seedspec conformance [cases.yaml]
@@ -25,9 +25,9 @@ seedspec verify-lock <project-path> --package <path> [--package <path>]
 
 `begin` is the read-only entry point for an agent that has received an application package. It validates the package, inventories configuration, decisions, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, select configuration, execute package content, fetch remote artifacts, or activate an artifact workflow.
 
-Protocol 0.1 names `configuration.example` as an example while the current resolver uses it as its merge baseline. `begin` therefore marks that configuration as review-required instead of implying that the buyer selected it. This alpha behavior remains under protocol review.
+`begin` marks `configuration.example` as review-required. The example is author material, not a selected default.
 
-`resolve` accepts repeated `--feature` options, an application `--config`, feature overrides through `--feature-config <id>=<path>`, product-decision answers through `--decisions`, separate `--technical-preferences`, and `--artifact-selections` for selected, declined, or deferred artifacts. Artifacts omitted from the selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation. An implementation agent should run resolution only after completing the configuration, decision, optional-guidance, and completion-scope review surfaced by `begin`.
+`resolve` accepts repeated `--feature` options, one `--configuration-selections` document covering every selected package, product-decision answers through `--decisions`, separate `--technical-preferences`, and `--artifact-selections` for selected, declined, or deferred artifacts. A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
 
 Technical preferences may include provider-neutral `implementation_targets` with namespaced kind and target IDs plus validated references to selected package guidance. Referenced artifacts must be selected. The generated guide surfaces targets before architecture planning but does not claim that the final application is compatible or deployable.
 

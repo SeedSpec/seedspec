@@ -10,6 +10,7 @@ export const protocolSchemaNames = Object.freeze([
   "component-index.schema.json",
   "artifact-index.schema.json",
   "artifact-selections.schema.json",
+  "configuration-selections.schema.json",
   "technical-preferences.schema.json",
   "lock.schema.json",
   "resolved-config.schema.json",

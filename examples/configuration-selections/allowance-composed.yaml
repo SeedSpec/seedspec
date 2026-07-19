@@ -1,0 +1,8 @@
+protocol_version: "0.1"
+packages:
+  - package: org.seedspec.examples.allowance-tracker
+    selection: example
+  - package: org.seedspec.savings-goals
+    selection: example
+  - package: org.seedspec.chore-streaks
+    selection: example

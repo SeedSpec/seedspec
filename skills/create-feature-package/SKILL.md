@@ -37,7 +37,7 @@ Define:
 - failure, retry, concurrency, deletion, and historical behavior;
 - observable acceptance criteria.
 
-Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Infer reversible defaults and record them in example configuration.
+Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as a buyer-selected default.
 
 ## 3. Set the portability boundary
 

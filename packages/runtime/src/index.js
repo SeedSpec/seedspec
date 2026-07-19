@@ -20,5 +20,5 @@ export {
   resolveCapabilityGraph
 } from "./capabilities.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
-export { mergeConfiguration, resolveProject } from "./resolve.js";
+export { resolveProject } from "./resolve.js";
 export { validatePackage } from "./validate.js";

@@ -1,6 +1,7 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { stringify as stringifyYaml } from "yaml";
 import { SeedSpecError } from "./errors.js";
 import { readYamlFile } from "./files.js";
 import { resolveProject } from "./resolve.js";
@@ -29,10 +30,29 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       return { digest: first.digest };
     }
     case "resolve": {
+      const applicationPath = resolveFixture(indexDirectory, testCase.application);
+      const featurePaths = testCase.features.map((feature) => resolveFixture(indexDirectory, feature));
+      let configurationSelectionsPath;
+      if (testCase.configuration_selection === "examples") {
+        const records = await Promise.all([
+          validatePackage(applicationPath),
+          ...featurePaths.map(validatePackage)
+        ]);
+        configurationSelectionsPath = path.join(outputDirectory, "configuration-selections.yaml");
+        await mkdir(outputDirectory, { recursive: true });
+        await writeFile(configurationSelectionsPath, stringifyYaml({
+          protocol_version: "0.1",
+          packages: records.map((record) => ({
+            package: record.manifest.id,
+            selection: "example"
+          }))
+        }), "utf8");
+      }
       const result = await resolveProject(
-        resolveFixture(indexDirectory, testCase.application),
+        applicationPath,
         {
-          featurePaths: testCase.features.map((feature) => resolveFixture(indexDirectory, feature)),
+          featurePaths,
+          configurationSelectionsPath,
           decisionsPath: testCase.decisions
             ? resolveFixture(indexDirectory, testCase.decisions)
             : undefined,
@@ -84,6 +104,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       return {
         featureOrder: result.features,
         projectStatus: result.project.status,
+        configurationStatus: result.project.configuration_status,
         reviewCount: result.lock.reviews.length,
         sourceExtensions
       };
@@ -114,6 +135,13 @@ function assertExpectedOutput(testCase, output) {
   if (testCase.expect.project_status && output.projectStatus !== testCase.expect.project_status) {
     throw new SeedSpecError(
       `Project status mismatch; expected ${testCase.expect.project_status}, received ${output.projectStatus}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (testCase.expect.configuration_status
+    && output.configurationStatus !== testCase.expect.configuration_status) {
+    throw new SeedSpecError(
+      `Configuration status mismatch; expected ${testCase.expect.configuration_status}, received ${output.configurationStatus}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }

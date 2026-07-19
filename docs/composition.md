@@ -44,8 +44,10 @@ the user's desired outcome. SeedSpec cannot know which answer is correct without
 the actual implementation.
 
 Application, feature, decision, artifact, and technical configuration stay in
-separate namespaces. Required unanswered product decisions produce a valid
-project with `status: needs-decisions`; they do not disappear into implementation
+separate namespaces. Every explicit application or feature configuration is
+complete; resolution never fills a custom selection from an example. Missing
+configuration selection or required decision answers produce a valid project
+with `status: needs-input`; they do not disappear into implementation
 assumptions.
 
 The dependency lock records exact package digests, deterministic feature order,
