@@ -18,6 +18,8 @@ The demo creates `.tmp/allowance-demo/.seedspec/` with a human-readable resolved
 Inspect the source packages:
 
 ```bash
+npx seedspec prompt
+npx seedspec begin examples/allowance-tracker
 npx seedspec inspect examples/allowance-tracker
 npx seedspec inspect examples/savings-goals
 npx seedspec inspect examples/chore-streaks
@@ -53,7 +55,7 @@ Use `--config <yaml>` to override application configuration, `--feature-config <
 
 - A compact package format with versioned JSON Schemas.
 - Complete Allowance Tracker, Savings Goals, and Chore Streaks packages.
-- A generic `seedspec` CLI with validation, inspection, artifact adapters, feature discovery, resolution, and initialization.
+- A generic `seedspec` CLI with a buyer-to-agent prompt, read-only application bootstrap, validation, inspection, artifact adapters, feature discovery, resolution, and initialization.
 - Authoring skills for application and feature packages, plus a beginner-facing `use-seedspec` lifecycle skill.
 - A generic artifact model and explicit ProductSpec adapter backed by the official ProductSpec parser.
 - Versioned capability contracts whose `tested_against` revisions create review signals rather than dependency gates.

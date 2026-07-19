@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
+  beginPackage,
   discoverFeatures,
+  formatBuyerAgentPrompt,
   inspectPackage,
   initPackage,
   listArtifactAdapters,
@@ -118,6 +120,49 @@ test("inspect reports identity, capabilities, and optional components", async ()
   );
   assert.deepEqual(Object.keys(inspection.components).sort(), ["acceptance", "integration"]);
   assert.match(inspection.digest, /^sha256:[a-f0-9]{64}$/);
+});
+
+test("begin validates an application and exposes the pre-resolution workflow", async () => {
+  const beginning = await beginPackage(allowance);
+
+  assert.equal(beginning.package.id, "org.seedspec.examples.allowance-tracker");
+  assert.equal(beginning.configuration.selection_status, "review-required");
+  assert.equal(beginning.configuration.resolution_behavior, "example-used-as-baseline");
+  assert.equal(beginning.acceptance.declared, true);
+  assert.ok(beginning.components.some(
+    (component) => component.name === "reference" && component.review === "before-planning"
+  ));
+  assert.ok(beginning.artifacts.some(
+    (artifact) => artifact.id === "product-spec" && artifact.adapter?.id === "org.seedspec.adapter.product-spec"
+  ));
+  assert.equal(beginning.trust.discovery_activates_content, false);
+  assert.ok(beginning.next_actions.some((action) => action.id === "resolve-handoff"));
+});
+
+test("begin reports when a package has no author acceptance material", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "no-acceptance");
+  await cp(allowance, packagePath, { recursive: true });
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  delete manifest.components;
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+
+  const beginning = await beginPackage(packagePath);
+  assert.equal(beginning.acceptance.declared, false);
+  assert.ok(beginning.notices.some((notice) => notice.code === "NO_DECLARED_ACCEPTANCE"));
+  assert.match(
+    beginning.next_actions.find((action) => action.id === "agree-completion-scope").action,
+    /Agree with the user/
+  );
+});
+
+test("the buyer prompt delegates the detailed workflow to versioned tooling", () => {
+  const prompt = formatBuyerAgentPrompt();
+  assert.match(prompt, /seedspec begin <package-path>/);
+  assert.match(prompt, /before planning/i);
+  assert.match(prompt, /Do not execute package-provided scripts/);
+  assert.doesNotMatch(prompt, /npx|npm install/);
 });
 
 test("artifact discovery recognizes ProductSpec without activating its workflow", async () => {
@@ -341,6 +386,8 @@ test("init creates valid application and feature starter packages", async (t) =>
 test("CLI validates and inspects the example package", async () => {
   const cli = path.join(root, "packages/cli/bin/seedspec.js");
   const validation = await execFileAsync(process.execPath, [cli, "validate", allowance]);
+  const prompt = await execFileAsync(process.execPath, [cli, "prompt"]);
+  const beginning = await execFileAsync(process.execPath, [cli, "begin", allowance]);
   const inspection = await execFileAsync(process.execPath, [cli, "inspect", savings]);
   const artifacts = await execFileAsync(process.execPath, [cli, "artifacts", allowance]);
   const productSpec = await execFileAsync(process.execPath, [
@@ -358,6 +405,10 @@ test("CLI validates and inspects the example package", async () => {
   ]);
 
   assert.match(validation.stdout, /Valid SeedSpec application package/);
+  assert.match(prompt.stdout, /Use this SeedSpec package/);
+  assert.match(beginning.stdout, /Do not begin implementation yet/);
+  assert.match(beginning.stdout, /CONFIGURATION_EXAMPLE_REQUIRES_REVIEW/);
+  assert.match(beginning.stdout, /Discovery does not activate optional material/);
   assert.match(inspection.stdout, /Requires: org\.seedspec\.core\.actors \(tested against 1\.0\.0\)/);
   assert.match(inspection.stdout, /Components: acceptance, integration/);
   assert.match(artifacts.stdout, /ProductSpec/);

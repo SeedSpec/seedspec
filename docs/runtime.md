@@ -5,6 +5,8 @@ The runtime is a neutral CLI and JavaScript library. It does not know about mark
 ## Commands
 
 ```text
+seedspec prompt
+seedspec begin <application-path> [--json]
 seedspec validate <path>
 seedspec digest <path>
 seedspec inspect <path>
@@ -19,7 +21,13 @@ seedspec conformance [cases.yaml]
 seedspec verify-lock <project-path> --package <path> [--package <path>]
 ```
 
-`resolve` accepts repeated `--feature` options, an application `--config`, feature overrides through `--feature-config <id>=<path>`, product-decision answers through `--decisions`, and separate `--technical-preferences`.
+`prompt` prints a short, agent-agnostic instruction that a package distributor or buyer can give to an implementation agent. It delegates the detailed workflow to version-compatible official tooling rather than embedding a long marketplace-maintained prompt.
+
+`begin` is the read-only entry point for an agent that has received an application package. It validates the package, inventories configuration, decisions, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, select configuration, execute package content, fetch remote artifacts, or activate an artifact workflow.
+
+Protocol 0.1 names `configuration.example` as an example while the current resolver uses it as its merge baseline. `begin` therefore marks that configuration as review-required instead of implying that the buyer selected it. This alpha behavior remains under protocol review.
+
+`resolve` accepts repeated `--feature` options, an application `--config`, feature overrides through `--feature-config <id>=<path>`, product-decision answers through `--decisions`, and separate `--technical-preferences`. An implementation agent should run it only after completing the configuration, decision, optional-guidance, and completion-scope review surfaced by `begin`.
 
 Feature argument order is not semantic. `capability-graph-v1` validates the selected graph, produces deterministic provider-first order, and records capability-revision review signals. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, graph order, providers, and review bindings from explicitly supplied package directories.
 

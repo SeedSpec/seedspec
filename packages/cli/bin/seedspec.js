@@ -2,6 +2,7 @@
 
 import process from "node:process";
 import {
+  beginPackage,
   discoverFeatures,
   formatError,
   formatAdapterListing,
@@ -9,7 +10,9 @@ import {
   formatArtifactValidation,
   formatConformanceResult,
   formatFeatureDiscovery,
+  formatBuyerAgentPrompt,
   formatInspection,
+  formatPackageBeginning,
   initPackage,
   inspectPackage,
   listArtifactAdapters,
@@ -24,6 +27,8 @@ import {
 const HELP = `SeedSpec CLI v0.1 alpha
 
 Usage:
+  seedspec prompt
+  seedspec begin <application-path> [--json]
   seedspec validate <path>
   seedspec digest <path>
   seedspec inspect <path> [--json]
@@ -98,6 +103,18 @@ async function run() {
   }
 
   switch (command) {
+    case "prompt": {
+      process.stdout.write(`${formatBuyerAgentPrompt()}\n`);
+      break;
+    }
+    case "begin": {
+      const packagePath = requirePositional(positional, 0, "application package path");
+      const beginning = await beginPackage(packagePath);
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(beginning, null, 2)}\n`
+        : `${formatPackageBeginning(beginning)}\n`);
+      break;
+    }
     case "validate": {
       const packagePath = requirePositional(positional, 0, "package path");
       const record = await validatePackage(packagePath);

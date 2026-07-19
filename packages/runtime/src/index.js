@@ -1,4 +1,5 @@
 export { SeedSpecError, formatError } from "./errors.js";
+export { beginPackage, formatBuyerAgentPrompt, formatPackageBeginning } from "./begin.js";
 export { discoverFeatures, formatFeatureDiscovery } from "./discovery.js";
 export {
   PRODUCTSPEC_ARTIFACT_TYPE,

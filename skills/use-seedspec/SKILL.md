@@ -25,7 +25,19 @@ Do not execute scripts obtained from a remote package. Acquire a user-supplied p
 
 ## Workflow
 
-### 1. Establish the starting point
+### 1. Begin with the official package handoff
+
+Run:
+
+```text
+$SEEDSPEC begin <application-path> --json
+```
+
+This is the versioned, read-only workflow entry point. Use its notices and next actions as the package-specific checklist. It validates the package but does not configure, resolve, execute, fetch, or activate package content.
+
+If the user arrived without an agent instruction, `$SEEDSPEC prompt` prints the short generic instruction intended for package distribution. Do not replace it with a marketplace-specific copy of this entire skill.
+
+### 2. Establish the starting point
 
 Identify:
 
@@ -36,9 +48,9 @@ Identify:
 
 Do not force implementation-platform decisions at this stage. If the user has not chosen an environment, defer that choice until the resolved product intent is clear.
 
-### 2. Validate and explain the package
+### 3. Validate and explain the package
 
-Run:
+`begin` has already performed core validation. Use these commands when you need their focused structured output:
 
 ```text
 $SEEDSPEC validate <application-path>
@@ -56,7 +68,7 @@ Summarize in plain language:
 
 If validation fails, explain the stable error code and the smallest corrective action. Do not continue to resolution with an invalid package.
 
-### 3. Handle optional artifacts neutrally
+### 4. Handle optional artifacts neutrally
 
 Artifact listings may show a registered adapter. Explain that this means SeedSpec can recognize or validate the format; it does not mean the artifact governs implementation.
 
@@ -70,7 +82,7 @@ If the user declines or defers, keep the ProductSpec available as ordinary produ
 
 Apply the same boundary to all future artifact adapters.
 
-### 4. Discover feature options
+### 5. Discover feature options
 
 When local package catalogs are available, run:
 
@@ -89,9 +101,9 @@ Discovery never selects a feature. Ask the user which outcomes they want. Prefer
 
 Remote discovery is a catalog or registry responsibility. If another trusted tool supplies remote results, acquire the selected package locally and validate it before use; do not pretend the core CLI searched a remote registry.
 
-### 5. Resolve the selected handoff
+### 6. Resolve the selected handoff
 
-Gather only choices that materially affect product behavior:
+Gather only choices that materially affect product behavior. Treat the current alpha's `configuration.example` as an author-supplied baseline requiring review, not as a choice the user already made:
 
 - chosen features;
 - configuration overrides;
@@ -108,7 +120,7 @@ $SEEDSPEC resolve <application-path> \
 
 If the resolved project reports `needs-decisions`, explain the unanswered decisions and obtain the user's direction before consequential implementation. Capability revision `review` signals require inspection and planning but are not automatic rejection gates.
 
-### 6. Prepare the implementation agent
+### 7. Prepare the implementation agent
 
 Have the implementation agent read, in order:
 
@@ -123,7 +135,7 @@ Explain any artifact-specific choice the user made. If no choice was made, tell 
 
 Ask the user about their implementation ecosystem only when it becomes relevant: existing repository, ChatGPT/Codex or another agent, web or mobile target, and hosting preferences. Offer beginner-friendly options with consequences, but do not make infrastructure policy part of the SeedSpec.
 
-### 7. Close the loop
+### 8. Close the loop
 
 During implementation, preserve established behavior and terminology unless the user requests a migration. Record material mappings and deviations in `.seedspec/implementation-notes.md`, and acceptance evidence in `.seedspec/verification-report.md`.
 
