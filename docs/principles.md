@@ -66,9 +66,17 @@ Authoring tools may help a user progressively:
 1. capture the source idea;
 2. shape actors, outcomes, workflows, and concepts;
 3. harden permissions, invariants, failures, and acceptance behavior;
-4. compose the package with compatible features and artifacts.
+4. analyze feature candidates, capability context, and related artifacts.
 
 Not every author must complete every stage before using or sharing a SeedSpec.
+
+## Declarations are not implementation state
+
+Capability, compatibility, and conflict fields record what package authors
+designed, tested, or expect. SeedSpec does not continuously inspect the generated
+application and cannot prove that a capability is present, absent, compatible,
+or conflicting. Composition preserves those declarations as review context; the
+implementation agent evaluates them against actual code and user intent.
 
 Structured spec workflows demonstrate the value of making requirements, design, and implementation tasks separately inspectable; linking transformed outputs back to their sources; and checking requirements before expensive implementation begins. SeedSpec adopts those lessons as authoring and analysis capabilities. It does not require every package to pass through the same stages or make a task plan part of product intent.
 

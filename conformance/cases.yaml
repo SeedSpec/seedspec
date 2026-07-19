@@ -1,4 +1,4 @@
-suite_version: "1.1.0"
+suite_version: "1.2.0"
 protocol_version: "0.1"
 
 cases:
@@ -108,7 +108,7 @@ cases:
         - org.seedspec.savings-goals
 
   - id: resolve-order-independent-feature-graph
-    description: A consumer supplied before its provider is topologically ordered.
+    description: Feature order is deterministic by package ID and does not claim implementation order.
     operation: resolve
     application: ../examples/allowance-tracker
     features:
@@ -118,20 +118,23 @@ cases:
       result: pass
       project_status: ready
       feature_order:
-        - org.example.chain-provider
         - org.example.chain-consumer
+        - org.example.chain-provider
       preserved_extension:
         package: org.example.chain-provider
         key: org.example.conformance-marker
 
-  - id: reject-missing-provider
+  - id: review-missing-provider
     operation: resolve
     application: ../examples/allowance-tracker
     features:
       - ../packages/runtime/test/fixtures/unmet-feature
     expect:
-      result: fail
-      code: MISSING_CAPABILITIES
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.teleportation
+      review_count: 1
 
   - id: flag-capability-revision-review
     operation: resolve
@@ -145,14 +148,17 @@ cases:
         - org.example.revision-review
       review_count: 1
 
-  - id: reject-ambiguous-provider
+  - id: review-multiple-declared-providers
     operation: resolve
     application: ../examples/allowance-tracker
     features:
       - fixtures/ambiguous-provider
     expect:
-      result: fail
-      code: AMBIGUOUS_CAPABILITY_PROVIDER
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.ambiguous-provider
+      review_count: 1
 
   - id: reject-duplicate-package-selection
     operation: resolve
@@ -164,24 +170,31 @@ cases:
       result: fail
       code: DUPLICATE_FEATURE
 
-  - id: reject-declared-conflict
+  - id: review-declared-conflict
     operation: resolve
     application: ../examples/allowance-tracker
     features:
       - fixtures/conflicting-feature
     expect:
-      result: fail
-      code: DECLARED_CONFLICT
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.conflicting-feature
+      review_count: 1
 
-  - id: reject-capability-cycle
+  - id: review-declared-requirement-cycle
     operation: resolve
     application: ../examples/allowance-tracker
     features:
       - fixtures/cycle-a
       - fixtures/cycle-b
     expect:
-      result: fail
-      code: CAPABILITY_CYCLE
+      result: pass
+      project_status: ready
+      feature_order:
+        - org.example.cycle-a
+        - org.example.cycle-b
+      review_count: 1
 
   - id: preserve-required-decision
     operation: resolve

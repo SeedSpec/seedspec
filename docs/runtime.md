@@ -31,11 +31,11 @@ Protocol 0.1 names `configuration.example` as an example while the current resol
 
 Technical preferences may include provider-neutral `implementation_targets` with namespaced kind and target IDs plus validated references to selected package guidance. Referenced artifacts must be selected. The generated guide surfaces targets before architecture planning but does not claim that the final application is compatible or deployable.
 
-Feature argument order is not semantic. `capability-graph-v1` validates the selected graph, produces deterministic provider-first order, and records capability-revision review signals. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, graph order, providers, and review bindings from explicitly supplied package directories.
+Feature argument order is not semantic. `declaration-review-v1` records features in deterministic package-ID order and preserves all capability candidates, revision comparisons, conflicts, and cycles as author-supplied review context. Missing or multiple declarations do not reject a feature because the runtime cannot observe the real implementation. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, deterministic order, declaration candidates, and review records from explicitly supplied package directories.
 
 `artifacts` lists declarations and registered adapters without invoking them. `adapters` lists the runtime's known artifact integrations. `validate-artifact` is an explicit request to run the registered format-specific validator. The official `org.seedspec.adapter.product-spec` adapter recognizes `org.seedspec.artifact.product-spec` and invokes `@productspec/parser`; ProductSpec is an optional dependency rather than a core package requirement.
 
-`discover-features` recursively inspects local catalog directories and reports candidates as compatible, dependent on other features, review-required, missing capabilities, incompatible, or conflicting. It never selects a feature. Remote registry search and package acquisition remain separate catalog responsibilities.
+`discover-features` recursively inspects local catalog directories and reports each valid feature as `candidate` or `review`. It may show capability, revision, compatibility-scope, and conflict declarations, but it never makes a compatibility verdict or selects a feature. Remote registry search and package acquisition remain separate catalog responsibilities.
 
 The resulting workspace is:
 

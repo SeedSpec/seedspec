@@ -84,7 +84,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       return {
         featureOrder: result.features,
         projectStatus: result.project.status,
-        reviewCount: result.lock.requirements.filter((requirement) => requirement.status === "review").length,
+        reviewCount: result.lock.reviews.length,
         sourceExtensions
       };
     }

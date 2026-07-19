@@ -93,12 +93,16 @@ When local package catalogs are available, run:
 $SEEDSPEC discover-features <application-path> --catalog <catalog-path> --json
 ```
 
-Use repeated `--catalog` options when needed. Present useful candidates grouped by status:
+Use repeated `--catalog` options when needed. Present useful packages grouped by status:
 
-- `compatible`: the application already provides the required capabilities;
-- `needs-features`: other catalog features may satisfy missing capabilities;
-- `review`: domain compatibility needs human or implementation review;
-- `missing-capabilities`, `incompatible`, or `conflict`: explain why the feature is not ready to select.
+- `candidate`: package declarations expose no concern, but the actual
+  implementation still requires inspection;
+- `review`: capability, revision, compatibility-scope, or conflict declarations
+  deserve explicit agent/user review.
+
+Never translate these statuses into compatible or incompatible. When another
+catalog feature declares a required capability, present it as possible context,
+not a mandatory dependency.
 
 Discovery never selects a feature. Ask the user which outcomes they want. Prefer discussing the user-facing behavior over package IDs.
 
@@ -126,7 +130,7 @@ $SEEDSPEC resolve <application-path> \
   --output <project-path>
 ```
 
-If the resolved project reports `needs-decisions`, explain the unanswered decisions and obtain the user's direction before consequential implementation. If `artifact_status` is `review`, distinguish unreviewed artifacts from explicitly deferred ones and surface only those that become consequential. Capability revision `review` signals require inspection and planning but are not automatic rejection gates.
+If the resolved project reports `needs-decisions`, explain the unanswered decisions and obtain the user's direction before consequential implementation. If `artifact_status` is `review`, distinguish unreviewed artifacts from explicitly deferred ones and surface only those that become consequential. If `declaration_status` is `review`, inspect the real code for equivalent concepts and resolve the recorded capability, conflict, or cycle concerns in the integration plan. They are not automatic rejection gates.
 
 ### 7. Prepare the implementation agent
 

@@ -49,9 +49,12 @@ Use `compatibility.scope` deliberately:
 
 Do not claim generic compatibility merely because names can be changed. Remove unnecessary screen, route, framework, publisher, and host-specific assumptions.
 
+Compatibility scope records where the author intended or tested the feature. It
+does not prove compatibility or incompatibility with a future implementation.
+
 ## 4. Declare capabilities and configuration
 
-Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one contract file per provided capability. Revision differences are integration-review signals, not installation gates.
+Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one contract file per provided capability. Missing, multiple, cyclic, self-provided, or revision-different declarations are integration-review signals, not installation gates or observations of the actual host.
 
 Turn variable product behavior into JSON Schema-backed configuration. Keep implementation preferences outside feature configuration. When a configured behavior needs a host operation not guaranteed by declared capabilities, document it as an explicit integration requirement or unresolved decision; never silently approximate it.
 
@@ -82,7 +85,9 @@ When a host application is available, resolve them together in a temporary proje
 seedspec resolve <application-path> --feature <feature-path> --output <temporary-path>
 ```
 
-Repair all errors and confirm the resolved specification preserves both packages' intent.
+Repair structural errors. Inspect declaration review records and confirm the
+resolved specification preserves both packages' intent without presenting those
+records as compatibility verdicts.
 
 ## 6. Generalize for reuse
 

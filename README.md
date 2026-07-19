@@ -58,7 +58,9 @@ Use `--config <yaml>` to override application configuration, `--feature-config <
 - A generic `seedspec` CLI with a buyer-to-agent prompt, read-only application bootstrap, validation, inspection, artifact adapters, feature discovery, resolution, and initialization.
 - Authoring skills for application and feature packages, plus a beginner-facing `use-seedspec` lifecycle skill.
 - A generic artifact model and explicit ProductSpec adapter backed by the official ProductSpec parser.
-- Versioned capability contracts whose `tested_against` revisions create review signals rather than dependency gates.
+- Versioned capability contracts, provider candidates, compatibility statements,
+  and conflicts that create implementation review context rather than dependency
+  gates or compatibility verdicts.
 - Structured decisions, artifact dispositions, validated implementation-target guidance, content-addressed locks, agent handoff guidance, and durable deviation and verification records.
 - Tooling tests and a format conformance suite.
 

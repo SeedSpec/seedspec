@@ -1,6 +1,9 @@
 # Capability authoring and evolution
 
-Capabilities let independently published packages compose around observable product contracts without agreeing on source code or infrastructure.
+Capabilities let independently published packages describe expected observable
+product contracts without agreeing on source code or infrastructure. They are
+integration context for an agent, not proof of what the actual application
+implements.
 
 ## Choosing an identifier
 
@@ -43,11 +46,18 @@ A provider publishes one exact current contract revision. A consumer records the
 
 Revision equality is useful testing evidence. A difference does not prohibit integration: it creates a review signal for the implementing agent. The agent should read available contract history and the current application, plan around semantic differences, preserve local terminology, and verify the composed use case.
 
-## Provider ambiguity
+## Provider candidates
 
-`capability-graph-v1` permits only one selected provider for an ID. This is conservative: choosing between providers can change product behavior even if both claim compatible versions.
+`declaration-review-v1` records every selected package that declares a
+capability. Zero candidates and multiple candidates both create review signals;
+neither rejects the handoff. A declaration is not an installed dependency, and
+the implementation agent may map equivalent existing behavior, adapt one or
+more candidates, implement missing behavior, or surface a genuine conflict to
+the user.
 
-A future composition algorithm may support explicit provider selection or replacement. Until then, packages that intentionally substitute for one another should not be selected together.
+Exact revision equality produces `declared-aligned` only when exactly one other
+package declares the capability. That label describes package evidence, not
+runtime compatibility.
 
 ## Capability review checklist
 
@@ -58,3 +68,5 @@ A future composition algorithm may support explicit provider selection or replac
 - Does the version change match the semantic change?
 - Does each `tested_against` revision represent real design or testing evidence?
 - Would an agent understand how to find contract history and record a local semantic mapping?
+- Does the package avoid claiming that a declaration proves the actual host has
+  or lacks the capability?

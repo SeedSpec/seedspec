@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveCapabilityGraph } from "./capabilities.js";
+import { analyzeCapabilityDeclarations } from "./capabilities.js";
 import { SeedSpecError } from "./errors.js";
 import { pathExists, readYamlFile } from "./files.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
@@ -84,14 +84,15 @@ export async function verifyProjectLock(projectPath, packagePaths) {
 
   const application = supplied.get(lock.application.id);
   const features = lock.features.map((feature) => supplied.get(feature.id));
-  const graph = resolveCapabilityGraph(application, features);
+  const graph = analyzeCapabilityDeclarations(application, features);
   const graphOrder = graph.orderedFeatures.map((feature) => feature.manifest.id);
   const lockOrder = lock.features.map((feature) => feature.id);
 
   if (stableJson(graphOrder) !== stableJson(lockOrder)
     || stableJson(graph.capabilities) !== stableJson(lock.capabilities)
-    || stableJson(graph.requirements) !== stableJson(lock.requirements)) {
-    throw new SeedSpecError("Locked feature order or capability providers do not match package declarations", {
+    || stableJson(graph.requirements) !== stableJson(lock.requirements)
+    || stableJson(graph.reviews) !== stableJson(lock.reviews)) {
+    throw new SeedSpecError("Locked feature order or declaration analysis does not match package declarations", {
       code: "LOCK_GRAPH_MISMATCH"
     });
   }
@@ -100,6 +101,6 @@ export async function verifyProjectLock(projectPath, packagePaths) {
     workspace,
     lock,
     verifiedPackages: expectedPackages.map((item) => item.id),
-    verifiedCapabilities: lock.capabilities.map((item) => item.id)
+    verifiedCapabilityDeclarations: lock.capabilities.map((item) => item.id)
   };
 }

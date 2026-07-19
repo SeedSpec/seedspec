@@ -1,7 +1,7 @@
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
-import { resolveCapabilityGraph } from "./capabilities.js";
+import { analyzeCapabilityDeclarations } from "./capabilities.js";
 import { SeedSpecError } from "./errors.js";
 import { pathExists, readMarkdownComponent, readYamlFile, resolvePackagePath } from "./files.js";
 import { compileConfigurationSchema, compileProtocolSchema, formatSchemaErrors } from "./schema.js";
@@ -275,6 +275,16 @@ function yamlBlock(value) {
   return `\`\`\`yaml\n${stringifyYaml(value).trimEnd()}\n\`\`\``;
 }
 
+function requirementSummary(requirement) {
+  const providers = requirement.providers.length === 0
+    ? "no selected package declares a provider"
+    : requirement.providers.map((candidate) => (
+      `${candidate.provider.id}@${candidate.provided_version} (${candidate.revision_status})`
+    )).join(", ");
+  const issues = requirement.issues.length ? requirement.issues.join(", ") : "none";
+  return `${requirement.consumer} expects ${requirement.capability}@${requirement.tested_against}; declared candidates: ${providers}; issues: ${issues}`;
+}
+
 async function writeFileIfMissing(filePath, contents) {
   if (!await pathExists(filePath)) {
     await writeFile(filePath, contents, "utf8");
@@ -285,12 +295,12 @@ function buildAgentGuide({
   application,
   features,
   requirements,
+  reviews,
   unresolvedDecisions,
   components,
   artifacts,
   technicalPreferences
 }) {
-  const reviewItems = requirements.filter((requirement) => requirement.status === "review");
   const planningComponents = components.filter((component) => component.review === "before-planning");
   const planningArtifacts = artifacts.filter((artifact) => artifact.review === "before-planning");
   const activationArtifacts = artifacts.filter((artifact) => artifact.review === "before-activation");
@@ -349,7 +359,8 @@ function buildAgentGuide({
     "## Working principles",
     "",
     "- Preserve the requested product outcome, not the SeedSpec's original implementation assumptions.",
-    "- Capability revisions are evidence. A mismatch is a prompt to inspect and plan, never a reason by itself to reject the work.",
+    "- Capabilities, compatibility, and conflicts are package-author declarations, not observations of the actual implementation.",
+    "- Missing, multiple, cyclic, conflicting, or revision-different declarations are prompts to inspect and plan, never reasons by themselves to reject the work.",
     "- Recognize equivalent local concepts even when names differ. Prefer adapting incoming behavior to the current application.",
     "- Do not rename, migrate, or overwrite established behavior merely to make it resemble the source SeedSpec.",
     "- Surface consequential ambiguity before implementing it. Reversible technical choices remain yours.",
@@ -469,18 +480,29 @@ function buildAgentGuide({
 
   lines.push(
     "",
-    "## Capability revision review",
+    "## Capability and composition declaration review",
     ""
   );
 
-  if (reviewItems.length === 0) {
-    lines.push("No selected capability revision differs from the revision its consumer was tested against.");
+  if (reviews.length === 0) {
+    lines.push("No concern is visible from the selected packages' declarations. This is not a compatibility claim; verify the actual application before integration.");
   } else {
     lines.push(
-      "Create an integration plan for these items before implementation:",
+      "Create an integration plan for these author-supplied review signals. Resolve them against actual code and user intent rather than treating them as package-manager failures:",
       "",
-      ...reviewItems.map((requirement) => (
-        `- ${requirement.consumer} was tested against ${requirement.capability}@${requirement.tested_against}; the selected provider supplies ${requirement.provided_version}.`
+      ...reviews.map((review) => (
+        `- **${review.code}** — packages: ${review.packages.join(", ")}${review.capability ? `; capability: ${review.capability}` : ""}${review.reason ? `; author reason: ${JSON.stringify(review.reason)}` : ""}`
+      ))
+    );
+  }
+
+  if (requirements.length > 0) {
+    lines.push(
+      "",
+      "Declared requirement context:",
+      "",
+      ...requirements.map((requirement) => (
+        `- **${requirement.status === "review" ? "REVIEW" : "NO DECLARED CONCERN"}** ${requirementSummary(requirement)}.`
       ))
     );
   }
@@ -667,6 +689,7 @@ async function buildResolvedSpecification({
   technicalPreferences,
   capabilities,
   requirements,
+  reviews,
   resolvedDecisions,
   unresolvedDecisions,
   components,
@@ -765,21 +788,30 @@ async function buildResolvedSpecification({
 
   lines.push(
     "",
-    "## Resulting capabilities",
+    "## Declared capabilities",
     "",
     ...capabilities.map((capability) => (
       `- ${capability.id}@${capability.version} — ${capability.provider.id}@${capability.provider.version}`
     )),
     "",
-    "## Capability integration review",
+    "## Capability and composition declaration review",
     ""
   );
 
   if (requirements.length === 0) {
-    lines.push("No selected feature declares host capability expectations.");
+    lines.push("No selected package declares capability expectations.");
   } else {
     lines.push(...requirements.map((requirement) => (
-      `- **${requirement.status === "review" ? "REVIEW" : "ALIGNED"}** ${requirement.consumer} uses ${requirement.capability}; tested against ${requirement.tested_against}, provider supplies ${requirement.provided_version}.`
+      `- **${requirement.status === "review" ? "REVIEW" : "NO DECLARED CONCERN"}** ${requirementSummary(requirement)}.`
+    )));
+  }
+
+  lines.push("", "### Composition review records", "");
+  if (reviews.length === 0) {
+    lines.push("No concern is visible from package declarations. This does not establish implementation compatibility.");
+  } else {
+    lines.push(...reviews.map((review) => (
+      `- **${review.code}** — packages: ${review.packages.join(", ")}${review.capability ? `; capability: ${review.capability}` : ""}${review.reason ? `; author reason: ${JSON.stringify(review.reason)}` : ""}`
     )));
   }
 
@@ -832,7 +864,10 @@ export async function resolveProject(applicationPath, {
     selectedIds.add(feature.manifest.id);
   }
 
-  const { orderedFeatures, capabilities, requirements } = resolveCapabilityGraph(application, featureRecords);
+  const { orderedFeatures, capabilities, requirements, reviews } = analyzeCapabilityDeclarations(
+    application,
+    featureRecords
+  );
   const applicationConfiguration = await selectConfiguration(
     application,
     applicationConfigurationPath
@@ -907,9 +942,7 @@ export async function resolveProject(applicationPath, {
   const project = {
     protocol_version: "0.1",
     status,
-    integration_status: requirements.some((requirement) => requirement.status === "review")
-      ? "review"
-      : "aligned",
+    declaration_status: reviews.length > 0 ? "review" : "no-declared-concerns",
     artifact_status: artifactIndex.artifacts.some(
       (artifact) => artifact.disposition === "unreviewed"
     ) ? "review" : "recorded",
@@ -928,11 +961,12 @@ export async function resolveProject(applicationPath, {
   };
   const lock = {
     protocol_version: "0.1",
-    resolution_algorithm: "capability-graph-v1",
+    resolution_algorithm: "declaration-review-v1",
     application: lockedPackage(application),
     features: selectedFeatures.map(({ record }) => lockedPackage(record)),
     capabilities,
-    requirements
+    requirements,
+    reviews
   };
   const resolvedConfiguration = {
     protocol_version: "0.1",
@@ -967,6 +1001,7 @@ export async function resolveProject(applicationPath, {
         application,
         features: selectedFeatures,
         requirements,
+        reviews,
         unresolvedDecisions: decisionState.unresolved,
         components: componentIndex.components,
         artifacts: artifactIndex.artifacts,
@@ -983,6 +1018,7 @@ export async function resolveProject(applicationPath, {
         technicalPreferences,
         capabilities,
         requirements,
+        reviews,
         resolvedDecisions: decisionState.resolved,
         unresolvedDecisions: decisionState.unresolved,
         components: componentIndex.components,
@@ -1024,15 +1060,25 @@ export async function resolveProject(applicationPath, {
       "",
       `Digest: ${record.digest}`,
       "",
-      "Capability revisions are integration evidence, not installation gates. Product configuration and answered decisions are recorded in `resolved-config.yaml`.",
+      "Capability, compatibility, and conflict declarations are integration evidence, not installation gates or observations of the actual application. Product configuration and answered decisions are recorded in `resolved-config.yaml`.",
       "",
       "## Capability review",
       "",
       ...requirements
         .filter((requirement) => requirement.consumer === record.manifest.id)
         .map((requirement) => (
-          `- **${requirement.status === "review" ? "REVIEW" : "ALIGNED"}** ${requirement.capability}: tested against ${requirement.tested_against}; selected provider supplies ${requirement.provided_version}.`
+          `- **${requirement.status === "review" ? "REVIEW" : "NO DECLARED CONCERN"}** ${requirementSummary(requirement)}.`
         )),
+      "",
+      "## Composition review records",
+      "",
+      ...(reviews.filter((review) => review.packages.includes(record.manifest.id)).length
+        ? reviews
+          .filter((review) => review.packages.includes(record.manifest.id))
+          .map((review) => (
+            `- ${review.code}${review.capability ? `: ${review.capability}` : ""}${review.reason ? ` — ${JSON.stringify(review.reason)}` : ""}`
+          ))
+        : ["No declared composition concern names this feature."]),
       "",
       "## Source integration requirements",
       "",

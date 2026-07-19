@@ -7,7 +7,7 @@
   "required": [
     "protocol_version",
     "status",
-    "integration_status",
+    "declaration_status",
     "artifact_status",
     "application",
     "features",
@@ -25,7 +25,7 @@
   "properties": {
     "protocol_version": { "const": "0.1" },
     "status": { "enum": ["ready", "needs-decisions"] },
-    "integration_status": { "enum": ["aligned", "review"] },
+    "declaration_status": { "enum": ["no-declared-concerns", "review"] },
     "artifact_status": { "enum": ["recorded", "review"] },
     "application": { "$ref": "#/$defs/packageRef" },
     "features": {

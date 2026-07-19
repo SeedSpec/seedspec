@@ -70,10 +70,16 @@ test("capability revision differences request review without blocking handoff", 
   );
 
   assert.equal(result.project.status, "ready");
-  assert.equal(result.project.integration_status, "review");
+  assert.equal(result.project.declaration_status, "review");
   assert.equal(binding.tested_against, "1.0.0");
-  assert.equal(binding.provided_version, "1.1.0");
+  assert.equal(binding.providers[0].provided_version, "1.1.0");
+  assert.equal(binding.providers[0].revision_status, "different-revision");
+  assert.deepEqual(binding.issues, ["revision-difference"]);
   assert.equal(binding.status, "review");
+  assert.ok(result.lock.reviews.some(
+    (review) => review.code === "revision-difference"
+      && review.capability === "org.seedspec.core.chores"
+  ));
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
     /Create an integration plan/
@@ -232,7 +238,7 @@ test("artifact relationships must refer to declared local artifact IDs", async (
   );
 });
 
-test("feature discovery explains compatibility without selecting features", async () => {
+test("feature discovery exposes declaration context without compatibility verdicts", async () => {
   const result = await discoverFeatures(allowance, [path.join(root, "examples")]);
   const savingsCandidate = result.candidates.find((candidate) => (
     candidate.id === "org.seedspec.savings-goals"
@@ -241,8 +247,12 @@ test("feature discovery explains compatibility without selecting features", asyn
     candidate.id === "org.seedspec.chore-streaks"
   ));
 
-  assert.equal(savingsCandidate.status, "compatible");
+  assert.equal(savingsCandidate.status, "candidate");
   assert.equal(streakCandidate.status, "review");
+  assert.ok(streakCandidate.reasons.some((reason) => reason.includes("tested at 1.0.0")));
+  assert.ok(result.candidates.every(
+    (candidate) => !["compatible", "incompatible", "conflict"].includes(candidate.status)
+  ));
   assert.deepEqual(result.application.id, "org.seedspec.examples.allowance-tracker");
 });
 
@@ -447,20 +457,93 @@ test("Allowance Tracker composes with Savings Goals into a stable workspace", as
     await readFile(path.join(output, "AGENTS.md"), "utf8"),
     /\.seedspec\/agent-guide\.md/
   );
-  assert.match(firstSpec, /Capability integration review/);
+  assert.match(firstSpec, /Capability and composition declaration review/);
 });
 
-test("missing required capabilities fail resolution clearly", async (t) => {
+test("missing required capability declarations produce agent review instead of rejection", async (t) => {
   const output = await temporaryDirectory(t);
-
-  await assert.rejects(
-    resolveProject(allowance, {
-      featurePaths: [path.join(fixtures, "unmet-feature")],
-      outputDirectory: output
-    }),
-    (error) => error.code === "MISSING_CAPABILITIES"
-      && error.details.some((detail) => detail.includes("org.example.capability.teleportation"))
+  const result = await resolveProject(allowance, {
+    featurePaths: [path.join(fixtures, "unmet-feature")],
+    outputDirectory: output
+  });
+  const requirement = result.lock.requirements.find(
+    (candidate) => candidate.capability === "org.example.capability.teleportation"
   );
+
+  assert.equal(result.project.status, "ready");
+  assert.equal(result.project.declaration_status, "review");
+  assert.deepEqual(requirement.providers, []);
+  assert.deepEqual(requirement.issues, ["no-declared-provider"]);
+  assert.ok(result.lock.reviews.some(
+    (review) => review.code === "no-declared-provider"
+      && review.capability === "org.example.capability.teleportation"
+  ));
+  assert.match(
+    await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
+    /no-declared-provider.*teleportation/
+  );
+});
+
+test("application capability requirements are retained as declaration review", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "application-with-requirement");
+  await cp(allowance, packagePath, { recursive: true });
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.requires = {
+    capabilities: [{
+      id: "org.example.capability.external-identity",
+      tested_against: "1.0.0"
+    }]
+  };
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+
+  const result = await resolveProject(packagePath, {
+    outputDirectory: path.join(output, "project")
+  });
+  const requirement = result.lock.requirements.find(
+    (candidate) => candidate.consumer === "org.seedspec.examples.allowance-tracker"
+  );
+
+  assert.equal(result.project.declaration_status, "review");
+  assert.equal(requirement.capability, "org.example.capability.external-identity");
+  assert.deepEqual(requirement.issues, ["no-declared-provider"]);
+});
+
+test("ambiguous providers, author conflicts, and cycles resolve as review context", async (t) => {
+  const scenarios = [
+    {
+      name: "ambiguous",
+      featurePaths: [path.join(root, "conformance/fixtures/ambiguous-provider")],
+      code: "multiple-declared-providers"
+    },
+    {
+      name: "conflict",
+      featurePaths: [path.join(root, "conformance/fixtures/conflicting-feature")],
+      code: "declared-package-conflict"
+    },
+    {
+      name: "cycle",
+      featurePaths: [
+        path.join(root, "conformance/fixtures/cycle-a"),
+        path.join(root, "conformance/fixtures/cycle-b")
+      ],
+      code: "declared-requirement-cycle"
+    }
+  ];
+
+  for (const scenario of scenarios) {
+    const output = path.join(await temporaryDirectory(t), scenario.name);
+    const result = await resolveProject(allowance, {
+      featurePaths: scenario.featurePaths,
+      outputDirectory: output
+    });
+    assert.equal(result.project.declaration_status, "review");
+    assert.ok(
+      result.lock.reviews.some((review) => review.code === scenario.code),
+      `${scenario.name} should retain ${scenario.code}`
+    );
+  }
 });
 
 test("configuration overrides are merged then validated", async (t) => {
@@ -560,7 +643,7 @@ test("CLI validates and inspects the example package", async () => {
   assert.match(inspection.stdout, /Components: acceptance, integration/);
   assert.match(artifacts.stdout, /ProductSpec/);
   assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
-  assert.match(discovery.stdout, /Savings Goals.*compatible/);
+  assert.match(discovery.stdout, /Savings Goals.*candidate/);
 });
 
 test("CLI failures expose stable protocol error codes", async () => {
@@ -612,7 +695,7 @@ test("packages containing symbolic links are rejected", async (t) => {
   );
 });
 
-test("a dependency lock verifies exact package bytes and capability providers", async (t) => {
+test("a dependency lock verifies exact package bytes and declaration analysis", async (t) => {
   const output = await temporaryDirectory(t);
   const result = await resolveProject(allowance, {
     featurePaths: [savings],
@@ -623,7 +706,10 @@ test("a dependency lock verifies exact package bytes and capability providers", 
     "org.seedspec.examples.allowance-tracker",
     "org.seedspec.savings-goals"
   ]);
-  assert.equal(verified.verifiedCapabilities.length, result.lock.capabilities.length);
+  assert.equal(
+    verified.verifiedCapabilityDeclarations.length,
+    result.lock.capabilities.length
+  );
 
   const changedFeature = path.join(output, "changed-savings");
   await cp(savings, changedFeature, { recursive: true });

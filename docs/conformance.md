@@ -39,6 +39,6 @@ Fixtures should isolate one rule where practical. Negative cases assert stable e
 
 - `validate` checks structural, referenced-file, configuration, artifact-reference, relationship, semantic, and content-safety behavior without invoking artifact adapters.
 - `digest-stability` checks repeated calculation over identical package bytes.
-- `resolve` checks graph behavior and resolved project state.
+- `resolve` checks deterministic declaration analysis, review records, and resolved project state.
 
 Future suite versions may change as alpha experiments expose better package and handoff semantics.

@@ -13,7 +13,7 @@ Authoring can proceed progressively:
 1. **Capture** preserves the source idea in a minimal conforming package.
 2. **Shape** identifies actors, outcomes, workflows, domain concepts, and meaningful variations.
 3. **Harden** adds permissions, invariants, failure behavior, edge cases, and observable acceptance criteria.
-4. **Compose** identifies capabilities, compatible SeedSpec feature packages, and related artifacts.
+4. **Compose** identifies capability context, SeedSpec feature candidates, and related artifacts.
 
 The user may stop at any stage. Authoring depth is a workflow choice, not a different protocol format or a package-quality claim.
 
@@ -41,3 +41,8 @@ seedspec inspect <package-path>
 When a resolved project exists, inspect `.seedspec/project.yaml`, `resolved-spec.md`, `agent-guide.md`, `implementation-notes.md`, and `dependencies.lock.yaml` before asking questions. Reuse known actors, terminology, configuration decisions, and capabilities. Declare only the capabilities the feature truly uses and the capabilities it adds.
 
 Keep origin context, the portable feature, and project integration decisions distinct. Before sharing a feature broadly, remove application-private assumptions, replace narrow terminology, convert variable behavior into configuration, declare known conflicts and unresolved decisions, and select an explicit compatibility scope.
+
+Capability, compatibility, and conflict declarations describe author intent and
+testing evidence. Do not claim they prove that a future application implements a
+capability or that a feature is compatible. The implementing agent makes that
+determination from the actual project.

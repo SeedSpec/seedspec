@@ -14,7 +14,11 @@ export { inspectPackage, formatInspection } from "./inspect.js";
 export { initPackage } from "./init.js";
 export { computePackageDigest } from "./integrity.js";
 export { verifyProjectLock } from "./lock.js";
-export { capabilityMatches, resolveCapabilityGraph } from "./capabilities.js";
+export {
+  analyzeCapabilityDeclarations,
+  capabilityMatches,
+  resolveCapabilityGraph
+} from "./capabilities.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
 export { mergeConfiguration, resolveProject } from "./resolve.js";
 export { validatePackage } from "./validate.js";

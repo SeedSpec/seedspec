@@ -212,7 +212,7 @@ async function run() {
     case "verify-lock": {
       const projectPath = requirePositional(positional, 0, "project path");
       const result = await verifyProjectLock(projectPath, options.get("package") ?? []);
-      process.stdout.write(`Verified ${result.verifiedPackages.length} package(s) and ${result.verifiedCapabilities.length} capability provider(s)\n`);
+      process.stdout.write(`Verified ${result.verifiedPackages.length} package(s) and ${result.verifiedCapabilityDeclarations.length} capability declaration(s)\n`);
       break;
     }
     default:

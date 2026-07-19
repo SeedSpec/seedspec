@@ -27,7 +27,9 @@ It does not standardize programming languages, frameworks, data stores, clouds, 
 A SeedSpec package is a dedicated directory whose root contains `seedspec.yaml`. A package has one kind:
 
 - `application` is the root product definition in a resolution.
-- `feature` adds product behavior to a compatible application or feature graph.
+- `feature` describes product behavior intended to be adapted into an
+  application. Compatibility is decided against the actual implementation, not
+  proven by package composition.
 
 Every package MUST contain:
 
@@ -94,7 +96,12 @@ Within the alpha, a schema path identifies the format revision used for testing.
 
 A provider publishes the exact `major.minor.patch` revision of its current Markdown capability contract. A consumer records the exact revision it was designed or tested against through `tested_against`.
 
-The revision is evidence, not a traditional package constraint. Matching revisions produce an `aligned` binding. Different revisions produce a `review` binding and instruct the implementing agent to inspect the contracts and current application before planning integration. A mismatch alone never rejects composition.
+The revision is evidence, not a traditional package constraint. Exactly one
+other-package declaration at the tested revision produces a `declared-aligned`
+binding. Missing, multiple, self-provided, or different-revision declarations
+produce `review` context and instruct the implementing agent to inspect the
+actual application. These states describe package declarations only and never
+reject composition by themselves.
 
 Older contract text may be retained in a package reference component or external history so an agent can understand changes. Capability IDs act as lineage identifiers and need not match the application's user-facing terminology.
 
@@ -131,7 +138,7 @@ Every package declares:
 
 The example MUST validate against the declared schema. Configuration describes product behavior; technical implementation preferences remain separate.
 
-When applying a partial override, `capability-graph-v1` uses this recursive merge:
+When applying a partial override, the reference resolver uses this recursive merge:
 
 1. If base and override values are both mappings, merge their keys recursively.
 2. Otherwise the override replaces the base value.
@@ -198,17 +205,38 @@ Every `provides.capabilities` item declares:
 
 The contract MUST identify the capability and version and SHOULD define concepts, authorization expectations, invariants, state behavior, atomicity, retry behavior, failure behavior, and what consumers may rely upon.
 
-Every `requires.capabilities` item declares an ID and a `tested_against` contract revision. The implementing agent depends on the behavior described by that lineage, not the provider's internal API or local vocabulary.
+Every `requires.capabilities` item declares an ID and a `tested_against` contract
+revision. It records what the package author designed or tested against. The
+implementing agent maps that behavioral lineage to the actual application's
+code and concepts; absence of a provider declaration is not proof that the
+behavior is absent.
 
 Within one package, required capability IDs, provided capability IDs, decision IDs, and artifact IDs MUST be unique.
 
+### 7.1 Feature compatibility scope
+
+A feature declares `compatibility.scope` as `generic`, `domain`, or
+`application`. Domain scope supplies a namespaced domain ID. Application scope
+supplies one or more package IDs.
+
+This is an author statement about intended, generalized, or tested context. A
+runtime MAY use it to explain why a feature deserves review, but MUST NOT treat
+the scope as proof of compatibility or incompatibility with an actual
+implementation.
+
 ## 8. Declared conflicts
 
-A package MAY declare conflicts with package IDs or capability IDs and MUST supply a human-readable reason.
+A package MAY declare conflicts with package IDs or capability IDs and MUST
+supply a human-readable reason.
 
-If any selected package names another selected package, resolution fails with `DECLARED_CONFLICT`. If it names a capability provided by another selected package, resolution also fails. Conflicts are symmetric in effect even when declared by only one side.
+When a declaration matches selected packages or capability declarations,
+resolution preserves a review record with the declaring author's reason. It
+does not reject the handoff. The implementation agent must determine whether
+the concern applies to the actual code and resolve consequential conflicts with
+the end user.
 
-Conflicts express known incompatibility. Their absence is not proof that two definitions are semantically compatible.
+Conflicts express known author concerns. Their presence is not proof of actual
+incompatibility, and their absence is not proof of compatibility.
 
 ## 9. Product decisions
 
@@ -266,22 +294,33 @@ by that target. Providers remain independent of SeedSpec core, and the
 implementing agent remains responsible for applying the guidance to the actual
 implementation.
 
-## 10. Composition: `capability-graph-v1`
+## 10. Composition: `declaration-review-v1`
 
-Given one application and zero or more features, conforming runtimes perform these steps in order:
+Given one application and zero or more features, conforming runtimes perform
+these steps in order:
 
-1. Validate every package, referenced file, configuration example, semantic declaration, path, and digestability rule.
-2. Require one application and unique package IDs.
-3. Build a provider map from every declared provided capability.
-4. Fail with `AMBIGUOUS_CAPABILITY_PROVIDER` when more than one selected package provides the same capability ID. Version differences do not select a winner.
-5. Enforce declared package and capability conflicts.
-6. Make application-provided capabilities initially available. A root application cannot require external capabilities in this algorithm.
-7. Find every remaining feature whose required capability IDs are available. Compare each provider revision with the consumer's `tested_against` revision and record `aligned` or `review` without blocking composition.
-8. Sort that ready set by package ID using ascending UTF-8 byte order; append the whole set and add its provisions.
-9. Repeat until no features remain.
-10. If no feature is ready, classify the failure as either `MISSING_CAPABILITIES` when no selected provider exists or `CAPABILITY_CYCLE` when selected features wait on one another.
+1. Validate every package, referenced file, configuration example, semantic
+   declaration, path, and digestability rule.
+2. Require one application, feature kinds for feature inputs, and unique
+   selected package IDs.
+3. Sort selected features by package ID using ascending UTF-8 byte order. This
+   is deterministic recording order, not implementation or dependency order.
+4. Record every provided capability declaration with its declaring package.
+   Multiple declarations for one ID remain visible.
+5. For every application or feature requirement, record zero or more declared
+   provider candidates and compare each exact revision with `tested_against`.
+6. Record `no-declared-provider`, `multiple-declared-providers`,
+   `self-declared-provider`, and `revision-difference` issues as applicable.
+7. Record matched package conflicts, capability conflicts, and deterministic
+   declared requirement cycles as review context.
+8. Generate the resolved handoff without treating those review records as
+   installation gates.
 
-CLI argument order has no semantic effect. This algorithm is deliberately strict about duplicate providers; explicit provider selection or replacement belongs to a future algorithm version.
+CLI argument order has no semantic effect. Structural invalidity, unsafe
+content, wrong package kinds, and duplicate package selection remain errors.
+Capability, compatibility, conflict, and cycle declarations are author-supplied
+evidence. SeedSpec does not inspect the implementation and therefore cannot use
+them to prove that a feature is compatible, incompatible, present, or absent.
 
 ## 11. Package integrity
 
@@ -325,13 +364,13 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 └── features/
 ```
 
-`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records decision status, `aligned` or `review` integration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
+`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records decision status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
 
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
 `artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata, relationships, deterministic review timing, and `selected`, `declined`, `deferred`, or `unreviewed` disposition. Execution artifacts also record that activation requires specific user direction. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path regardless of disposition. Remote URLs remain URLs and are not fetched. Materialization preserves auditability and later choice without activating an artifact-specific workflow.
 
-`dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic feature order, capability providers, each consumer's `tested_against` revision, the selected provider revision, and the resulting review status.
+`dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic feature order, every capability declaration, every requirement's declared provider candidates and revision comparisons, and all composition review records. It does not claim a provider is installed or that a capability exists in the actual application.
 
 `resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, answered decisions, and technical preferences as separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 
@@ -349,7 +388,9 @@ The reference runtime's format checks:
 
 Human-readable error wording may vary. Error codes used by the alpha suite keep the reference tooling testable.
 
-Schema validation alone is insufficient because capability uniqueness, content safety, digests, graph ordering, review bindings, conflicts, and decisions require semantic validation.
+Schema validation alone is insufficient because content safety, digests,
+deterministic declaration analysis, review records, reference integrity, and
+decisions require semantic validation.
 
 ## 14. Trust and non-goals
 
