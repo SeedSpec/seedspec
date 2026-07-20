@@ -70,6 +70,24 @@ Declare capabilities as namespaced, versioned product contracts such as `org.see
 
 When the source material includes a useful native specification, design, plan, infrastructure description, or evidence document, preserve it under `artifacts` with a namespaced type and concern. Do not manufacture an artifact merely to fill a category, merge distinct concerns, or mark it governing/advisory. ProductSpec is one optional rigorous intent artifact, not a required replacement for the SeedSpec definition.
 
+At packaging time, inspect the available versioned implementation-resource
+catalogs. Offer tested SeedSpec resources as defaults, but let the author remove
+them, change `required`, `recommended`, or `available` usage, and choose
+`additional_guidance: none` or `agent-delegated`. Prefer compact skills whose
+frontmatter lets the implementing agent decide relevance. Do not include generic
+advice merely to make the package appear more complete.
+
+For a bundled failsafe, compute its exact bytes with
+`seedspec resource-digest <directory>`. Keep capability and target applicability advisory; it helps
+resource discovery but never claims that the resulting application implements
+the capability or supports the target.
+
+When the same core intent has multiple materially different implementation
+directions, preserve them as `implementation_profiles` rather than product
+configuration or solution decisions. Describe prerequisites and blockers as
+verifiable conditions, keep profile-specific guidance separate from the core
+definition, and do not imply that an author preference overrides the end user.
+
 ## 6. Validate and review
 
 Run:
@@ -78,6 +96,7 @@ Run:
 seedspec validate <package-path>
 seedspec inspect <package-path>
 seedspec artifacts <package-path>
+seedspec resources <package-path>
 ```
 
 If the author deliberately included a recognized native format and wants its conformance checked, invoke `seedspec validate-artifact <package-path> <artifact-id>` separately. Successful package validation must not be presented as native artifact validation, or vice versa.

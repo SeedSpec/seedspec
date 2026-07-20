@@ -4,7 +4,10 @@ Status: private design alpha
 
 This document describes the current package and handoff format. The JSON Schemas in `packages/protocol/schemas/v0.1/` define what the reference tooling accepts. Everything remains open to reconsideration before a later public release.
 
-Format validation constrains SeedSpec artifacts and deterministic tool output. It does not constrain the architecture, vocabulary, or implementation decisions of an application built from those artifacts.
+Format validation constrains SeedSpec artifacts and deterministic runtime
+output. It does not make agent execution deterministic or constrain the
+architecture, vocabulary, tools, or implementation decisions used to realize
+the packaged intent.
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**, and **MAY** describe interoperability requirements as defined by BCP 14 when shown in uppercase.
 
@@ -18,18 +21,56 @@ The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**, 
 
 ## 1. Scope
 
-The SeedSpec Protocol defines portable packages containing ideas, product intent, and related artifacts that can help people and tools produce software. It standardizes package identity, discovery, configuration, capabilities, artifact relationships, composition, decisions, integrity, and resolved project state.
+The SeedSpec Protocol defines portable, agent-ready packages containing intent,
+configuration, context, resources, success criteria, and related artifacts. A
+package can help an agent produce software, adapt a feature, configure an
+external system, establish an automation, generate an operational artifact, or
+realize a composite solution. The protocol standardizes package identity,
+discovery, configuration, capabilities, artifact relationships, composition,
+decisions, integrity, and resolved project state.
 
-It does not standardize programming languages, frameworks, data stores, clouds, repository layouts, user interfaces, deployment, marketplace policy, payment, licensing enforcement, or coding-agent prompts.
+It does not standardize programming languages, frameworks, data stores, clouds,
+repository layouts, user interfaces, deployment, external-service operation,
+marketplace policy, payment, licensing enforcement, or the substantive content
+of agent guidance. It standardizes how authors declare, version, resolve, and
+preserve optional implementation resources without granting them automatic
+authority.
 
 ## 2. Package model
 
-A SeedSpec package is a dedicated directory whose root contains `seedspec.yaml`. A package has one kind:
+A SeedSpec package is a dedicated directory whose root contains
+`seedspec.yaml`. Every manifest carries one author-supplied `kind` hint:
 
-- `application` is the root product definition in a resolution.
-- `feature` describes product behavior intended to be adapted into an
-  application. Compatibility is decided against the actual implementation, not
-  proven by package composition.
+- `solution`: a compound outcome or one whose realization form is intentionally
+  broad;
+- `application`: a user-facing software system or product;
+- `feature`: behavior intended to extend or change an existing solution;
+- `workflow`: a coordinated process across people, agents, or systems;
+- `automation`: scheduled or event-driven behavior intended to run with limited
+  human involvement;
+- `configuration`: desired state primarily realized inside an existing system;
+  or
+- `integration`: a connection or coordinated behavior across systems.
+
+Publishers MAY use a namespaced custom hint when none of the core suggestions
+communicates the outcome adequately. Generic tooling MUST preserve unknown
+namespaced hints and SHOULD fall back to `solution`-style guidance.
+
+`kind` is communicative metadata, not a type system. It guides authoring tools,
+quality checks, discovery, and agent handoff, but it MUST NOT determine whether
+a package may be selected as a composition root or addition and MUST NOT impose
+kind-specific required fields. Authoring tools SHOULD request the hint early,
+adapt their prompts and recommendations to it, and identify likely omissions or
+scope mismatches. They MUST present those findings separately from protocol
+validity, MUST NOT silently rewrite the package, and SHOULD let the author keep
+an unusual but intentional shape. Generic tools receiving a namespaced custom
+kind SHOULD apply `solution` guidance while preserving the declared value.
+
+Resolution position establishes composition role: the first selected package
+is the root and every other selected package is an addition. The expected
+authoring lens and reference diagnostics for each core kind are defined in
+`docs/kind-guidance.md`. See also
+`docs/decisions/0009-kind-hints-and-implementation-profiles.md`.
 
 Every package MUST contain:
 
@@ -49,6 +90,12 @@ The manifest MAY discover optional components. Empty directories have no protoco
 
 `seedspec.yaml`, package configuration, decision answers, and resolved YAML documents MUST be UTF-8 YAML 1.2 mappings. Duplicate mapping keys MUST be rejected. JSON documents MUST be UTF-8 JSON.
 
+Conformance is determined from the materialized declarative package. Authors
+MAY use language-specific builders, forms, agentic workflows, or other
+authoring frontends to produce that package, but consumers MUST NOT require or
+implicitly execute the authoring frontend. No particular authoring frontend or
+implementation language is part of package conformance.
+
 Protocol paths use `/` regardless of host operating system. Every path segment MUST:
 
 - begin with an ASCII letter or digit;
@@ -62,7 +109,7 @@ A conforming runtime MUST verify all package contents, not only manifest-referen
 
 ## 4. Identity
 
-Package, capability, domain, artifact type, concern, relationship, adapter, and extension identifiers use lowercase reverse-DNS form with at least three segments:
+Package, capability, implementation resource, resource catalog, target, domain, artifact type, concern, relationship, adapter, and extension identifiers use lowercase reverse-DNS form with at least three segments:
 
 ```text
 org.seedspec.examples.allowance-tracker
@@ -74,11 +121,12 @@ Each segment begins with an alphanumeric character and may then contain lowercas
 
 Publishers SHOULD use a DNS namespace they control. Namespace syntax prevents accidental global collisions; it does not prove ownership or trust.
 
-Local decision and artifact IDs use lowercase hyphenated form within one package.
+Local decision, artifact, implementation-profile, and profile-condition IDs use
+lowercase hyphenated form within one package.
 
 ## 5. Versions
 
-Three version domains are independent:
+Four version domains are independent:
 
 ### 5.1 Protocol version
 
@@ -100,10 +148,21 @@ The revision is evidence, not a traditional package constraint. Exactly one
 other-package declaration at the tested revision produces a `declared-aligned`
 binding. Missing, multiple, self-provided, or different-revision declarations
 produce `review` context and instruct the implementing agent to inspect the
-actual application. These states describe package declarations only and never
+actual realization. These states describe package declarations only and never
 reject composition by themselves.
 
-Older contract text may be retained in a package reference component or external history so an agent can understand changes. Capability IDs act as lineage identifiers and need not match the application's user-facing terminology.
+Older contract text may be retained in a package reference component or
+external history so an agent can understand changes. Capability IDs act as
+lineage identifiers and need not match the realized solution's user-facing
+terminology.
+
+### 5.4 Implementation resource version
+
+Implementation resources use Semantic Versioning independently from the
+protocol, CLI, package, and capability contracts. A package records a requested
+version, update policy, canonical manifest URL, optional canonical digest, and
+optional bundled fallback version and digest. Resolution MUST record the actual
+version and source used.
 
 ## 6. Manifest
 
@@ -120,13 +179,15 @@ Required fields are:
 - `configuration`
 - `provides`
 
-Feature packages additionally require `requires` and `compatibility`.
-
 Unknown top-level fields are forbidden. Publisher- or tool-specific data belongs under `extensions`.
 
 ### 6.1 Definition
 
-`definition.entrypoint` references the primary Markdown product definition. It SHOULD describe purpose, actors, permissions, concepts, workflows, state transitions, business rules, configuration behavior, failures, edge cases, and observable conformance without prescribing implementation technology.
+`definition.entrypoint` references the primary Markdown intent definition. It
+SHOULD describe what should be accomplished, why it matters, relevant actors
+and permissions, concepts, workflows, state transitions, rules, configuration
+behavior, failures, edge cases, and observable conformance without prescribing
+an execution path that the intended outcome does not require.
 
 ### 6.2 Configuration
 
@@ -136,14 +197,16 @@ Every package declares:
 - `configuration.example`: one complete valid configuration;
 - optional `configuration.guide`.
 
-The example MUST validate against the declared schema. Configuration describes product behavior; technical implementation preferences remain separate.
+The example MUST validate against the declared schema. Configuration describes
+meaningful variations in intended solution behavior; technical implementation
+preferences remain separate.
 
 The example is author-supplied package material. It is not a default selected by
 the user merely because the package was handed to an agent.
 
 An optional resolution input conforming to
 `configuration-selections.schema.json` records exactly one selection for every
-selected application and feature package:
+selected root and addition package:
 
 - `example` selects the package's exact validated example; or
 - `custom` supplies a complete configuration object that MUST validate against
@@ -157,7 +220,7 @@ When no configuration-selection input is supplied, resolution MAY preserve each
 example as `example-unreviewed` so the handoff remains inspectable, but it MUST
 set `configuration_status: review` and MUST NOT report the project as ready.
 
-Application and feature configurations remain namespaced by package ID. A runtime MUST NOT flatten them into one keyspace.
+Root and addition configurations remain namespaced by package ID. A runtime MUST NOT flatten them into one keyspace.
 
 ### 6.3 Optional components
 
@@ -185,7 +248,13 @@ A package-local artifact path MUST exist and may reference a regular file or dir
 
 `relationships` MAY connect two artifact IDs declared by the same package. The relationship `type` is globally namespaced and descriptive. Examples such as `org.seedspec.relation.derived-from`, `org.seedspec.relation.implements`, and `org.seedspec.relation.validates` communicate traceability but have no automatic execution semantics in protocol 0.1. Both endpoints MUST exist.
 
-Artifact declaration is discovery, not activation or authority. Protocol 0.1 deliberately has no artifact `authority`, `governing`, or `advisory` field. Lineage or precedence claims may be recorded as descriptive relationships, but they do not require an implementation agent to adopt the artifact's workflow, keep generated software synchronized with it, or treat it as current application truth. Adapter-specific behavior requires explicit invocation by a user or execution environment.
+Artifact declaration is discovery, not activation or authority. Protocol 0.1
+deliberately has no artifact `authority`, `governing`, or `advisory` field.
+Lineage or precedence claims may be recorded as descriptive relationships, but
+they do not require an implementation agent to adopt the artifact's workflow,
+keep a realized solution synchronized with it, or treat it as current system
+truth. Adapter-specific behavior requires explicit invocation by a user or
+execution environment.
 
 ### 6.5 Metadata
 
@@ -204,9 +273,114 @@ Core runtimes:
 
 An extension cannot relax core validation or override a core field.
 
+### 6.7 Implementation resources
+
+`implementation_resources` is an optional author declaration. When omitted,
+the author's position on additional SeedSpec guidance is `unspecified`; a
+runtime MUST NOT reinterpret omission as acceptance or rejection.
+
+When present it declares `additional_guidance` as `none` or
+`agent-delegated`, zero or more public versioned catalogs, and zero or more
+author-selected resources. Catalogs are permitted only with
+`agent-delegated`. Core defines catalog identity and discovery metadata but does
+not define catalog search or ranking in protocol 0.1.
+
+Every resource declares a namespaced ID, kind, description, usage, entrypoint,
+requested version, update policy, and at least one canonical or bundled source.
+Kinds are `skill`, `instructions`, `verification`, `tool`, and
+`target-profile`. Usage is `required`, `recommended`, or `available` and
+expresses author intent only.
+
+An optional `applies_to` mapping may name capability and target IDs. Matching is
+advisory context. It does not prove that a capability exists in an
+implementation, that a target is selected, or that the resource is suitable.
+
+Canonical sources point to HTTPS resource manifests conforming to
+`implementation-resource-manifest.schema.json`. An `exact` policy MUST declare
+the expected canonical digest. `latest-compatible` accepts no older version
+with the same major version; `latest` accepts no version older than the
+requested baseline.
+
+Bundled sources are package-local directory fallbacks with an exact version,
+digest, and `exact` or `author-declared-compatible` relationship to the
+requested version. The latter is an author claim, not proof. The runtime MUST
+validate the directory, entrypoint, digest, and skill
+frontmatter when applicable. Bundled fallback use MUST be visible with the
+canonical failure reason. A runtime MUST NOT silently present fallback bytes as
+the requested online version.
+
+Resource discovery, author usage, content loading, and tool activation are
+separate. Resolving a resource MAY make verified instruction bytes available to
+an agent. It MUST NOT execute a tool or grant permission for external effects.
+See `docs/implementation-resources.md`.
+
+### 6.8 Implementation profiles
+
+The definition, configuration, capabilities, and acceptance material express
+the package's **core intent**. An optional `implementation_profiles` array may
+preserve materially different candidate directions for realizing that intent.
+Each profile declares a package-local ID, name, and description and MAY declare:
+
+- package-relative Markdown `guidance`;
+- declarative `prerequisites` that must hold for the profile to be viable;
+- declarative `blockers` whose presence prevents faithful use of the profile;
+- human-readable `tradeoffs`; and
+- references to implementation resources declared by the same package.
+
+Every prerequisite and blocker has a local ID, a declarative statement, and a
+`verification` object. The object declares a `method`, an `evidence`
+expectation, and optional guidance. Core methods are `user-confirmation`,
+`environment-inspection`, `tool-check`, `document-review`, and
+`manual-observation`; `evidence` is `none`, `optional`, or `required`.
+Publishers MAY use a namespaced custom method. Generic tooling MUST preserve
+it and SHOULD ask the agent to follow supplied guidance or obtain user
+direction.
+
+These are conditions to establish, not predetermined question wording or
+authorization to perform the check. An agent SHOULD use available read-only
+evidence first and ask the user when confirmation, access, or consequential
+interpretation is required. Package validation and profile resolution MUST NOT
+execute a tool, access an account, or claim that a condition holds.
+
+A new verification method belongs in the core enum only when it has recurring
+use across independent packages, is semantically distinct from existing
+methods, gives a generic agent a clear responsibility, has a documented
+evidence and trust model, has safe fallback behavior, and is covered by schema,
+conformance, authoring-diagnostic, and end-to-end example tests. Namespaced
+experimentation SHOULD precede core promotion. See
+`docs/implementation-profiles.md`.
+
+Profile IDs MUST be unique within a package. Condition IDs MUST be unique within
+one profile. Guidance paths MUST exist, and implementation-resource references
+MUST resolve to resources declared by the same package.
+
+An implementation-profile preference is a package/profile pair. A root profile
+MAY be selected by local ID shorthand. The preference is strong implementation
+guidance from whoever initiated resolution; it is not a change to core intent,
+an authorization for external effects, proof that prerequisites hold, or an
+irreversible execution command.
+
+When a selected package declares multiple profiles and no preference is
+recorded, resolution MUST set `implementation_profile_status: review`, MUST set project
+`status: needs-input`, and MUST instruct the implementing agent to explain the
+material differences and ask which direction to prefer. When a preference is
+recorded, the handoff MUST preserve all candidates, emphasize the preferred
+profile, and instruct the agent to verify its prerequisites and blocker
+conditions. If the preference conflicts with the actual environment or core
+intent, the agent MUST present the conflict and request direction rather than
+silently switching profiles.
+
+Resolution MUST produce exactly one project-level implementation profile state.
+That state preserves the profiles from every selected package and records at
+most one preferred profile for each package. It does not create a separate
+state for every candidate. Comparing mutually exclusive project realizations
+requires separate resolution runs or workspaces; one handoff MUST NOT contain
+competing project-level profile states.
+
 ## 7. Capability contracts
 
-A capability is an observable product contract, not a screen, class, endpoint, datastore, or framework module.
+A capability is an observable solution contract, not a screen, class, endpoint,
+datastore, framework module, or vendor-specific implementation mechanism.
 
 Every `provides.capabilities` item declares:
 
@@ -218,20 +392,20 @@ The contract MUST identify the capability and version and SHOULD define concepts
 
 Every `requires.capabilities` item declares an ID and a `tested_against` contract
 revision. It records what the package author designed or tested against. The
-implementing agent maps that behavioral lineage to the actual application's
-code and concepts; absence of a provider declaration is not proof that the
-behavior is absent.
+implementing agent maps that behavioral lineage to the actual realization's
+code, configuration, external state, and concepts; absence of a provider
+declaration is not proof that the behavior is absent.
 
 Within one package, required capability IDs, provided capability IDs, decision IDs, and artifact IDs MUST be unique.
 
-### 7.1 Feature compatibility scope
+### 7.1 Compatibility scope
 
-A feature declares `compatibility.scope` as `generic`, `domain`, or
+Any package may declare `compatibility.scope` as `generic`, `domain`, or
 `application`. Domain scope supplies a namespaced domain ID. Application scope
 supplies one or more package IDs.
 
 This is an author statement about intended, generalized, or tested context. A
-runtime MAY use it to explain why a feature deserves review, but MUST NOT treat
+runtime MAY use it to explain why a package deserves review, but MUST NOT treat
 the scope as proof of compatibility or incompatibility with an actual
 implementation.
 
@@ -243,15 +417,16 @@ supply a human-readable reason.
 When a declaration matches selected packages or capability declarations,
 resolution preserves a review record with the declaring author's reason. It
 does not reject the handoff. The implementation agent must determine whether
-the concern applies to the actual code and resolve consequential conflicts with
-the end user.
+the concern applies to the actual code, configuration, or external state and
+resolve consequential conflicts with the end user.
 
 Conflicts express known author concerns. Their presence is not proof of actual
 incompatibility, and their absence is not proof of compatibility.
 
-## 9. Product decisions
+## 9. Solution decisions
 
-A package MAY declare product decisions containing local ID, question, required flag, and optional allowed answers.
+A package MAY declare solution decisions containing local ID, question,
+required flag, and optional allowed answers.
 
 Answers are supplied as a mapping from package ID to decision ID and non-empty string answer. Unknown packages, unknown decision IDs, non-string answers, and answers outside declared options are invalid.
 
@@ -260,8 +435,8 @@ Resolution preserves unanswered declarations. A project has:
 - `configuration_status: selected` when every package has an explicit
   configuration selection;
 - `configuration_status: review` when examples are only unreviewed placeholders;
-- `status: ready` only when configuration is selected and no required decision
-  is unanswered; and
+- `status: ready` only when configuration is selected, no required decision is
+  unanswered, and no implementation-profile choice requires review; and
 - `status: needs-input` otherwise.
 
 Unanswered decisions and unselected configuration do not disappear or silently
@@ -296,6 +471,11 @@ canonical digest of `completion-scope.yaml` and creates one result for every
 included criterion or component item. Non-`not-run` results require evidence.
 Runtimes MUST detect a stale scope digest, missing or extra item results, and a
 recorded status that contradicts deterministic derivation.
+
+Evidence MAY describe code and test results or observable external state such
+as created resource identifiers, permission checks, queries against known data,
+delivered messages, screenshots, or platform audit records. Protocol validity
+does not establish that the evidence is truthful or sufficient.
 
 Core derived completion statuses are `scope-review`, `not-started`,
 `in-progress`, `failed`, `verified-with-gaps`, and `verified`. Any failure yields
@@ -334,43 +514,48 @@ Technical preferences MAY contain `implementation_targets` conforming to
 - a project-local ID;
 - a namespaced target kind such as `org.seedspec.target.hosting`;
 - a namespaced provider or product target ID; and
-- one or more guidance references to components or artifacts in selected
-  packages.
+- one or more guidance references to components, artifacts, or implementation
+  resources in selected packages.
 
 Every guidance reference MUST resolve. Referenced artifact guidance MUST have a
 `selected` disposition. Component guidance is preserved package context and
-does not require an artifact disposition.
+does not require an artifact disposition. Implementation-resource guidance
+MUST name an author-declared resource and MUST be resolved through the resource
+lifecycle before its contents are loaded.
 
 An implementation target is strong user-supplied planning context. It does not
-prove that generated software is compatible with, deployable to, or accepted
+prove that a realized solution is compatible with, deployable to, or accepted
 by that target. Providers remain independent of SeedSpec core, and the
 implementing agent remains responsible for applying the guidance to the actual
-implementation.
+environment.
 
 ## 10. Composition: `declaration-review-v1`
 
-Given one application and zero or more features, conforming runtimes perform
+Given one root package and zero or more additions, conforming runtimes perform
 these steps in order:
 
 1. Validate every package, referenced file, configuration example, semantic
    declaration, path, and digestability rule.
-2. Require one application, feature kinds for feature inputs, and unique
-   selected package IDs.
-3. Sort selected features by package ID using ascending UTF-8 byte order. This
+2. Require one root and unique selected package IDs. Package `kind` does not
+   constrain composition position.
+3. Sort selected additions by package ID using ascending UTF-8 byte order. This
    is deterministic recording order, not implementation or dependency order.
 4. Record every provided capability declaration with its declaring package.
    Multiple declarations for one ID remain visible.
-5. For every application or feature requirement, record zero or more declared
+5. For every root or addition requirement, record zero or more declared
    provider candidates and compare each exact revision with `tested_against`.
 6. Record `no-declared-provider`, `multiple-declared-providers`,
    `self-declared-provider`, and `revision-difference` issues as applicable.
 7. Record matched package conflicts, capability conflicts, and deterministic
    declared requirement cycles as review context.
-8. Generate the resolved handoff without treating those review records as
+8. Resolve implementation-profile preferences. Preserve every candidate, make
+   a recorded preference prominent, and require user review when a selected
+   package has multiple candidates without a preference.
+9. Generate the resolved handoff without treating those review records as
    installation gates.
 
 CLI argument order has no semantic effect. Structural invalidity, unsafe
-content, wrong package kinds, and duplicate package selection remain errors.
+content and duplicate package selection remain errors.
 Capability, compatibility, conflict, and cycle declarations are author-supplied
 evidence. SeedSpec does not inspect the implementation and therefore cannot use
 them to prove that a feature is compatible, incompatible, present, or absent.
@@ -409,6 +594,11 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 ├── components/
 ├── artifacts.yaml
 ├── artifacts/
+├── implementation-resources.yaml
+├── implementation-resource-state.yaml
+├── implementation-resources/
+├── implementation-profile-state.yaml
+├── implementation-profiles/
 ├── implementation-notes.md
 ├── verification-report.md
 ├── completion-scope.yaml
@@ -416,18 +606,35 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 ├── resolved-spec.md
 ├── resolved-config.yaml
 ├── dependencies.lock.yaml
-└── features/
+└── additions/
 ```
 
-`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records combined readiness, `selected` or `review` configuration status, independent `recorded` or `review` completion-scope status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact package references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
+`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records combined readiness, `selected` or `review` configuration status, `not-declared`, `recorded`, or `review` implementation-profile status, independent `recorded` or `review` completion-scope status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact root and addition references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
 
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
 `artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata, relationships, deterministic review timing, and `selected`, `declined`, `deferred`, or `unreviewed` disposition. Execution artifacts also record that activation requires specific user direction. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path regardless of disposition. Remote URLs remain URLs and are not fetched. Materialization preserves auditability and later choice without activating an artifact-specific workflow.
 
-`dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic feature order, every capability declaration, every requirement's declared provider candidates and revision comparisons, and all composition review records. It does not claim a provider is installed or that a capability exists in the actual application.
+`implementation-resources.yaml` conforms to
+`implementation-resource-index.schema.json`. It preserves each selected
+package's additional-guidance policy, catalogs, author-selected resource
+metadata, canonical references, capability and target applicability, and copied
+bundled fallbacks. `implementation-resource-state.yaml` conforms to
+`implementation-resource-state.schema.json`, binds to the exact index digest,
+and records canonical, bundled, fallback, unavailable, loaded, and skipped
+state. Resource use state is local telemetry; the protocol does not transmit it.
 
-`resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves application configuration, feature configurations keyed by package ID, and each configuration's `example-unreviewed`, `example`, or `custom` selection provenance. Answered decisions and technical preferences remain separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
+`implementation-profile-state.yaml` conforms to
+`implementation-profile-state.schema.json`. It is the single project-level
+record for every selected package's kind hint, candidate profiles,
+prerequisites, blockers, tradeoffs, and preferred profile when supplied. Each
+package has at most one preferred profile. `implementation-profiles/` contains
+copied profile guidance so the handoff remains durable without the source
+package.
+
+`dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic addition order, every capability declaration, every requirement's declared provider candidates and revision comparisons, and all composition review records. It does not claim a provider is installed or that a capability exists in the actual realization.
+
+`resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves root configuration, addition configurations keyed by package ID, and each configuration's `example-unreviewed`, `example`, or `custom` selection provenance. Answered decisions and technical preferences remain separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 
 `completion-scope.yaml` conforms to `completion-scope.schema.json` and records
 included, deferred, excluded, and uncovered completion context.
@@ -436,7 +643,13 @@ bound to the exact scope digest, and is created only when missing so resolution
 does not erase implementation evidence. `verification-report.md` remains the
 human-readable detailed evidence companion.
 
-`resolved-spec.md` is human- and agent-readable product intent. `agent-guide.md` explains how to interpret it. `implementation-notes.md`, `verification-report.md`, and `verification-state.yaml` are created only when missing so later resolution does not erase project memory. A changed scope intentionally makes preserved verification state stale until an agent reconciles it.
+`resolved-spec.md` is human- and agent-readable solution intent.
+`agent-guide.md` explains how to interpret it. `implementation-notes.md`,
+`verification-report.md`, and `verification-state.yaml` are created only when
+missing so later resolution does not erase project memory. Notes may record
+code mappings, architecture, external resource identifiers, configured state,
+and material deviations. A changed scope intentionally makes preserved
+verification state stale until an agent reconciles it.
 
 ## 13. Conformance
 
@@ -445,7 +658,7 @@ The reference runtime's format checks:
 1. pass every applicable case in `conformance/cases.yaml`;
 2. produce schema-valid project and lock documents;
 3. calculate identical package digests;
-4. produce the declared deterministic feature order;
+4. produce the declared deterministic addition order;
 5. return the specified stable error code for negative cases.
 
 Human-readable error wording may vary. Error codes used by the alpha suite keep the reference tooling testable.
@@ -458,4 +671,9 @@ decisions require semantic validation.
 
 Protocol validity does not mean a package is safe, accurate, certified, legally usable, or faithfully implementable. Marketplaces may add review, certification, signatures, reputation, malware scanning, and policy, but those claims remain outside the neutral package format.
 
-Protocol 0.1 does not define registries, package archives, signing, capability delegation, provider selection, dependency acquisition, update/migration execution, eval execution, automatic artifact workflow activation, continuous source/code synchronization, or code-generation adapters.
+Protocol 0.1 does not define package registries, related-solution or
+realization ranking, guidance-catalog search or ranking, signing, capability
+delegation, provider selection, package dependency acquisition,
+update/migration execution, eval execution, automatic artifact or tool
+activation, telemetry transmission, continuous synchronization with code or
+external systems, or code-generation adapters.

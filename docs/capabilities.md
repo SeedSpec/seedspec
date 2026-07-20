@@ -2,8 +2,16 @@
 
 Capabilities let independently published packages describe expected observable
 product contracts without agreeing on source code or infrastructure. They are
-integration context for an agent, not proof of what the actual application
+integration context for an agent, not proof of what the actual realization
 implements.
+
+Capability contracts and implementation resources are deliberately separate.
+A contract says what behavior a package expects or describes. A skill,
+instruction set, verification module, or tool may help implement that behavior,
+but its presence does not establish that the implementation has the capability.
+An author may associate a resource through `applies_to.capabilities`; the agent
+still evaluates it against actual code and user intent. See
+`implementation-resources.md`.
 
 ## Choosing an identifier
 
@@ -44,7 +52,11 @@ Use:
 
 A provider publishes one exact current contract revision. A consumer records the exact revision it has actually been designed or evaluated against through `tested_against`.
 
-Revision equality is useful testing evidence. A difference does not prohibit integration: it creates a review signal for the implementing agent. The agent should read available contract history and the current application, plan around semantic differences, preserve local terminology, and verify the composed use case.
+Revision equality is useful testing evidence. A difference does not prohibit
+integration: it creates a review signal for the implementing agent. The agent
+should read available contract history and inspect the current code,
+configuration, and external state; plan around semantic differences; preserve
+local terminology; and verify the composed use case.
 
 ## Provider candidates
 
@@ -70,3 +82,6 @@ runtime compatibility.
 - Would an agent understand how to find contract history and record a local semantic mapping?
 - Does the package avoid claiming that a declaration proves the actual host has
   or lacks the capability?
+- Are optional implementation resources clearly separated from the behavioral
+  contract, versioned independently, and narrow enough to justify their context
+  cost?

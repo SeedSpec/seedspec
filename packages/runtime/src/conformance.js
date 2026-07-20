@@ -30,13 +30,13 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       return { digest: first.digest };
     }
     case "resolve": {
-      const applicationPath = resolveFixture(indexDirectory, testCase.application);
-      const featurePaths = testCase.features.map((feature) => resolveFixture(indexDirectory, feature));
+      const rootPath = resolveFixture(indexDirectory, testCase.root);
+      const additionPaths = testCase.additions.map((addition) => resolveFixture(indexDirectory, addition));
       let configurationSelectionsPath;
       if (testCase.configuration_selection === "examples") {
         const records = await Promise.all([
-          validatePackage(applicationPath),
-          ...featurePaths.map(validatePackage)
+          validatePackage(rootPath),
+          ...additionPaths.map(validatePackage)
         ]);
         configurationSelectionsPath = path.join(outputDirectory, "configuration-selections.yaml");
         await mkdir(outputDirectory, { recursive: true });
@@ -49,9 +49,10 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         }), "utf8");
       }
       const result = await resolveProject(
-        applicationPath,
+        rootPath,
         {
-          featurePaths,
+          additionPaths,
+          implementationProfiles: testCase.implementations ?? [],
           configurationSelectionsPath,
           decisionsPath: testCase.decisions
             ? resolveFixture(indexDirectory, testCase.decisions)
@@ -75,6 +76,18 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         path.join(result.workspace, "artifacts.yaml"),
         "Resolved artifact index"
       );
+      const implementationResourceIndex = await readYamlFile(
+        path.join(result.workspace, "implementation-resources.yaml"),
+        "Implementation resource index"
+      );
+      const implementationResourceState = await readYamlFile(
+        path.join(result.workspace, "implementation-resource-state.yaml"),
+        "Implementation resource state"
+      );
+      const implementationProfileState = await readYamlFile(
+        path.join(result.workspace, "implementation-profile-state.yaml"),
+        "Implementation profile state"
+      );
       const completionScope = await readYamlFile(
         path.join(result.workspace, "completion-scope.yaml"),
         "Resolved completion scope"
@@ -87,12 +100,24 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       const validateLock = await compileProtocolSchema("lock.schema.json");
       const validateResolvedConfiguration = await compileProtocolSchema("resolved-config.schema.json");
       const validateArtifactIndex = await compileProtocolSchema("artifact-index.schema.json");
+      const validateImplementationResourceIndex = await compileProtocolSchema(
+        "implementation-resource-index.schema.json"
+      );
+      const validateImplementationResourceState = await compileProtocolSchema(
+        "implementation-resource-state.schema.json"
+      );
+      const validateImplementationProfileState = await compileProtocolSchema(
+        "implementation-profile-state.schema.json"
+      );
       const validateCompletionScope = await compileProtocolSchema("completion-scope.schema.json");
       const validateVerificationState = await compileProtocolSchema("verification-state.schema.json");
       if (!validateProject(project)
         || !validateLock(lock)
         || !validateResolvedConfiguration(resolvedConfiguration)
         || !validateArtifactIndex(artifactIndex)
+        || !validateImplementationResourceIndex(implementationResourceIndex)
+        || !validateImplementationResourceState(implementationResourceState)
+        || !validateImplementationProfileState(implementationProfileState)
         || !validateCompletionScope(completionScope)
         || !validateVerificationState(verificationState)) {
         throw new SeedSpecError("Resolution produced non-conforming structured state", {
@@ -102,23 +127,27 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
             ...formatSchemaErrors(validateLock.errors),
             ...formatSchemaErrors(validateResolvedConfiguration.errors),
             ...formatSchemaErrors(validateArtifactIndex.errors),
+            ...formatSchemaErrors(validateImplementationResourceIndex.errors),
+            ...formatSchemaErrors(validateImplementationResourceState.errors),
+            ...formatSchemaErrors(validateImplementationProfileState.errors),
             ...formatSchemaErrors(validateCompletionScope.errors),
             ...formatSchemaErrors(validateVerificationState.errors)
           ]
         });
       }
       const sourceExtensions = {};
-      for (const featureId of result.features) {
+      for (const additionId of result.additions) {
         const source = await readYamlFile(
-          path.join(result.workspace, "features", featureId, "source.yaml"),
-          "Resolved feature source"
+          path.join(result.workspace, "additions", additionId, "source.yaml"),
+          "Resolved addition source"
         );
-        sourceExtensions[featureId] = source.extensions ?? {};
+        sourceExtensions[additionId] = source.extensions ?? {};
       }
       return {
-        featureOrder: result.features,
+        additionOrder: result.additions,
         projectStatus: result.project.status,
         configurationStatus: result.project.configuration_status,
+        implementationProfileStatus: result.project.implementation_profile_status,
         completionScopeStatus: result.project.completion_scope_status,
         reviewCount: result.lock.reviews.length,
         sourceExtensions
@@ -138,11 +167,11 @@ function assertExpectedOutput(testCase, output) {
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }
-  if (testCase.expect.feature_order) {
-    const actual = JSON.stringify(output.featureOrder);
-    const expected = JSON.stringify(testCase.expect.feature_order);
+  if (testCase.expect.addition_order) {
+    const actual = JSON.stringify(output.additionOrder);
+    const expected = JSON.stringify(testCase.expect.addition_order);
     if (actual !== expected) {
-      throw new SeedSpecError(`Feature order mismatch; expected ${expected}, received ${actual}`, {
+      throw new SeedSpecError(`Addition order mismatch; expected ${expected}, received ${actual}`, {
         code: "CONFORMANCE_ASSERTION_FAILED"
       });
     }
@@ -157,6 +186,13 @@ function assertExpectedOutput(testCase, output) {
     && output.configurationStatus !== testCase.expect.configuration_status) {
     throw new SeedSpecError(
       `Configuration status mismatch; expected ${testCase.expect.configuration_status}, received ${output.configurationStatus}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (testCase.expect.implementation_profile_status
+    && output.implementationProfileStatus !== testCase.expect.implementation_profile_status) {
+    throw new SeedSpecError(
+      `Implementation profile status mismatch; expected ${testCase.expect.implementation_profile_status}, received ${output.implementationProfileStatus}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }

@@ -44,11 +44,22 @@
       "properties": {
         "package": { "$ref": "#/$defs/namespacedId" },
         "artifact": { "$ref": "#/$defs/localId" },
-        "component": { "$ref": "#/$defs/componentName" }
+        "component": { "$ref": "#/$defs/componentName" },
+        "resource": { "$ref": "#/$defs/namespacedId" }
       },
       "oneOf": [
-        { "required": ["artifact"], "not": { "required": ["component"] } },
-        { "required": ["component"], "not": { "required": ["artifact"] } }
+        {
+          "required": ["artifact"],
+          "not": { "anyOf": [{ "required": ["component"] }, { "required": ["resource"] }] }
+        },
+        {
+          "required": ["component"],
+          "not": { "anyOf": [{ "required": ["artifact"] }, { "required": ["resource"] }] }
+        },
+        {
+          "required": ["resource"],
+          "not": { "anyOf": [{ "required": ["artifact"] }, { "required": ["component"] }] }
+        }
       ]
     },
     "implementationTarget": {

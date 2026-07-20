@@ -4,12 +4,12 @@
   "title": "SeedSpec Dependency Lock 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "resolution_algorithm", "application", "features", "capabilities", "requirements", "reviews"],
+  "required": ["protocol_version", "resolution_algorithm", "root", "additions", "capabilities", "requirements", "reviews"],
   "properties": {
     "protocol_version": { "const": "0.1" },
     "resolution_algorithm": { "const": "declaration-review-v1" },
-    "application": { "$ref": "#/$defs/lockedPackage" },
-    "features": {
+    "root": { "$ref": "#/$defs/lockedPackage" },
+    "additions": {
       "type": "array",
       "items": { "$ref": "#/$defs/lockedPackage" }
     },
@@ -38,7 +38,12 @@
       "properties": {
         "id": { "$ref": "#/$defs/namespacedId" },
         "version": { "$ref": "#/$defs/semver" },
-        "kind": { "enum": ["application", "feature"] },
+        "kind": {
+          "oneOf": [
+            { "enum": ["solution", "application", "feature", "workflow", "automation", "configuration", "integration"] },
+            { "$ref": "#/$defs/namespacedId" }
+          ]
+        },
         "digest": { "$ref": "#/$defs/digest" }
       }
     },

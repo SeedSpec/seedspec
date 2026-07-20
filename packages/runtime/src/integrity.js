@@ -51,7 +51,7 @@ async function collectFiles(root, current, files, seenFoldedPaths) {
   }
 }
 
-export async function computePackageDigest(root) {
+export async function computeDirectoryDigest(root) {
   const rootInfo = await lstat(root);
   if (rootInfo.isSymbolicLink()) {
     throw new SeedSpecError("A SeedSpec package root must not be a symbolic link", {
@@ -74,4 +74,8 @@ export async function computePackageDigest(root) {
   }
 
   return `sha256:${packageHash.digest("hex")}`;
+}
+
+export async function computePackageDigest(root) {
+  return computeDirectoryDigest(root);
 }

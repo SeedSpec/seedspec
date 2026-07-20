@@ -4,11 +4,11 @@
   "title": "Resolved SeedSpec Configuration 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "application", "features", "decisions", "technical_preferences"],
+  "required": ["protocol_version", "root", "additions", "decisions", "technical_preferences"],
   "properties": {
     "protocol_version": { "const": "0.1" },
-    "application": { "$ref": "#/$defs/packageConfiguration" },
-    "features": {
+    "root": { "$ref": "#/$defs/packageConfiguration" },
+    "additions": {
       "type": "object",
       "propertyNames": { "$ref": "#/$defs/namespacedId" },
       "additionalProperties": { "$ref": "#/$defs/packageConfiguration" }

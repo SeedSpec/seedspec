@@ -15,6 +15,10 @@ export const protocolSchemaNames = Object.freeze([
   "completion-scope.schema.json",
   "verification-state.schema.json",
   "technical-preferences.schema.json",
+  "implementation-resource-manifest.schema.json",
+  "implementation-resource-index.schema.json",
+  "implementation-resource-state.schema.json",
+  "implementation-profile-state.schema.json",
   "lock.schema.json",
   "resolved-config.schema.json",
   "conformance.schema.json"

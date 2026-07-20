@@ -1,4 +1,4 @@
-suite_version: "1.4.0"
+suite_version: "1.8.0"
 protocol_version: "0.1"
 
 cases:
@@ -22,6 +22,43 @@ cases:
     package: ../examples/chore-streaks
     expect:
       result: pass
+
+  - id: validate-configured-system-and-automation-root
+    description: A workflow kind hint can package configured external state and cross-system automation without requiring a standalone codebase.
+    operation: validate
+    package: ../examples/hubspot-daily-metric
+    expect:
+      result: pass
+
+  - id: validate-core-and-namespaced-verification-methods
+    description: Profile conditions accept every core verification method and preserve a namespaced experimental method.
+    operation: validate
+    package: fixtures/verification-methods
+    expect:
+      result: pass
+
+  - id: reject-unnamespaced-verification-method
+    description: Experimental verification methods must be namespaced rather than resembling unregistered core enum values.
+    operation: validate
+    package: fixtures/invalid-verification-method
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: validate-implementation-resource-declarations
+    description: Authors can select versioned implementation resources and delegate additional discovery without asserting implementation capability.
+    operation: validate
+    package: fixtures/implementation-resources
+    expect:
+      result: pass
+
+  - id: reject-insecure-implementation-resource-url
+    description: Canonical implementation resources must use HTTPS.
+    operation: validate
+    package: fixtures/insecure-implementation-resource
+    expect:
+      result: fail
+      code: INVALID_IMPLEMENTATION_RESOURCE
 
   - id: reject-unsupported-protocol
     operation: validate
@@ -98,29 +135,60 @@ cases:
   - id: resolve-allowance-with-savings-goals
     description: The primary application and portable feature produce a ready project.
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - ../examples/savings-goals
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
       completion_scope_status: review
-      feature_order:
+      addition_order:
         - org.seedspec.savings-goals
+
+  - id: resolve-configured-system-and-automation-root
+    description: A provider-specific non-code-first root resolves through the same configuration, decision, handoff, and verification model.
+    operation: resolve
+    root: ../examples/hubspot-daily-metric
+    additions: []
+    implementations:
+      - hubspot-native
+    configuration_selection: examples
+    expect:
+      result: pass
+      project_status: ready
+      configuration_status: selected
+      implementation_profile_status: recorded
+      completion_scope_status: review
+      addition_order: []
+      review_count: 0
+
+  - id: review-ambiguous-implementation-profiles
+    description: Multiple candidate profiles without a recorded preference require the agent to ask which direction to prefer.
+    operation: resolve
+    root: ../examples/hubspot-daily-metric
+    additions: []
+    configuration_selection: examples
+    expect:
+      result: pass
+      project_status: needs-input
+      configuration_status: selected
+      implementation_profile_status: review
+      completion_scope_status: review
+      addition_order: []
 
   - id: resolve-order-independent-feature-graph
     description: Feature order is deterministic by package ID and does not claim implementation order.
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/chain-consumer
       - fixtures/chain-provider
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.chain-consumer
         - org.example.chain-provider
       preserved_extension:
@@ -129,111 +197,111 @@ cases:
 
   - id: review-missing-provider
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - ../packages/runtime/test/fixtures/unmet-feature
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.teleportation
       review_count: 1
 
   - id: flag-capability-revision-review
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/revision-review
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.revision-review
       review_count: 1
 
   - id: review-multiple-declared-providers
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/ambiguous-provider
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.ambiguous-provider
       review_count: 1
 
   - id: reject-duplicate-package-selection
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/chain-provider
       - fixtures/chain-provider
     expect:
       result: fail
-      code: DUPLICATE_FEATURE
+      code: DUPLICATE_ADDITION
 
   - id: review-declared-conflict
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/conflicting-feature
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.conflicting-feature
       review_count: 1
 
   - id: review-declared-requirement-cycle
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/cycle-a
       - fixtures/cycle-b
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.cycle-a
         - org.example.cycle-b
       review_count: 1
 
   - id: preserve-required-decision
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/decision-feature
     configuration_selection: examples
     expect:
       result: pass
       project_status: needs-input
       configuration_status: selected
-      feature_order:
+      addition_order:
         - org.example.decision-feature
 
   - id: accept-decision-answer
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/decision-feature
     decisions: fixtures/decision-answers.yaml
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.decision-feature
 
   - id: reject-invalid-decision-answer
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: ../examples/allowance-tracker
+    additions:
       - fixtures/decision-feature
     decisions: fixtures/invalid-decision-answers.yaml
     configuration_selection: examples
@@ -244,11 +312,11 @@ cases:
   - id: preserve-unselected-configuration-as-review
     description: Omitting configuration choices produces an inspectable handoff that is not ready.
     operation: resolve
-    application: ../examples/allowance-tracker
-    features: []
+    root: ../examples/allowance-tracker
+    additions: []
     configuration_selection: omitted
     expect:
       result: pass
       project_status: needs-input
       configuration_status: review
-      feature_order: []
+      addition_order: []

@@ -138,11 +138,6 @@ function assessFeature(application, feature, providers) {
 
 export async function discoverFeatures(applicationPath, catalogPaths) {
   const application = await validatePackage(applicationPath);
-  if (application.manifest.kind !== "application") {
-    throw new SeedSpecError(`Feature discovery requires an application package: ${application.manifest.id}`, {
-      code: "EXPECTED_APPLICATION"
-    });
-  }
   if (!catalogPaths?.length) {
     throw new SeedSpecError("Feature discovery requires at least one catalog path", {
       code: "CATALOG_REQUIRED"

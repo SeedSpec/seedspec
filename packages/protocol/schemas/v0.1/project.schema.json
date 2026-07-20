@@ -11,11 +11,15 @@
     "completion_scope_status",
     "declaration_status",
     "artifact_status",
-    "application",
-    "features",
+    "implementation_profile_status",
+    "root",
+    "additions",
     "configuration",
     "component_index",
     "artifact_index",
+    "implementation_resource_index",
+    "implementation_resource_state",
+    "implementation_profile_state",
     "lockfile",
     "resolved_spec",
     "agent_guide",
@@ -33,14 +37,18 @@
     "completion_scope_status": { "enum": ["recorded", "review"] },
     "declaration_status": { "enum": ["no-declared-concerns", "review"] },
     "artifact_status": { "enum": ["recorded", "review"] },
-    "application": { "$ref": "#/$defs/packageRef" },
-    "features": {
+    "implementation_profile_status": { "enum": ["not-declared", "recorded", "review"] },
+    "root": { "$ref": "#/$defs/packageRef" },
+    "additions": {
       "type": "array",
       "items": { "$ref": "#/$defs/packageRef" }
     },
     "configuration": { "const": "resolved-config.yaml" },
     "component_index": { "const": "components.yaml" },
     "artifact_index": { "const": "artifacts.yaml" },
+    "implementation_resource_index": { "const": "implementation-resources.yaml" },
+    "implementation_resource_state": { "const": "implementation-resource-state.yaml" },
+    "implementation_profile_state": { "const": "implementation-profile-state.yaml" },
     "lockfile": { "const": "dependencies.lock.yaml" },
     "resolved_spec": { "const": "resolved-spec.md" },
     "agent_guide": { "const": "agent-guide.md" },
@@ -66,6 +74,7 @@
       "then": {
         "properties": {
           "configuration_status": { "const": "selected" },
+          "implementation_profile_status": { "enum": ["not-declared", "recorded"] },
           "unresolved_decisions": {
             "items": {
               "allOf": [
@@ -100,6 +109,11 @@
                   "required": ["required"]
                 }
               }
+            }
+          },
+          {
+            "properties": {
+              "implementation_profile_status": { "const": "review" }
             }
           }
         ]

@@ -71,18 +71,26 @@ Run `seedspec init feature --output <package-path>` when available, then write:
 
 Preserve useful source specifications, designs, execution plans, infrastructure descriptions, and evidence as separately declared artifacts. Label their concerns and relationships without claiming they govern the future implementation agent. Do not require ProductSpec or any other native format simply to make a SeedSpec feature package appear rigorous.
 
+At packaging time, optionally select independently versioned skills,
+instructions, verification material, tools, or target profiles that materially
+help implement this feature. Let the author choose usage and additional-guidance
+policy. Associate resources with capabilities or targets only as discovery
+context, not implementation-state evidence, and include a digest-verified
+bundled failsafe when offline or version-unavailable operation matters.
+
 Validate and inspect:
 
 ```bash
 seedspec validate <package-path>
 seedspec inspect <package-path>
 seedspec artifacts <package-path>
+seedspec resources <package-path>
 ```
 
 When a host application is available, resolve them together in a temporary project:
 
 ```bash
-seedspec resolve <application-path> --feature <feature-path> --output <temporary-path>
+seedspec resolve <root-package-path> --add <feature-path> --output <temporary-path>
 ```
 
 Repair structural errors. Inspect declaration review records and confirm the

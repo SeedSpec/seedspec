@@ -1,0 +1,51 @@
+protocol_version: "0.1"
+id: org.example.verification-methods
+name: Verification Methods
+version: 0.1.0
+kind: solution
+description: Exercises core and experimental implementation-profile condition verification methods.
+definition:
+  entrypoint: definition/solution.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []
+implementation_profiles:
+  - id: exercised-profile
+    name: Exercised profile
+    description: A profile whose conditions cover the verification vocabulary.
+    prerequisites:
+      - id: organization-confirms
+        statement: The organization confirms the relevant operational fact.
+        verification:
+          method: user-confirmation
+          evidence: optional
+      - id: environment-shows
+        statement: Read-only environment state shows the required capability.
+        verification:
+          method: environment-inspection
+          evidence: required
+      - id: validator-passes
+        statement: An authorized non-mutating validator reports success.
+        verification:
+          method: tool-check
+          evidence: required
+      - id: policy-allows
+        statement: Controlled policy documentation allows the realization.
+        verification:
+          method: document-review
+          evidence: required
+      - id: person-observes
+        statement: A person can observe the delivered result.
+        verification:
+          method: manual-observation
+          evidence: optional
+      - id: experimental-check
+        statement: The publisher-specific applicability check succeeds.
+        verification:
+          method: org.example.verification.account-check
+          evidence: required
+          guidance: Follow package documentation or request user direction when the method is unsupported.
+    tradeoffs:
+      - Exists only to exercise interoperable verification declarations.

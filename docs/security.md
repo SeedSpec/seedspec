@@ -13,10 +13,45 @@ A runtime must:
 - resolve every manifest reference within the package root;
 - apply resource limits for file count, file size, aggregate size, YAML depth, and JSON Schema complexity appropriate to its environment;
 - treat Markdown, artifacts, extension values, evals, scripts, reference code, and deployment material as untrusted content;
+- treat implementation-resource manifests, skill bodies, instructions, tools,
+  verification material, target profiles, and catalogs as untrusted content;
+- require HTTPS for canonical resource manifests and files, apply strict file
+  count and byte limits, reject unsafe paths, and verify every file and aggregate
+  digest before exposing downloaded bytes;
+- reject literal loopback, link-local, and private-network resource hosts and
+  use environment-level egress controls where DNS can resolve public names to
+  private addresses;
+- report bundled fallback use and its reason rather than silently substituting
+  local content for an unavailable requested version;
 - avoid executing any optional component merely because the manifest discovers it;
 - avoid loading an artifact-provided skill, prompt, plugin, or lifecycle merely because the manifest declares it or an adapter recognizes it;
 - fetch remote artifact URLs only through an explicitly authorized, isolated acquisition step;
 - keep technical credentials and secrets outside packages and resolved configuration.
+
+## Changes to external systems
+
+A SeedSpec package may describe intended state in an authenticated external
+system. Package validation, artifact selection, resource resolution, and
+project readiness do not authorize an agent to sign in, create or modify
+resources, send messages, schedule work, incur cost, or change user data.
+
+Before external effects, an implementation environment should resolve the
+exact target account, workspace, organization, channel, recipients, and scope
+of change; use an approved credential provider or an explicitly authorized
+authenticated session; preview consequential or irreversible operations when
+possible; and obtain any direction required by the environment's safety model.
+
+Packages may declare credential requirements and handling constraints, but MUST
+NOT contain live credentials, session tokens, private keys, recovery codes, or
+secrets. Execution receipts and verification evidence SHOULD record stable
+resource identifiers and observations without copying credentials or sensitive
+customer data.
+
+Agents should discover existing state before creating resources, avoid
+duplicates on retry, and record whether a requested result was created,
+updated, reused, skipped, or only partially realized. These are execution
+responsibilities; protocol conformance does not prove that an agent handled
+external state safely.
 
 The reference runtime enforces path and file-type rules and safe parsing. It does not yet impose configurable package-size limits, so callers operating a public ingestion service must place external limits around it.
 

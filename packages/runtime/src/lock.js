@@ -48,7 +48,7 @@ export async function verifyProjectLock(projectPath, packagePaths) {
     supplied.set(record.manifest.id, record);
   }
 
-  const expectedPackages = [lock.application, ...lock.features];
+  const expectedPackages = [lock.root, ...lock.additions];
   const missing = expectedPackages
     .filter((expected) => !supplied.has(expected.id))
     .map((expected) => expected.id);
@@ -82,17 +82,17 @@ export async function verifyProjectLock(projectPath, packagePaths) {
     });
   }
 
-  const application = supplied.get(lock.application.id);
-  const features = lock.features.map((feature) => supplied.get(feature.id));
-  const graph = analyzeCapabilityDeclarations(application, features);
-  const graphOrder = graph.orderedFeatures.map((feature) => feature.manifest.id);
-  const lockOrder = lock.features.map((feature) => feature.id);
+  const root = supplied.get(lock.root.id);
+  const additions = lock.additions.map((addition) => supplied.get(addition.id));
+  const graph = analyzeCapabilityDeclarations(root, additions);
+  const graphOrder = graph.orderedAdditions.map((addition) => addition.manifest.id);
+  const lockOrder = lock.additions.map((addition) => addition.id);
 
   if (stableJson(graphOrder) !== stableJson(lockOrder)
     || stableJson(graph.capabilities) !== stableJson(lock.capabilities)
     || stableJson(graph.requirements) !== stableJson(lock.requirements)
     || stableJson(graph.reviews) !== stableJson(lock.reviews)) {
-    throw new SeedSpecError("Locked feature order or declaration analysis does not match package declarations", {
+    throw new SeedSpecError("Locked addition order or declaration analysis does not match package declarations", {
       code: "LOCK_GRAPH_MISMATCH"
     });
   }

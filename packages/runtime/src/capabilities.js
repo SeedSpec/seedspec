@@ -32,6 +32,31 @@ export function validateManifestSemantics(manifest) {
     decisionIds.add(decision.id);
   }
 
+  const profileIds = new Set();
+  const implementationResourceIds = new Set(
+    (manifest.implementation_resources?.resources ?? []).map((resource) => resource.id)
+  );
+  for (const profile of manifest.implementation_profiles ?? []) {
+    if (profileIds.has(profile.id)) details.push(`implementation_profiles repeats ${profile.id}`);
+    profileIds.add(profile.id);
+
+    const conditionIds = new Set();
+    for (const condition of [
+      ...(profile.prerequisites ?? []),
+      ...(profile.blockers ?? [])
+    ]) {
+      if (conditionIds.has(condition.id)) {
+        details.push(`implementation_profiles.${profile.id} repeats condition ${condition.id}`);
+      }
+      conditionIds.add(condition.id);
+    }
+    for (const resourceId of profile.implementation_resources ?? []) {
+      if (!implementationResourceIds.has(resourceId)) {
+        details.push(`implementation_profiles.${profile.id} references unknown implementation resource ${resourceId}`);
+      }
+    }
+  }
+
   const artifactIds = new Set();
   for (const artifact of manifest.artifacts ?? []) {
     if (artifactIds.has(artifact.id)) details.push(`artifacts repeats ${artifact.id}`);
@@ -139,19 +164,19 @@ function duplicateProviderReviews(providers) {
   return reviews;
 }
 
-function requirementCycles(features, requirements) {
-  const featureIds = new Set(features.map((feature) => feature.manifest.id));
-  const edges = new Map([...featureIds].map((id) => [id, new Set()]));
+function requirementCycles(root, additions, requirements) {
+  const additionIds = new Set(additions.map((addition) => addition.manifest.id));
+  const edges = new Map([...additionIds].map((id) => [id, new Set()]));
 
   for (const requirement of requirements) {
-    if (!featureIds.has(requirement.consumer)) continue;
-    const externalFeatureProviders = requirement.providers
+    if (!additionIds.has(requirement.consumer)) continue;
+    const externalAdditionProviders = requirement.providers
       .map((provider) => provider.provider)
-      .filter((provider) => provider.kind === "feature" && provider.id !== requirement.consumer);
-    const applicationProviders = requirement.providers
-      .filter((provider) => provider.provider.kind === "application");
-    if (applicationProviders.length === 0 && externalFeatureProviders.length === 1) {
-      edges.get(requirement.consumer).add(externalFeatureProviders[0].id);
+      .filter((provider) => additionIds.has(provider.id) && provider.id !== requirement.consumer);
+    const rootProviders = requirement.providers
+      .filter((provider) => provider.provider.id === root.manifest.id);
+    if (rootProviders.length === 0 && externalAdditionProviders.length === 1) {
+      edges.get(requirement.consumer).add(externalAdditionProviders[0].id);
     }
   }
 
@@ -190,17 +215,17 @@ function requirementCycles(features, requirements) {
     }
   }
 
-  for (const id of [...featureIds].sort(compareIdsByUtf8)) {
+  for (const id of [...additionIds].sort(compareIdsByUtf8)) {
     if (!indexes.has(id)) visit(id);
   }
   return components.sort((left, right) => compareIdsByUtf8(left[0], right[0]));
 }
 
-export function analyzeCapabilityDeclarations(application, features) {
-  const orderedFeatures = [...features].sort(
+export function analyzeCapabilityDeclarations(root, additions) {
+  const orderedAdditions = [...additions].sort(
     (left, right) => compareIdsByUtf8(left.manifest.id, right.manifest.id)
   );
-  const records = [application, ...orderedFeatures];
+  const records = [root, ...orderedAdditions];
   const providers = new Map();
 
   for (const record of records) {
@@ -261,7 +286,7 @@ export function analyzeCapabilityDeclarations(application, features) {
       capability: requirement.capability
     }))
   ));
-  const cycleReviews = requirementCycles(orderedFeatures, requirements).map((packages) => ({
+  const cycleReviews = requirementCycles(root, orderedAdditions, requirements).map((packages) => ({
     code: "declared-requirement-cycle",
     packages
   }));
@@ -275,7 +300,7 @@ export function analyzeCapabilityDeclarations(application, features) {
     reviewCandidates.map((review) => [JSON.stringify(review), review])
   ).values()].sort(compareReviews);
 
-  return { orderedFeatures, capabilities, requirements, reviews };
+  return { orderedAdditions, capabilities, requirements, reviews };
 }
 
 // Backward-compatible alpha export. The function performs declaration analysis,

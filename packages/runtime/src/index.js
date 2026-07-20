@@ -11,8 +11,21 @@ export {
   validateArtifact
 } from "./artifacts.js";
 export { inspectPackage, formatInspection } from "./inspect.js";
+export { formatPackageLint, lintPackage } from "./lint.js";
 export { initPackage } from "./init.js";
-export { computePackageDigest } from "./integrity.js";
+export { computeDirectoryDigest, computePackageDigest } from "./integrity.js";
+export {
+  createInitialImplementationResourceState,
+  formatImplementationResourceListing,
+  formatImplementationResourceResolution,
+  implementationResourceIndexDigest,
+  listPackageImplementationResources,
+  materializeImplementationResources,
+  reconcileImplementationResourceState,
+  recordImplementationResourceUse,
+  resolveImplementationResources,
+  validateImplementationResourceDeclarations
+} from "./resources.js";
 export { verifyProjectLock } from "./lock.js";
 export {
   completionScopeDigest,

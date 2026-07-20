@@ -1,0 +1,7 @@
+protocol_version: "0.1"
+items:
+  - kind: component
+    id: hubspot-daily-metric-acceptance
+    package: org.seedspec.examples.hubspot-daily-metric
+    component: acceptance
+    selection: all

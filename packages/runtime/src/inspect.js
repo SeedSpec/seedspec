@@ -21,9 +21,11 @@ export async function inspectPackage(inputPath) {
     provides: manifest.provides.capabilities,
     conflicts: manifest.conflicts ?? { packages: [], capabilities: [] },
     decisions: manifest.decisions ?? [],
+    implementationProfiles: manifest.implementation_profiles ?? [],
     components: manifest.components ?? {},
     artifacts: manifest.artifacts ?? [],
     relationships: manifest.relationships ?? [],
+    implementationResources: manifest.implementation_resources ?? null,
     compatibility: manifest.compatibility ?? null,
     extensions: manifest.extensions ?? {}
   };
@@ -32,7 +34,7 @@ export async function inspectPackage(inputPath) {
 export function formatInspection(inspection) {
   const lines = [
     `${inspection.name} (${inspection.id}@${inspection.version})`,
-    `Kind: ${inspection.kind}`,
+    `Kind hint: ${inspection.kind}`,
     `Protocol: ${inspection.protocolVersion}`,
     `Digest: ${inspection.digest}`,
     `Definition: ${inspection.definition}`,
@@ -43,6 +45,13 @@ export function formatInspection(inspection) {
     `Provides: ${inspection.provides.length ? inspection.provides.map((capability) => `${capability.id}@${capability.version}`).join(", ") : "none"}`,
     `Components: ${Object.keys(inspection.components).length ? Object.keys(inspection.components).sort().join(", ") : "none"}`,
     `Artifacts: ${inspection.artifacts.length ? inspection.artifacts.map((artifact) => `${artifact.id} (${artifact.type})`).join(", ") : "none"}`,
+    `Implementation profiles: ${inspection.implementationProfiles.length
+      ? inspection.implementationProfiles.map((profile) => `${profile.id} (${profile.name})`).join(", ")
+      : "none"}`,
+    `Implementation resources: ${inspection.implementationResources?.resources.length
+      ? inspection.implementationResources.resources.map((resource) => `${resource.id} (${resource.kind}; ${resource.usage})`).join(", ")
+      : "none"}`,
+    `Additional guidance: ${inspection.implementationResources?.additional_guidance ?? "unspecified"}`,
     `Extensions: ${Object.keys(inspection.extensions).length ? Object.keys(inspection.extensions).sort().join(", ") : "none"}`
   ];
 

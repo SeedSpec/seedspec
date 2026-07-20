@@ -1,6 +1,6 @@
 # ADR 0004: Capability declarations are review context
 
-Status: accepted for the private alpha
+Status: accepted for the private alpha; package-kind gating and feature-order terminology are superseded by ADR 0009
 
 ## Context
 
@@ -22,9 +22,10 @@ been factually wrong.
 ## Decision
 
 - Replace `capability-graph-v1` with `declaration-review-v1`.
-- Keep invalid structure, unsafe references, wrong package kinds, within-
-  manifest duplicate IDs, and duplicate selected package IDs as hard errors.
-- Sort selected features by package ID for deterministic recording, explicitly
+- Keep invalid structure, unsafe references, within-manifest duplicate IDs,
+  and duplicate selected package IDs as hard errors. Package kind no longer
+  gates composition position under ADR 0009.
+- Sort selected additions by package ID for deterministic recording, explicitly
   not implementation order.
 - Preserve every capability declaration; do not select or require a single
   installed provider.

@@ -1,0 +1,25 @@
+protocol_version: "0.1"
+id: org.example.insecure-implementation-resource
+name: Insecure Implementation Resource
+version: "0.1.0"
+kind: application
+definition:
+  entrypoint: definition/app.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []
+implementation_resources:
+  additional_guidance: none
+  resources:
+    - id: org.example.guidance.insecure
+      kind: instructions
+      description: Must fail because the canonical location is not HTTPS.
+      usage: recommended
+      entrypoint: instructions.md
+      version: "0.1.0"
+      update_policy: exact
+      canonical:
+        manifest_url: http://example.org/seedspec/insecure/resource.json
+        digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

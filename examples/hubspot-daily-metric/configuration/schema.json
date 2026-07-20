@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HubSpot Daily Metric configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hubspot_object",
+    "property_internal_name",
+    "property_label",
+    "dashboard_name",
+    "timezone",
+    "delivery_time",
+    "slack_channel",
+    "empty_day_behavior"
+  ],
+  "properties": {
+    "hubspot_object": {
+      "type": "string",
+      "enum": ["contact", "company", "deal", "ticket"]
+    },
+    "property_internal_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,79}$"
+    },
+    "property_label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "dashboard_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100
+    },
+    "delivery_time": {
+      "type": "string",
+      "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "slack_channel": {
+      "type": "string",
+      "pattern": "^#[a-z0-9][a-z0-9_-]{0,79}$"
+    },
+    "empty_day_behavior": {
+      "type": "string",
+      "enum": ["send-no-data", "skip-with-record"]
+    }
+  }
+}
