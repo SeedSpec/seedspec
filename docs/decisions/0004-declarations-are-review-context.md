@@ -1,6 +1,6 @@
 # ADR 0004: Capability declarations are review context
 
-Status: accepted for the private alpha; package-kind gating and feature-order terminology are superseded by ADR 0009
+Status: accepted for the design alpha; package-kind gating and feature-order terminology are superseded by ADR 0009
 
 ## Context
 

@@ -1,6 +1,6 @@
 # ADR 0005: Configuration examples are not defaults
 
-Status: accepted for the private alpha
+Status: accepted for the design alpha
 
 ## Context
 
@@ -31,4 +31,3 @@ to be implementation-ready. Agents must construct complete custom values, but
 JSON Schema makes missing fields immediately visible. The CLI records a claimed
 selection; it does not claim to prove that a human personally approved the
 input file.
-

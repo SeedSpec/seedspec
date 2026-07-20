@@ -1,6 +1,6 @@
 # ADR 0003: Artifact dispositions and implementation targets
 
-Status: accepted for the private alpha
+Status: accepted for the design alpha
 
 ## Context
 
@@ -52,4 +52,3 @@ resolution, testing, and deployment readiness.
 
 The alpha still does not define an activation command, approval token, provider
 registry, deployment API, or compatibility certification.
-

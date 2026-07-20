@@ -1,6 +1,6 @@
 # ADR 0006: Completion is separate from readiness
 
-Status: accepted for the private alpha
+Status: accepted for the design alpha
 
 ## Context
 
@@ -33,4 +33,3 @@ agent-authored observable criteria without making acceptance a required package
 file. Arbitrary Markdown reference labels are preserved assertions: core can
 validate their package/component relationship but cannot prove that the label
 exists in the source prose.
-

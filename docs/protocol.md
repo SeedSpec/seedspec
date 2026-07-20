@@ -1,6 +1,6 @@
 # SeedSpec Package Format 0.1 Alpha
 
-Status: private design alpha
+Status: published design alpha
 
 This document describes the current package and handoff format. The JSON Schemas in `packages/protocol/schemas/v0.1/` define what the reference tooling accepts. Everything remains open to reconsideration before a later public release.
 

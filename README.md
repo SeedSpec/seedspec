@@ -15,10 +15,24 @@ agent execution or identical output. A realization may be a new application, a
 feature adapted into an existing product, configured state in an external
 system, an automation, an operational artifact, or a composite of those forms.
 
-This private alpha contains the protocol schemas, authoring and resolution
+This design alpha contains the protocol schemas, authoring and resolution
 toolchain, and small protocol-owned fixtures used to exercise conformance.
 Independently versioned packages and their realized outputs live in
 [SeedSpec/reference-solutions](https://github.com/SeedSpec/reference-solutions).
+
+## Use the published CLI
+
+Run the CLI without installing it globally:
+
+```bash
+npx @seedspec/cli --help
+npx @seedspec/cli validate <package-path>
+npx @seedspec/cli begin <package-path>
+```
+
+The npm packages use prerelease versions while the protocol remains a design
+alpha. Pin exact versions when building tools that depend on its schemas or
+runtime behavior.
 
 ## Work on the protocol
 
