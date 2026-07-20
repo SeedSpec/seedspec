@@ -11,6 +11,8 @@ export async function inspectPackage(inputPath) {
     digest: record.digest,
     protocolVersion: manifest.protocol_version,
     kind: manifest.kind,
+    description: manifest.description ?? null,
+    metadata: manifest.metadata ?? {},
     definition: manifest.definition.entrypoint,
     configuration: {
       schema: manifest.configuration.schema,
@@ -37,6 +39,8 @@ export function formatInspection(inspection) {
     `Kind hint: ${inspection.kind}`,
     `Protocol: ${inspection.protocolVersion}`,
     `Digest: ${inspection.digest}`,
+    `Description: ${inspection.description ?? "not declared"}`,
+    `Metadata: ${Object.keys(inspection.metadata).length ? Object.keys(inspection.metadata).sort().join(", ") : "none"}`,
     `Definition: ${inspection.definition}`,
     `Configuration: ${inspection.configuration.schema} (example: ${inspection.configuration.example})`,
     `Requires: ${inspection.requires.length ? inspection.requires.map((requirement) => (

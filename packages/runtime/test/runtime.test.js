@@ -311,6 +311,8 @@ test("inspect reports identity, capabilities, and optional components", async ()
 
   assert.equal(inspection.id, "org.seedspec.fixtures.portable-feature");
   assert.equal(inspection.kind, "feature");
+  assert.equal(typeof inspection.description, "string");
+  assert.deepEqual(inspection.metadata, { license: "Apache-2.0" });
   assert.deepEqual(
     inspection.requires.map((capability) => capability.id),
     [

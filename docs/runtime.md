@@ -10,7 +10,7 @@ seedspec prompt
 seedspec begin <root-package-path> [--json]
 seedspec validate <path>
 seedspec digest <path>
-seedspec inspect <path>
+seedspec inspect <path> [--json]
 seedspec artifacts <path> [--json]
 seedspec resources <path> [--json]
 seedspec resource-digest <directory>
@@ -41,6 +41,13 @@ resource change.
 `begin` is the read-only entry point for an agent that has received a root package. It validates the package, inventories configuration, decisions, implementation profiles, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, select configuration or an implementation profile, execute package content, fetch remote artifacts, or activate an artifact workflow.
 
 `begin` marks `configuration.example` as review-required. The example is author material, not a selected default.
+
+`inspect` validates the package and returns package-derived identity, name,
+description, metadata, kind, configuration, capabilities, conflicts, decisions,
+implementation profiles, components, artifacts, relationships, implementation
+resources, compatibility, extensions, and canonical digest. JSON output is a
+read-only indexing surface; it does not add registry claims or activate package
+content.
 
 `resources` lists author-selected implementation resources, usage levels,
 version policy, canonical locations, bundled fallback locations, applicability,
