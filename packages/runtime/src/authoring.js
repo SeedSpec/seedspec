@@ -230,10 +230,13 @@ function validateResult(result, request) {
         details.push("validation.protocol_valid must be true for a completed pass");
       }
       const commands = Array.isArray(result.validation?.commands)
-        ? result.validation.commands.join("\n")
-        : "";
-      for (const command of ["seedspec validate", "seedspec lint", "seedspec digest"]) {
-        if (!commands.includes(command)) details.push(`validation.commands must record ${command}`);
+        ? result.validation.commands
+        : [];
+      for (const operation of ["validate", "lint", "digest"]) {
+        const operationPattern = new RegExp(`(?:^|\\s)${operation}(?:\\s|$)`);
+        if (!commands.some((command) => operationPattern.test(command))) {
+          details.push(`validation.commands must record a ${operation} command`);
+        }
       }
     }
   }

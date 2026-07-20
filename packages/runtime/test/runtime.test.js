@@ -269,6 +269,30 @@ test("authoring audit supports targeted areas and keeps state outside the packag
   );
 });
 
+test("completed authoring passes accept pinned npm CLI commands", async (t) => {
+  const output = await temporaryDirectory(t);
+  const stateDirectory = path.join(output, "authoring-state");
+  const audit = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test"
+  });
+  const result = parseYaml(await readFile(audit.current.result, "utf8"));
+  result.outcome = "completed";
+  result.summary = "Validated through the exact npm CLI package.";
+  result.validation.commands = [
+    "npx --yes @seedspec/cli@0.1.0-alpha.3 validate package",
+    "npx --yes @seedspec/cli@0.1.0-alpha.3 lint package",
+    "npx --yes @seedspec/cli@0.1.0-alpha.3 digest package"
+  ];
+  await writeFile(audit.current.result, stringifyYaml(result), "utf8");
+
+  const advanced = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test"
+  });
+  assert.equal(advanced.current.area, "kind-aware-discovery");
+});
+
 test("authoring audit status is read-only and accepts portable workspace paths", async (t) => {
   const output = await temporaryDirectory(t);
   const missingState = path.join(output, "missing-state");
