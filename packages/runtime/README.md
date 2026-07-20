@@ -12,12 +12,17 @@ npm install @seedspec/runtime
 ## Example
 
 ```js
-import { inspectPackage, validatePackage } from "@seedspec/runtime";
+import { auditPackage, inspectPackage, validatePackage } from "@seedspec/runtime";
 
 const record = await validatePackage("./my-seedspec-package");
 const inspection = await inspectPackage(record.root);
 
 console.log(inspection.id, inspection.version, inspection.digest);
+
+const audit = await auditPackage("./my-seedspec-package", {
+  toolVersion: "my-authoring-tool@1.0.0"
+});
+console.log(audit.current?.instructions);
 ```
 
 Validation establishes package structure and content identity. It does not

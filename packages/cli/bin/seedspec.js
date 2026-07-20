@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import {
+  auditPackage,
   beginPackage,
   computeDirectoryDigest,
   discoverFeatures,
@@ -9,6 +11,8 @@ import {
   formatAdapterListing,
   formatArtifactListing,
   formatArtifactValidation,
+  formatAuthoringAudit,
+  formatAuthoringDocumentation,
   formatConformanceResult,
   formatFeatureDiscovery,
   formatBuyerAgentPrompt,
@@ -34,9 +38,13 @@ import {
   validatePackage
 } from "@seedspec/runtime";
 
+const CLI_VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+
 const HELP = `SeedSpec CLI v0.1 alpha
 
 Usage:
+  seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
+  seedspec docs authoring [area]
   seedspec prompt
   seedspec begin <root-package-path> [--json]
   seedspec validate <path>
@@ -89,7 +97,7 @@ function parseArguments(args) {
       continue;
     }
 
-    if (value === "--json" || value === "--help") {
+    if (value === "--json" || value === "--help" || value === "--status") {
       options.set(value.slice(2), [true]);
       continue;
     }
@@ -139,6 +147,29 @@ async function run() {
   }
 
   switch (command) {
+    case "audit": {
+      rejectUnknownOptions(options, ["area", "target", "state", "status", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const statusOnly = options.has("status");
+      const result = await auditPackage(packagePath, {
+        area: oneOption(options, "area"),
+        target: oneOption(options, "target"),
+        stateDirectory: oneOption(options, "state"),
+        toolVersion: CLI_VERSION,
+        statusOnly
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatAuthoringAudit(result, { statusOnly })}\n`);
+      break;
+    }
+    case "docs": {
+      rejectUnknownOptions(options, []);
+      const topic = positional[0] ?? "authoring";
+      if (topic !== "authoring") throw new Error(`Unknown documentation topic: ${topic}`);
+      process.stdout.write(`SeedSpec CLI: ${CLI_VERSION}\n${formatAuthoringDocumentation(positional[1])}\n`);
+      break;
+    }
     case "prompt": {
       process.stdout.write(`${formatBuyerAgentPrompt()}\n`);
       break;

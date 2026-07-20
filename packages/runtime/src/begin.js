@@ -194,21 +194,10 @@ export function formatPackageBeginning(beginning) {
     "",
     "```yaml",
     stringifyYaml(beginning.configuration.example_values).trimEnd(),
-    "```",
-    "",
-    "## Solution decisions",
-    ""
+    "```"
   ];
 
-  lines.push("", "## Implementation profiles", "");
-  if (beginning.implementation_profiles.length === 0) {
-    lines.push("None declared.");
-  } else {
-    lines.push(...beginning.implementation_profiles.map((profile) => (
-      `- \`${profile.id}\` — ${quoted(profile.name)}: ${profile.description}`
-    )));
-  }
-
+  lines.push("", "## Solution decisions", "");
   if (beginning.decisions.length === 0) {
     lines.push("No package-declared solution decisions were supplied.");
   } else {
@@ -217,6 +206,36 @@ export function formatPackageBeginning(beginning) {
         `- \`${decision.id}\`${decision.required ? " **required**" : " optional"}: ${quoted(decision.question)}`
       );
       if (decision.options?.length) lines.push(`  Options: ${decision.options.map(quoted).join(", ")}`);
+    }
+  }
+
+  lines.push("", "## Implementation profiles", "");
+  if (beginning.implementation_profiles.length === 0) {
+    lines.push("None declared.");
+  } else {
+    for (const profile of beginning.implementation_profiles) {
+      lines.push(`- \`${profile.id}\` — ${quoted(profile.name)}: ${profile.description}`);
+      if (profile.guidance) lines.push(`  Guidance: \`${profile.guidance}\``);
+      if (profile.prerequisites?.length) {
+        lines.push("  Prerequisites:");
+        for (const condition of profile.prerequisites) {
+          lines.push(
+            `    - \`${condition.id}\`: ${condition.statement} (verify: ${condition.verification.method}; evidence: ${condition.verification.evidence})`
+          );
+        }
+      }
+      if (profile.blockers?.length) {
+        lines.push("  Blockers:");
+        for (const condition of profile.blockers) {
+          lines.push(
+            `    - \`${condition.id}\`: ${condition.statement} (verify: ${condition.verification.method}; evidence: ${condition.verification.evidence})`
+          );
+        }
+      }
+      if (profile.tradeoffs?.length) {
+        lines.push("  Tradeoffs:");
+        for (const tradeoff of profile.tradeoffs) lines.push(`    - ${tradeoff}`);
+      }
     }
   }
 

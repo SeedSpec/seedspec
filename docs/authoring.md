@@ -16,8 +16,11 @@ The included 0.1 authoring toolset is implemented in JavaScript for Node.js and
 currently provides:
 
 - `seedspec init <kind>` for kind-specific package scaffolding;
+- `seedspec audit <package-path>` for a versioned, kind-aware authoring review;
 - `seedspec validate` and `seedspec lint` for structural validation and
-  authoring feedback; and
+  deterministic authoring feedback;
+- `seedspec docs authoring [area]` for guidance bundled with the installed
+  tool version; and
 - agent-guided application and feature authoring skills under `skills/`.
 
 Future tooling MAY offer web forms, conversational agent flows, visual editors,
@@ -32,6 +35,101 @@ source MAY travel as an optional artifact, but validation or implementation
 MUST NOT execute it implicitly. Reproducible authoring tools SHOULD produce the
 same package bytes from the same source and inputs and SHOULD surface generated
 changes for author review.
+
+## Agent-guided audit lifecycle
+
+The reference authoring workflow assumes that a capable agent runs the CLI
+beside an author. SeedSpec does not embed a model. The CLI owns protocol-aware,
+deterministic work: validating packages, selecting a kind-aware review lens,
+tracking pass state, emitting current instructions, and checking the shape of
+results. The agent owns semantic work: inspecting source material, identifying
+material uncertainty, asking the author for decisions, editing the package,
+and explaining its judgment.
+
+Start or continue the next incomplete audit area with one command:
+
+```bash
+seedspec audit <package-path> [--target <depth>]
+```
+
+The command emits a Markdown work order for the agent and initializes a
+standardized YAML result. After the agent records a completed result, running
+the same command advances to the next incomplete area. There is deliberately no
+`next` command: progression is derived from durable pass state rather than a
+transient cursor. The output lists all six areas and tells the agent which area
+would follow an accepted pass.
+
+Target one area for an initial or repeated review with `--area`:
+
+```bash
+seedspec audit <package-path> --area material-ambiguity
+```
+
+Inspect existing state without creating or changing files with `--status`.
+Text is the primary agent-and-human interface; `--json` exposes the same state
+for another harness. `seedspec docs authoring [area]` prints guidance shipped
+with the installed tool, so an agent does not need to guess from possibly newer
+web documentation.
+
+The ordered review areas are:
+
+1. **Concern separation** checks core intent, configuration, additions,
+   implementation profiles, artifacts, resources, and acceptance boundaries.
+2. **Kind-aware discovery** applies the selected `kind` as an authoring lens,
+   never as a fixed template or validity gate.
+3. **Material ambiguity** identifies competing interpretations that could
+   materially alter behavior, authority, data treatment, portability, or
+   success.
+4. **Internal consistency** combines deterministic diagnostics with semantic
+   review across package concerns.
+5. **Progressive hardening** evaluates the requested capture, shape, harden,
+   compose, or package depth without treating depth as a quality score.
+6. **Agent-ready handoff** tests the package as a cold implementation handoff,
+   including the actual output of `seedspec begin`.
+
+One nonterminal pass is active at a time. `needs-author` keeps the pass active
+when a consequential decision requires the author. `completed` means that the
+area has a validated review record; it does not certify that the package is
+complete, high quality, or free of open questions. `abandoned` and
+`superseded` preserve history while allowing a later pass to revisit the area.
+
+The audit command has no package-writing or `--fix` mode. Creating a pass writes
+only audit state. A capable agent may apply explicit author decisions,
+source-supported refinements, and mechanical corrections to the package, then
+must record their basis and the final package digest. Suggestions and
+consequential inference stay out of the distributable package until confirmed.
+
+## Authoring state
+
+By default, audit state lives in a sibling directory named
+`<package-path>.seedspec-authoring`. Use `--state <directory>` to choose a
+different location. The CLI rejects any state path inside the distributable
+package.
+
+```text
+<authoring-state>/
+├── workspace.yaml
+├── sources.yaml
+├── open-questions.yaml
+├── candidates/
+└── passes/
+    └── 0001-concern-separation/
+        ├── request.yaml
+        ├── instructions.md
+        └── result.yaml
+```
+
+`workspace.yaml` binds the review to a package, protocol version, target depth,
+and last observed digest. Package paths are relative to the state directory
+when possible. `sources.yaml` inventories authoring inputs,
+`open-questions.yaml` keeps unresolved decisions out of distributable intent,
+and `candidates/` holds speculative material. Each pass records the exact
+instruction, tool, and protocol versions plus before-and-after package digests,
+findings, questions, changes, and validation evidence.
+
+Authoring state is local and is never bundled, uploaded, synchronized, or
+exported implicitly. The stable layout is intended to support manual sharing
+now and an explicit export or hosted scratch-space flow later.
 
 ## Starting altitude
 
