@@ -2,12 +2,20 @@
   "name": "@seedspec/runtime",
   "version": "0.1.0-alpha.1",
   "description": "Reference JavaScript runtime for the SeedSpec Protocol",
+  "keywords": [
+    "seedspec",
+    "agents",
+    "intent",
+    "validation",
+    "specifications"
+  ],
   "type": "module",
   "exports": {
     ".": "./src/index.js"
   },
   "files": [
-    "src"
+    "src",
+    "README.md"
   ],
   "scripts": {
     "test": "node --test"
@@ -24,5 +32,18 @@
   "optionalDependencies": {
     "@productspec/parser": "^0.26.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeedSpec/seedspec.git",
+    "directory": "packages/runtime"
+  },
+  "homepage": "https://seedspec.dev",
+  "bugs": {
+    "url": "https://github.com/SeedSpec/seedspec/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "SeedSpec contributors",
   "license": "Apache-2.0"
 }

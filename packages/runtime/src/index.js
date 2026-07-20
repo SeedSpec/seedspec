@@ -1,4 +1,5 @@
 export { SeedSpecError, formatError } from "./errors.js";
+export { beginPackage, formatBuyerAgentPrompt, formatPackageBeginning } from "./begin.js";
 export { discoverFeatures, formatFeatureDiscovery } from "./discovery.js";
 export {
   PRODUCTSPEC_ARTIFACT_TYPE,
@@ -10,10 +11,34 @@ export {
   validateArtifact
 } from "./artifacts.js";
 export { inspectPackage, formatInspection } from "./inspect.js";
+export { formatPackageLint, lintPackage } from "./lint.js";
 export { initPackage } from "./init.js";
-export { computePackageDigest } from "./integrity.js";
+export { computeDirectoryDigest, computePackageDigest } from "./integrity.js";
+export {
+  createInitialImplementationResourceState,
+  formatImplementationResourceListing,
+  formatImplementationResourceResolution,
+  implementationResourceIndexDigest,
+  listPackageImplementationResources,
+  materializeImplementationResources,
+  reconcileImplementationResourceState,
+  recordImplementationResourceUse,
+  resolveImplementationResources,
+  validateImplementationResourceDeclarations
+} from "./resources.js";
 export { verifyProjectLock } from "./lock.js";
-export { capabilityMatches, resolveCapabilityGraph } from "./capabilities.js";
+export {
+  completionScopeDigest,
+  createInitialVerificationState,
+  formatProjectCompletion,
+  inspectProjectCompletion,
+  resolveCompletionScope
+} from "./completion.js";
+export {
+  analyzeCapabilityDeclarations,
+  capabilityMatches,
+  resolveCapabilityGraph
+} from "./capabilities.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
-export { mergeConfiguration, resolveProject } from "./resolve.js";
+export { resolveProject } from "./resolve.js";
 export { validatePackage } from "./validate.js";

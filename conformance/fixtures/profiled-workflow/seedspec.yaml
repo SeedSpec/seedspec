@@ -1,0 +1,87 @@
+protocol_version: "0.1"
+id: org.seedspec.fixtures.profiled-workflow
+name: Profiled Workflow Fixture
+version: 0.1.0-alpha.1
+kind: workflow
+description: Exercise a workflow package with several conditional implementation profiles.
+definition:
+  entrypoint: definition/solution.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+  guide: configuration/guide.md
+provides:
+  capabilities:
+    - id: org.seedspec.fixtures.daily-metric-briefing
+      version: 0.1.0
+      contract: capabilities/daily-metric-briefing.md
+implementation_profiles:
+  - id: hubspot-native
+    name: HubSpot-native dashboard and workflow
+    description: Realize the metric, dashboard, schedule, and delivery primarily with HubSpot capabilities.
+    guidance: implementation/hubspot-native.md
+    prerequisites:
+      - id: uses-hubspot
+        statement: The organization uses HubSpot as the relevant customer system of record.
+        verification:
+          method: user-confirmation
+          evidence: optional
+      - id: supports-native-operations
+        statement: The active HubSpot edition and enabled features support the required calculation, scheduling, and delivery behavior.
+        verification:
+          method: environment-inspection
+          evidence: required
+    blockers:
+      - id: native-fidelity-gap
+        statement: HubSpot-native behavior cannot calculate or deliver the metric with the fidelity required by the core intent.
+        verification:
+          method: environment-inspection
+          evidence: required
+    tradeoffs:
+      - Minimizes separately operated infrastructure but is bounded by HubSpot-native capabilities.
+  - id: existing-automation-platform
+    name: Existing automation platform
+    description: Use an automation system the organization already operates to connect HubSpot, calculation logic, and Slack.
+    guidance: implementation/existing-automation-platform.md
+    prerequisites:
+      - id: approved-automation-platform
+        statement: The organization operates an approved automation platform with an accountable owner.
+        verification:
+          method: user-confirmation
+          evidence: optional
+      - id: approved-connections
+        statement: Approved HubSpot and Slack connections can be provisioned without placing credentials in the SeedSpec package.
+        verification:
+          method: environment-inspection
+          evidence: required
+    blockers:
+      - id: data-flow-policy
+        statement: Security or data-handling policy prohibits the automation platform from processing the required customer data.
+        verification:
+          method: document-review
+          evidence: required
+    tradeoffs:
+      - Reuses existing operational controls but inherits the platform's limits and ownership model.
+  - id: scheduled-service
+    name: Separately operated scheduled service
+    description: Build and operate a scheduled service when native or existing automation options cannot realize the outcome faithfully.
+    guidance: implementation/scheduled-service.md
+    prerequisites:
+      - id: approved-runtime
+        statement: The organization has an approved runtime, credential store, monitoring path, and operational owner for the service.
+        verification:
+          method: user-confirmation
+          evidence: required
+    blockers:
+      - id: no-operational-owner
+        statement: No team accepts responsibility for the service's credentials, monitoring, failures, and maintenance.
+        verification:
+          method: user-confirmation
+          evidence: required
+    tradeoffs:
+      - Provides the most implementation freedom while creating a separately operated system.
+components:
+  acceptance: acceptance/
+  examples: examples/
+  reference: reference/
+  security: security/

@@ -37,7 +37,7 @@ Define:
 - failure, retry, concurrency, deletion, and historical behavior;
 - observable acceptance criteria.
 
-Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Infer reversible defaults and record them in example configuration.
+Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as a buyer-selected default.
 
 ## 3. Set the portability boundary
 
@@ -49,9 +49,12 @@ Use `compatibility.scope` deliberately:
 
 Do not claim generic compatibility merely because names can be changed. Remove unnecessary screen, route, framework, publisher, and host-specific assumptions.
 
+Compatibility scope records where the author intended or tested the feature. It
+does not prove compatibility or incompatibility with a future implementation.
+
 ## 4. Declare capabilities and configuration
 
-Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one contract file per provided capability. Revision differences are integration-review signals, not installation gates.
+Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one contract file per provided capability. Missing, multiple, cyclic, self-provided, or revision-different declarations are integration-review signals, not installation gates or observations of the actual host.
 
 Turn variable product behavior into JSON Schema-backed configuration. Keep implementation preferences outside feature configuration. When a configured behavior needs a host operation not guaranteed by declared capabilities, document it as an explicit integration requirement or unresolved decision; never silently approximate it.
 
@@ -68,21 +71,31 @@ Run `seedspec init feature --output <package-path>` when available, then write:
 
 Preserve useful source specifications, designs, execution plans, infrastructure descriptions, and evidence as separately declared artifacts. Label their concerns and relationships without claiming they govern the future implementation agent. Do not require ProductSpec or any other native format simply to make a SeedSpec feature package appear rigorous.
 
+At packaging time, optionally select independently versioned skills,
+instructions, verification material, tools, or target profiles that materially
+help implement this feature. Let the author choose usage and additional-guidance
+policy. Associate resources with capabilities or targets only as discovery
+context, not implementation-state evidence, and include a digest-verified
+bundled failsafe when offline or version-unavailable operation matters.
+
 Validate and inspect:
 
 ```bash
 seedspec validate <package-path>
 seedspec inspect <package-path>
 seedspec artifacts <package-path>
+seedspec resources <package-path>
 ```
 
 When a host application is available, resolve them together in a temporary project:
 
 ```bash
-seedspec resolve <application-path> --feature <feature-path> --output <temporary-path>
+seedspec resolve <root-package-path> --add <feature-path> --output <temporary-path>
 ```
 
-Repair all errors and confirm the resolved specification preserves both packages' intent.
+Repair structural errors. Inspect declaration review records and confirm the
+resolved specification preserves both packages' intent without presenting those
+records as compatibility verdicts.
 
 ## 6. Generalize for reuse
 

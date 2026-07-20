@@ -1,27 +1,64 @@
-suite_version: "1.1.0"
+suite_version: "1.8.0"
 protocol_version: "0.1"
 
 cases:
-  - id: validate-allowance-application
-    description: A complete application with contracts and a namespaced extension is valid.
+  - id: validate-comprehensive-application
+    description: A comprehensive application fixture with contracts and a namespaced extension is valid.
     operation: validate
-    package: ../examples/allowance-tracker
+    package: fixtures/comprehensive-application
     expect:
       result: pass
 
-  - id: validate-savings-feature
+  - id: validate-portable-feature
     description: A feature with tested-against capability revisions is valid.
     operation: validate
-    package: ../examples/savings-goals
+    package: fixtures/portable-feature
     expect:
       result: pass
 
-  - id: validate-chore-streaks-feature
+  - id: validate-revision-feature
     description: A feature can carry tested-against evidence and integration guidance.
     operation: validate
-    package: ../examples/chore-streaks
+    package: fixtures/revision-feature
     expect:
       result: pass
+
+  - id: validate-profiled-workflow
+    description: A workflow kind hint can package configured external state and cross-system automation without requiring a standalone codebase.
+    operation: validate
+    package: fixtures/profiled-workflow
+    expect:
+      result: pass
+
+  - id: validate-core-and-namespaced-verification-methods
+    description: Profile conditions accept every core verification method and preserve a namespaced experimental method.
+    operation: validate
+    package: fixtures/verification-methods
+    expect:
+      result: pass
+
+  - id: reject-unnamespaced-verification-method
+    description: Experimental verification methods must be namespaced rather than resembling unregistered core enum values.
+    operation: validate
+    package: fixtures/invalid-verification-method
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: validate-implementation-resource-declarations
+    description: Authors can select versioned implementation resources and delegate additional discovery without asserting implementation capability.
+    operation: validate
+    package: fixtures/implementation-resources
+    expect:
+      result: pass
+
+  - id: reject-insecure-implementation-resource-url
+    description: Canonical implementation resources must use HTTPS.
+    operation: validate
+    package: fixtures/insecure-implementation-resource
+    expect:
+      result: fail
+      code: INVALID_IMPLEMENTATION_RESOURCE
 
   - id: reject-unsupported-protocol
     operation: validate
@@ -90,128 +127,196 @@ cases:
 
   - id: package-digest-is-stable
     operation: digest-stability
-    package: ../examples/allowance-tracker
+    package: fixtures/comprehensive-application
     expect:
       result: pass
-      digest: sha256:d3303a5c6feccd7e936a9b64e186a6ed2c78722044c7e84008d0a3539dd29084
+      digest: sha256:7781f5f38df147e1143a0ea8d7ecd54c979f58222f1633e1e8fa51916dbf6dfe
 
-  - id: resolve-allowance-with-savings-goals
-    description: The primary application and portable feature produce a ready project.
+  - id: resolve-application-with-portable-feature
+    description: The comprehensive application and portable feature fixtures produce a ready project.
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
-      - ../examples/savings-goals
+    root: fixtures/comprehensive-application
+    additions:
+      - fixtures/portable-feature
+    configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
-        - org.seedspec.savings-goals
+      completion_scope_status: review
+      addition_order:
+        - org.seedspec.fixtures.portable-feature
+
+  - id: resolve-configured-system-and-automation-root
+    description: A provider-specific non-code-first root resolves through the same configuration, decision, handoff, and verification model.
+    operation: resolve
+    root: fixtures/profiled-workflow
+    additions: []
+    implementations:
+      - hubspot-native
+    configuration_selection: examples
+    expect:
+      result: pass
+      project_status: ready
+      configuration_status: selected
+      implementation_profile_status: recorded
+      completion_scope_status: review
+      addition_order: []
+      review_count: 0
+
+  - id: review-ambiguous-implementation-profiles
+    description: Multiple candidate profiles without a recorded preference require the agent to ask which direction to prefer.
+    operation: resolve
+    root: fixtures/profiled-workflow
+    additions: []
+    configuration_selection: examples
+    expect:
+      result: pass
+      project_status: needs-input
+      configuration_status: selected
+      implementation_profile_status: review
+      completion_scope_status: review
+      addition_order: []
 
   - id: resolve-order-independent-feature-graph
-    description: A consumer supplied before its provider is topologically ordered.
+    description: Feature order is deterministic by package ID and does not claim implementation order.
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/chain-consumer
       - fixtures/chain-provider
+    configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
-        - org.example.chain-provider
+      addition_order:
         - org.example.chain-consumer
+        - org.example.chain-provider
       preserved_extension:
         package: org.example.chain-provider
         key: org.example.conformance-marker
 
-  - id: reject-missing-provider
+  - id: review-missing-provider
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - ../packages/runtime/test/fixtures/unmet-feature
-    expect:
-      result: fail
-      code: MISSING_CAPABILITIES
-
-  - id: flag-capability-revision-review
-    operation: resolve
-    application: ../examples/allowance-tracker
-    features:
-      - fixtures/revision-review
+    configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
+        - org.example.teleportation
+      review_count: 1
+
+  - id: flag-capability-revision-review
+    operation: resolve
+    root: fixtures/comprehensive-application
+    additions:
+      - fixtures/revision-review
+    configuration_selection: examples
+    expect:
+      result: pass
+      project_status: ready
+      addition_order:
         - org.example.revision-review
       review_count: 1
 
-  - id: reject-ambiguous-provider
+  - id: review-multiple-declared-providers
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/ambiguous-provider
+    configuration_selection: examples
     expect:
-      result: fail
-      code: AMBIGUOUS_CAPABILITY_PROVIDER
+      result: pass
+      project_status: ready
+      addition_order:
+        - org.example.ambiguous-provider
+      review_count: 1
 
   - id: reject-duplicate-package-selection
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/chain-provider
       - fixtures/chain-provider
     expect:
       result: fail
-      code: DUPLICATE_FEATURE
+      code: DUPLICATE_ADDITION
 
-  - id: reject-declared-conflict
+  - id: review-declared-conflict
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/conflicting-feature
+    configuration_selection: examples
     expect:
-      result: fail
-      code: DECLARED_CONFLICT
+      result: pass
+      project_status: ready
+      addition_order:
+        - org.example.conflicting-feature
+      review_count: 1
 
-  - id: reject-capability-cycle
+  - id: review-declared-requirement-cycle
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/cycle-a
       - fixtures/cycle-b
+    configuration_selection: examples
     expect:
-      result: fail
-      code: CAPABILITY_CYCLE
+      result: pass
+      project_status: ready
+      addition_order:
+        - org.example.cycle-a
+        - org.example.cycle-b
+      review_count: 1
 
   - id: preserve-required-decision
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/decision-feature
+    configuration_selection: examples
     expect:
       result: pass
-      project_status: needs-decisions
-      feature_order:
+      project_status: needs-input
+      configuration_status: selected
+      addition_order:
         - org.example.decision-feature
 
   - id: accept-decision-answer
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/decision-feature
     decisions: fixtures/decision-answers.yaml
+    configuration_selection: examples
     expect:
       result: pass
       project_status: ready
-      feature_order:
+      addition_order:
         - org.example.decision-feature
 
   - id: reject-invalid-decision-answer
     operation: resolve
-    application: ../examples/allowance-tracker
-    features:
+    root: fixtures/comprehensive-application
+    additions:
       - fixtures/decision-feature
     decisions: fixtures/invalid-decision-answers.yaml
+    configuration_selection: examples
     expect:
       result: fail
       code: INVALID_DECISIONS
+
+  - id: preserve-unselected-configuration-as-review
+    description: Omitting configuration choices produces an inspectable handoff that is not ready.
+    operation: resolve
+    root: fixtures/comprehensive-application
+    additions: []
+    configuration_selection: omitted
+    expect:
+      result: pass
+      project_status: needs-input
+      configuration_status: review
+      addition_order: []

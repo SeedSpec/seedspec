@@ -1,9 +1,9 @@
 protocol_version: "0.1"
-id: org.seedspec.chore-streaks
-name: Chore Streaks
+id: org.seedspec.fixtures.revision-feature
+name: Revision Feature Fixture
 version: "0.1.0-alpha.1"
 kind: feature
-description: Show a child's current and longest streak of days with qualifying chore completion.
+description: Exercise feature requirements whose tested revisions differ from a selected provider.
 
 metadata:
   license: Apache-2.0

@@ -1,9 +1,9 @@
 protocol_version: "0.1"
-id: org.seedspec.examples.allowance-tracker
-name: Allowance Tracker
+id: org.seedspec.fixtures.comprehensive-application
+name: Comprehensive Application Fixture
 version: "0.1.0-alpha.1"
 kind: application
-description: Help a household assign chores, approve completed work, and maintain a trustworthy allowance balance.
+description: Exercise a complete application package with capabilities, components, configuration, and an optional artifact.
 
 metadata:
   license: Apache-2.0
@@ -57,5 +57,5 @@ artifacts:
       - org.seedspec.concern.intent
 
 extensions:
-  org.seedspec.examples.catalog:
+  org.seedspec.fixtures.catalog:
     audience: families

@@ -1,0 +1,32 @@
+protocol_version: "0.1"
+id: org.example.implementation-resources
+name: Implementation Resources
+version: "0.1.0"
+kind: application
+definition:
+  entrypoint: definition/app.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []
+implementation_resources:
+  additional_guidance: agent-delegated
+  catalogs:
+    - id: org.example.guidance.catalog
+      url: https://example.org/seedspec/catalog.json
+      version: "1.0.0"
+  resources:
+    - id: org.example.guidance.authorization
+      kind: skill
+      description: Experimental authorization decision guidance.
+      usage: available
+      entrypoint: SKILL.md
+      version: "0.1.0"
+      update_policy: exact
+      canonical:
+        manifest_url: https://example.org/seedspec/authorization/0.1.0/resource.json
+        digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+      applies_to:
+        capabilities:
+          - org.example.capability.authorization

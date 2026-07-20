@@ -1,10 +1,43 @@
 # SeedSpec Authoring
 
-Authoring is a guided product-discovery workflow, not a requirement to hand-edit manifests. The repository includes two reusable Codex skills under `skills/`.
+Authoring is a guided intent-discovery and refinement workflow, not a
+requirement to hand-edit manifests. The reference interfaces below all produce
+the same portable protocol package and leave room for additional authoring
+experiences.
+
+## Authoring interfaces and frontends
+
+The canonical SeedSpec package is declarative YAML, JSON, Markdown, and declared
+artifacts. Authors should be able to produce that package through interfaces
+suited to their experience and source material rather than being required to
+construct every file by hand.
+
+The included 0.1 authoring toolset is implemented in JavaScript for Node.js and
+currently provides:
+
+- `seedspec init <kind>` for kind-specific package scaffolding;
+- `seedspec validate` and `seedspec lint` for structural validation and
+  authoring feedback; and
+- agent-guided application and feature authoring skills under `skills/`.
+
+Future tooling MAY offer web forms, conversational agent flows, visual editors,
+language-specific builders, or other higher-level frontends that compile to the
+canonical package. Such frontends could provide reusable helpers, stronger
+construction errors, collaborative review, and organization-specific
+conventions without becoming dependencies of the generated SeedSpec.
+
+Generated output MUST pass ordinary package validation and MUST be usable by a
+consumer that has none of the authoring frontend installed. Executable authoring
+source MAY travel as an optional artifact, but validation or implementation
+MUST NOT execute it implicitly. Reproducible authoring tools SHOULD produce the
+same package bytes from the same source and inputs and SHOULD surface generated
+changes for author review.
 
 ## Starting altitude
 
-SeedSpec authoring may begin from a sentence, an existing product document, a structured specification, a prototype, an architecture, or a working application.
+SeedSpec authoring may begin from a sentence, an existing product document, a
+structured specification, a prototype, an architecture, a runbook, an existing
+configured system, or a working application.
 
 Preserve the supplied source and add only the structure justified by what is known. A sparse idea is not invalid merely because actors, capabilities, configuration, or acceptance criteria have not yet been fully developed. Do not manufacture details to make a package appear mature.
 
@@ -13,9 +46,90 @@ Authoring can proceed progressively:
 1. **Capture** preserves the source idea in a minimal conforming package.
 2. **Shape** identifies actors, outcomes, workflows, domain concepts, and meaningful variations.
 3. **Harden** adds permissions, invariants, failure behavior, edge cases, and observable acceptance criteria.
-4. **Compose** identifies capabilities, compatible SeedSpec feature packages, and related artifacts.
+4. **Compose** identifies capability context, SeedSpec feature candidates, and related artifacts.
+5. **Package** optionally selects versioned implementation resources and
+   decides whether additional guidance discovery is delegated to the agent.
 
 The user may stop at any stage. Authoring depth is a workflow choice, not a different protocol format or a package-quality claim.
+
+## Choose the intended realization context
+
+The same protocol may describe different forms of outcome. Authoring tools
+should tailor discovery without turning those forms into separate protocols:
+
+- **Application:** identify actors, domain concepts, permissions, workflows,
+  state, failures, and observable product behavior.
+- **Configured system:** identify the target account or environment, required
+  access, existing-state discovery, naming and ownership, idempotency, rollback
+  expectations, and durable records of created or changed resources.
+- **Automation:** identify triggers, schedules, timezones, data meaning,
+  recipients, side effects, retries, duplicate prevention, failure handling,
+  and delivery evidence.
+- **Composite solution:** cover the relevant combination and the boundaries
+  between code, configured systems, automated work, and human operations.
+
+Use the nearest manifest kind hint—`solution`, `application`, `feature`,
+`workflow`, `automation`, `configuration`, or `integration`—to communicate the
+expected shape and tailor authoring prompts. The hint does not impose a fixed
+template, minimum depth, composition role, or implementation form. A sparse
+package remains valid when details are not yet known. Authoring tools should
+identify gaps and offer refinement rather than inventing completeness.
+
+Use a namespaced custom kind only when no core hint is reasonably descriptive;
+generic consumers will treat it like `solution` while preserving the value.
+
+Provider-specific intent is valid. Portability does not require forced
+generality: a HubSpot-authored solution may name HubSpot throughout. The author
+should distinguish invariant outcomes from provider assumptions when doing so
+would materially help an agent adapt the package, but should not erase useful
+expertise merely to claim generic compatibility.
+
+## Separate core intent, configuration, additions, and implementation profiles
+
+- Core intent represents the outcome, behavior, capabilities, and success
+  criteria that should survive implementation choices.
+- Configuration represents meaningful variations in solution behavior.
+- Additions extend or modify the composed intent; `feature` is the usual kind
+  hint but not a composition requirement.
+- Implementation profiles describe materially different platforms,
+  architectures, or approaches for accomplishing the same core intent.
+
+Keep related realizations discoverable together when their shared intent and
+tradeoffs help an agent make a better decision. Record the selected direction
+prominently while preserving concise context for alternatives that were
+declined, deferred, or left unreviewed. An agent may explain a conflict and ask
+the user to reconsider; it must not silently replace the recorded preference.
+
+Give each implementation profile a concise name and description. Add guidance
+only when it materially helps execution. Express viability as declarative
+prerequisites and blockers rather than hard-coded interview scripts:
+
+```yaml
+implementation_profiles:
+  - id: hubspot-dashboard
+    name: HubSpot-native dashboard
+    description: Realize the outcome primarily with HubSpot reporting and workflows.
+    guidance: implementation/hubspot-dashboard.md
+    prerequisites:
+      - id: uses-hubspot
+        statement: The organization uses HubSpot as the relevant system of record.
+        verification:
+          method: user-confirmation
+          evidence: optional
+    blockers:
+      - id: native-fidelity-gap
+        statement: Native capabilities cannot produce the required behavior faithfully.
+        verification:
+          method: environment-inspection
+          evidence: required
+```
+
+Use `user-confirmation` when organizational truth or authority must come from a
+person, `environment-inspection` when the agent can establish the condition
+from actual state, `tool-check` for an authorized non-mutating probe,
+`document-review` for controlled records or policy, and `manual-observation`
+when a person must observe the result. Set evidence to `none`, `optional`, or
+`required` independently from the method.
 
 ## Related artifacts
 
@@ -23,9 +137,34 @@ Authors may include existing product documents, structured specifications, desig
 
 Declaring an artifact does not select its workflow for a future user or implementation agent. An author may explain why the artifact is useful, but should not encode `governing`, `advisory`, or automatic activation policy. Artifact-specific validation and transformation belong to adapters that a user invokes explicitly.
 
+## Implementation resources
+
+Authors may select public, versioned skills, instructions, verification
+material, tools, and target profiles through `implementation_resources`.
+Authoring tools should offer tested first-party resources as defaults, but MUST
+allow the author to exclude them. SeedSpec core does not inject a universal
+guidance pack merely because it exists.
+
+Prefer skills over long unconditional instructions when the implementing agent
+can determine relevance from concise frontmatter. Include a resource only when
+it contributes tested decisions, SeedSpec-specific integration behavior,
+reusable packaging, executable verification, or a recurring lesson that agents
+otherwise miss. Generic advice the agent already knows is a context cost, not a
+benefit.
+
+Choose `required`, `recommended`, or `available` deliberately. Decide separately
+whether additional catalog discovery is `agent-delegated` or `none`. Use
+`applies_to` as matching context without claiming an actual implementation has
+the named capability.
+
+For bundled resources, run `seedspec resource-digest <directory>` and record the
+exact digest. Prefer an exact canonical version for reproducible packages.
+Tracking policies are appropriate only when the author accepts implementation-
+time change and the resolver's exact resolved version will be recorded.
+
 ## Application workflow
 
-Start at the level of detail the user supplies. For shaping or hardening, identify the intended outcome, actors, roles, domain concepts, fundamental workflows, permissions, business rules, state transitions, failure behavior, meaningful configuration candidates, and acceptance criteria. Ask only questions whose answers materially change behavior; infer and record reversible defaults for the rest.
+Start at the level of detail the user supplies. For shaping or hardening, identify the intended outcome, actors, roles, domain concepts, fundamental workflows, permissions, business rules, state transitions, failure behavior, meaningful configuration candidates, and acceptance criteria. Ask only questions whose answers materially change behavior; use reversible values in the package example for the rest without implying that every buyer selected them.
 
 For capture-only work, preserve the original idea, use an empty configuration object when no behavioral choices are known, allow an empty capability list, and record important unknowns without forcing the user through full product discovery.
 
@@ -41,3 +180,8 @@ seedspec inspect <package-path>
 When a resolved project exists, inspect `.seedspec/project.yaml`, `resolved-spec.md`, `agent-guide.md`, `implementation-notes.md`, and `dependencies.lock.yaml` before asking questions. Reuse known actors, terminology, configuration decisions, and capabilities. Declare only the capabilities the feature truly uses and the capabilities it adds.
 
 Keep origin context, the portable feature, and project integration decisions distinct. Before sharing a feature broadly, remove application-private assumptions, replace narrow terminology, convert variable behavior into configuration, declare known conflicts and unresolved decisions, and select an explicit compatibility scope.
+
+Capability, compatibility, and conflict declarations describe author intent and
+testing evidence. Do not claim they prove that a future application implements a
+capability or that a feature is compatible. The implementing agent makes that
+determination from the actual project.

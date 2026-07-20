@@ -9,6 +9,7 @@ import {
 import { SeedSpecError } from "./errors.js";
 import { validateManifestSemantics } from "./capabilities.js";
 import { computePackageDigest } from "./integrity.js";
+import { validateImplementationResourceDeclarations } from "./resources.js";
 import {
   compileConfigurationSchema,
   compileProtocolSchema,
@@ -43,6 +44,15 @@ export async function validatePackage(inputPath, { configurationPath } = {}) {
 
   if (manifest.configuration.guide) {
     expectedFiles.push(["configuration.guide", manifest.configuration.guide, "file"]);
+  }
+  for (const profile of manifest.implementation_profiles ?? []) {
+    if (profile.guidance) {
+      expectedFiles.push([
+        `implementation_profiles.${profile.id}.guidance`,
+        profile.guidance,
+        "file"
+      ]);
+    }
   }
   for (const capability of manifest.provides.capabilities) {
     expectedFiles.push([
@@ -79,6 +89,8 @@ export async function validatePackage(inputPath, { configurationPath } = {}) {
       details: referenceErrors
     });
   }
+
+  await validateImplementationResourceDeclarations(root, manifest);
 
   const configurationSchemaPath = resolvePackagePath(root, manifest.configuration.schema);
   const configurationSchema = await readJsonFile(configurationSchemaPath, "Configuration schema");

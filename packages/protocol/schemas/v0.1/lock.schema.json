@@ -4,12 +4,12 @@
   "title": "SeedSpec Dependency Lock 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "resolution_algorithm", "application", "features", "capabilities", "requirements"],
+  "required": ["protocol_version", "resolution_algorithm", "root", "additions", "capabilities", "requirements", "reviews"],
   "properties": {
     "protocol_version": { "const": "0.1" },
-    "resolution_algorithm": { "const": "capability-graph-v1" },
-    "application": { "$ref": "#/$defs/lockedPackage" },
-    "features": {
+    "resolution_algorithm": { "const": "declaration-review-v1" },
+    "root": { "$ref": "#/$defs/lockedPackage" },
+    "additions": {
       "type": "array",
       "items": { "$ref": "#/$defs/lockedPackage" }
     },
@@ -20,6 +20,10 @@
     "requirements": {
       "type": "array",
       "items": { "$ref": "#/$defs/requirementBinding" }
+    },
+    "reviews": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/compositionReview" }
     }
   },
   "$defs": {
@@ -34,7 +38,12 @@
       "properties": {
         "id": { "$ref": "#/$defs/namespacedId" },
         "version": { "$ref": "#/$defs/semver" },
-        "kind": { "enum": ["application", "feature"] },
+        "kind": {
+          "oneOf": [
+            { "enum": ["solution", "application", "feature", "workflow", "automation", "configuration", "integration"] },
+            { "$ref": "#/$defs/namespacedId" }
+          ]
+        },
         "digest": { "$ref": "#/$defs/digest" }
       }
     },
@@ -55,17 +64,67 @@
         "consumer",
         "capability",
         "tested_against",
-        "provider",
-        "provided_version",
+        "providers",
+        "issues",
         "status"
       ],
       "properties": {
         "consumer": { "$ref": "#/$defs/namespacedId" },
         "capability": { "$ref": "#/$defs/namespacedId" },
         "tested_against": { "$ref": "#/$defs/capabilityVersion" },
+        "providers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerCandidate" }
+        },
+        "issues": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "no-declared-provider",
+              "multiple-declared-providers",
+              "self-declared-provider",
+              "revision-difference"
+            ]
+          }
+        },
+        "status": { "enum": ["declared-aligned", "review"] }
+      }
+    },
+    "providerCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "provided_version", "revision_status"],
+      "properties": {
         "provider": { "$ref": "#/$defs/lockedPackage" },
         "provided_version": { "$ref": "#/$defs/capabilityVersion" },
-        "status": { "enum": ["aligned", "review"] }
+        "revision_status": { "enum": ["tested-revision", "different-revision"] }
+      }
+    },
+    "compositionReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "packages"],
+      "properties": {
+        "code": {
+          "enum": [
+            "no-declared-provider",
+            "multiple-declared-providers",
+            "self-declared-provider",
+            "revision-difference",
+            "declared-package-conflict",
+            "declared-capability-conflict",
+            "declared-requirement-cycle"
+          ]
+        },
+        "packages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/namespacedId" }
+        },
+        "capability": { "$ref": "#/$defs/namespacedId" },
+        "reason": { "type": "string", "minLength": 1 }
       }
     },
     "namespacedId": {

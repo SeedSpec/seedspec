@@ -1,0 +1,4 @@
+protocol_version: "0.1"
+packages:
+  - package: org.seedspec.fixtures.profiled-workflow
+    selection: example

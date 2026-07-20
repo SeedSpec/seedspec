@@ -22,11 +22,14 @@
       "properties": {
         "result": { "enum": ["pass", "fail"] },
         "code": { "type": "string", "minLength": 2 },
-        "feature_order": {
+        "addition_order": {
           "type": "array",
           "items": { "type": "string", "minLength": 5 }
         },
-        "project_status": { "enum": ["ready", "needs-decisions"] },
+        "project_status": { "enum": ["ready", "needs-input"] },
+        "configuration_status": { "enum": ["selected", "review"] },
+        "implementation_profile_status": { "enum": ["not-declared", "recorded", "review"] },
+        "completion_scope_status": { "enum": ["recorded", "review"] },
         "review_count": { "type": "integer", "minimum": 0 },
         "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
         "preserved_extension": {
@@ -55,12 +58,17 @@
         "description": { "type": "string", "minLength": 1 },
         "operation": { "enum": ["validate", "resolve", "digest-stability"] },
         "package": { "type": "string", "minLength": 1 },
-        "application": { "type": "string", "minLength": 1 },
-        "features": {
+        "root": { "type": "string", "minLength": 1 },
+        "additions": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
         },
         "decisions": { "type": "string", "minLength": 1 },
+        "implementations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 2 }
+        },
+        "configuration_selection": { "enum": ["examples", "omitted"] },
         "expect": { "$ref": "#/$defs/expectation" }
       },
       "allOf": [
@@ -70,7 +78,7 @@
         },
         {
           "if": { "properties": { "operation": { "const": "resolve" } } },
-          "then": { "required": ["application", "features"] }
+          "then": { "required": ["root", "additions"] }
         }
       ]
     }

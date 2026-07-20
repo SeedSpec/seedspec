@@ -38,7 +38,7 @@ async function collectManifestPaths(inputPath, manifests) {
   }
 }
 
-function declaredConflict(application, feature) {
+function declaredConcerns(application, feature) {
   const applicationCapabilities = new Set(
     application.manifest.provides.capabilities.map((capability) => capability.id)
   );
@@ -46,94 +46,98 @@ function declaredConflict(application, feature) {
     feature.manifest.provides.capabilities.map((capability) => capability.id)
   );
 
+  const concerns = [];
   if ((feature.manifest.conflicts?.packages ?? []).some((item) => item.id === application.manifest.id)) {
-    return `${feature.manifest.id} declares a conflict with the application`;
+    concerns.push(`${feature.manifest.id} declares a package conflict with the application`);
   }
   if ((application.manifest.conflicts?.packages ?? []).some((item) => item.id === feature.manifest.id)) {
-    return `${application.manifest.id} declares a conflict with the feature`;
+    concerns.push(`${application.manifest.id} declares a package conflict with the feature`);
   }
-  const featureCapabilityConflict = (feature.manifest.conflicts?.capabilities ?? [])
-    .find((item) => applicationCapabilities.has(item.id));
-  if (featureCapabilityConflict) {
-    return `${feature.manifest.id} conflicts with ${featureCapabilityConflict.id}`;
+  for (const conflict of feature.manifest.conflicts?.capabilities ?? []) {
+    if (applicationCapabilities.has(conflict.id)) {
+      concerns.push(`${feature.manifest.id} declares a conflict with capability ${conflict.id}`);
+    }
   }
-  const applicationCapabilityConflict = (application.manifest.conflicts?.capabilities ?? [])
-    .find((item) => featureCapabilities.has(item.id));
-  if (applicationCapabilityConflict) {
-    return `${application.manifest.id} conflicts with ${applicationCapabilityConflict.id}`;
+  for (const conflict of application.manifest.conflicts?.capabilities ?? []) {
+    if (featureCapabilities.has(conflict.id)) {
+      concerns.push(`${application.manifest.id} declares a conflict with capability ${conflict.id}`);
+    }
   }
-  const duplicateProvider = feature.manifest.provides.capabilities
-    .find((capability) => applicationCapabilities.has(capability.id));
-  return duplicateProvider
-    ? `the application and feature both provide ${duplicateProvider.id}`
-    : null;
+  for (const capability of feature.manifest.provides.capabilities) {
+    if (applicationCapabilities.has(capability.id)) {
+      concerns.push(`the application and feature both declare provider context for ${capability.id}`);
+    }
+  }
+  return concerns;
 }
 
 function scopeAssessment(application, feature) {
   const compatibility = feature.manifest.compatibility;
-  if (compatibility.scope === "generic") return { compatible: true };
+  if (compatibility.scope === "generic") return null;
   if (compatibility.scope === "application") {
     return compatibility.applications.includes(application.manifest.id)
-      ? { compatible: true }
-      : { compatible: false, reason: "the feature does not list this application as compatible" };
+      ? null
+      : "the author's application-scoped compatibility statement does not list this application";
   }
-  return {
-    compatible: null,
-    reason: `domain compatibility (${compatibility.domain}) requires implementation review`
-  };
+  return `the author's domain scope (${compatibility.domain}) requires mapping to the actual implementation`;
 }
 
 function assessFeature(application, feature, providers) {
-  const conflict = declaredConflict(application, feature);
-  if (conflict) return { status: "conflict", reasons: [conflict], missingCapabilities: [] };
+  const reasons = declaredConcerns(application, feature);
+  const scopeReason = scopeAssessment(application, feature);
+  if (scopeReason) reasons.push(scopeReason);
 
-  const scope = scopeAssessment(application, feature);
-  if (scope.compatible === false) {
-    return { status: "incompatible", reasons: [scope.reason], missingCapabilities: [] };
-  }
-
-  const applicationCapabilities = new Set(
-    application.manifest.provides.capabilities.map((capability) => capability.id)
+  const applicationCapabilities = new Map(
+    application.manifest.provides.capabilities.map((capability) => [capability.id, capability])
   );
-  const missingCapabilities = (feature.manifest.requires?.capabilities ?? [])
+  const undeclaredCapabilities = (feature.manifest.requires?.capabilities ?? [])
     .map((requirement) => requirement.id)
     .filter((id) => !applicationCapabilities.has(id));
   const dependencyCandidates = Object.fromEntries(
-    missingCapabilities.map((id) => [
+    undeclaredCapabilities.map((id) => [
       id,
       (providers.get(id) ?? []).filter((provider) => provider !== feature.manifest.id)
     ])
   );
 
-  if (missingCapabilities.length > 0) {
-    const noProvider = missingCapabilities.filter((id) => dependencyCandidates[id].length === 0);
-    return {
-      status: noProvider.length ? "missing-capabilities" : "needs-features",
-      reasons: [
-        scope.compatible === null ? scope.reason : null,
-        noProvider.length
-          ? `no catalog feature provides: ${noProvider.join(", ")}`
-          : "additional catalog features may satisfy the missing capabilities"
-      ].filter(Boolean),
-      missingCapabilities,
-      dependencyCandidates
-    };
+  if (undeclaredCapabilities.length > 0) {
+    const catalogSuggestions = undeclaredCapabilities.filter(
+      (id) => dependencyCandidates[id].length > 0
+    );
+    const noCatalogDeclaration = undeclaredCapabilities.filter(
+      (id) => dependencyCandidates[id].length === 0
+    );
+    reasons.push(`the application package does not declare: ${undeclaredCapabilities.join(", ")}`);
+    if (catalogSuggestions.length > 0) {
+      reasons.push(`other catalog packages declare possible context for: ${catalogSuggestions.join(", ")}`);
+    }
+    if (noCatalogDeclaration.length > 0) {
+      reasons.push(`no catalog package declares context for: ${noCatalogDeclaration.join(", ")}`);
+    }
+  }
+
+  for (const requirement of feature.manifest.requires?.capabilities ?? []) {
+    const applicationCapability = applicationCapabilities.get(requirement.id);
+    if (applicationCapability && applicationCapability.version !== requirement.tested_against) {
+      reasons.push(
+        `${requirement.id} was tested at ${requirement.tested_against}; the application package declares ${applicationCapability.version}`
+      );
+    }
+    if (feature.manifest.provides.capabilities.some((capability) => capability.id === requirement.id)) {
+      reasons.push(`${feature.manifest.id} both requires and provides ${requirement.id}`);
+    }
   }
 
   return {
-    status: scope.compatible === null ? "review" : "compatible",
-    reasons: scope.reason ? [scope.reason] : [],
-    missingCapabilities: []
+    status: reasons.length > 0 ? "review" : "candidate",
+    reasons,
+    undeclaredCapabilities,
+    dependencyCandidates
   };
 }
 
 export async function discoverFeatures(applicationPath, catalogPaths) {
   const application = await validatePackage(applicationPath);
-  if (application.manifest.kind !== "application") {
-    throw new SeedSpecError(`Feature discovery requires an application package: ${application.manifest.id}`, {
-      code: "EXPECTED_APPLICATION"
-    });
-  }
   if (!catalogPaths?.length) {
     throw new SeedSpecError("Feature discovery requires at least one catalog path", {
       code: "CATALOG_REQUIRED"
@@ -204,8 +208,8 @@ export function formatFeatureDiscovery(result) {
       `- ${candidate.name} (${candidate.id}@${candidate.version}) — ${candidate.status}`,
       `  Path: ${candidate.path}`
     );
-    if (candidate.missingCapabilities.length > 0) {
-      lines.push(`  Missing: ${candidate.missingCapabilities.join(", ")}`);
+    if (candidate.undeclaredCapabilities.length > 0) {
+      lines.push(`  Not declared by application package: ${candidate.undeclaredCapabilities.join(", ")}`);
     }
     for (const reason of candidate.reasons) lines.push(`  Note: ${reason}`);
   }

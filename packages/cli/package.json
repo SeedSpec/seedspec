@@ -2,12 +2,20 @@
   "name": "@seedspec/cli",
   "version": "0.1.0-alpha.1",
   "description": "Command-line interface for the SeedSpec Protocol",
+  "keywords": [
+    "seedspec",
+    "cli",
+    "agents",
+    "intent",
+    "specifications"
+  ],
   "type": "module",
   "bin": {
     "seedspec": "./bin/seedspec.js"
   },
   "files": [
-    "bin"
+    "bin",
+    "README.md"
   ],
   "engines": {
     "node": ">=20"
@@ -15,5 +23,18 @@
   "dependencies": {
     "@seedspec/runtime": "0.1.0-alpha.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeedSpec/seedspec.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://seedspec.dev",
+  "bugs": {
+    "url": "https://github.com/SeedSpec/seedspec/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "SeedSpec contributors",
   "license": "Apache-2.0"
 }

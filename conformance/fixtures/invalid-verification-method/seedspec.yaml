@@ -1,0 +1,23 @@
+protocol_version: "0.1"
+id: org.example.invalid-verification-method
+name: Invalid Verification Method
+version: 0.1.0
+kind: solution
+description: Uses an unregistered and unnamespaced verification method.
+definition:
+  entrypoint: definition/solution.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []
+implementation_profiles:
+  - id: invalid-profile
+    name: Invalid profile
+    description: This condition method must not pass validation.
+    prerequisites:
+      - id: account-check
+        statement: The relevant account supports the required behavior.
+        verification:
+          method: account-check
+          evidence: required

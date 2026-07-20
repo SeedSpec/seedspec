@@ -1,6 +1,6 @@
 # ADR 0002: Artifacts, adapters, and agent choice
 
-Status: accepted for the private alpha
+Status: accepted for the design alpha
 
 ## Context
 
