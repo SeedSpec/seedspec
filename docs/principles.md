@@ -49,7 +49,7 @@ agent's plan without becoming a structural gate.
 
 A SeedSpec does not require one document format to completely define a
 solution. Product definitions, ProductSpecs, designs, API contracts,
-implementation plans, reference applications, runbooks, evaluations, and
+implementation plans, reference realizations, runbooks, evaluations, and
 infrastructure material may coexist as separate artifacts.
 
 SeedSpec standardizes the package and relationships between those artifacts. Each artifact format retains its own semantics and validation rules.

@@ -15,73 +15,31 @@ agent execution or identical output. A realization may be a new application, a
 feature adapted into an existing product, configured state in an external
 system, an automation, an operational artifact, or a composite of those forms.
 
-This private alpha contains an **Allowance Tracker** SeedSpec application
-package, portable **Savings Goals** and **Chore Streaks** feature packages, a
-non-code-first **HubSpot Daily Metric** root package, and the authoring and
-resolution toolchain.
+This private alpha contains the protocol schemas, authoring and resolution
+toolchain, and small protocol-owned fixtures used to exercise conformance.
+Independently versioned packages and their realized outputs live in
+[SeedSpec/reference-solutions](https://github.com/SeedSpec/reference-solutions).
 
-## Try the working use cases
+## Work on the protocol
 
 ```bash
 npm install
 npm test
 npm run conformance
-npm run demo
 ```
 
-The demo creates `.tmp/allowance-demo/.seedspec/` with a human-readable resolved specification, validated configuration, recorded completion scope, structured verification state, a preserved artifact index, capability revision reviews, agent guidance, persistent implementation notes, and addition integration records.
-
-Inspect the source packages:
+Inspect representative conformance fixtures:
 
 ```bash
 npx seedspec prompt
-npx seedspec begin examples/allowance-tracker
-npx seedspec inspect examples/allowance-tracker
-npx seedspec inspect examples/savings-goals
-npx seedspec inspect examples/chore-streaks
-npx seedspec inspect examples/hubspot-daily-metric
-npx seedspec lint examples/hubspot-daily-metric
-npx seedspec digest examples/allowance-tracker
-npx seedspec artifacts examples/allowance-tracker
-npx seedspec validate-artifact examples/allowance-tracker product-spec
-npx seedspec discover-features examples/allowance-tracker --catalog examples/
-```
-
-Resolve only the application:
-
-```bash
-npx seedspec resolve examples/allowance-tracker \
-  --configuration-selections examples/configuration-selections/allowance-only.yaml \
-  --completion-scope examples/completion-scopes/allowance-only.yaml \
-  --output .tmp/allowance-only
-```
-
-Resolve it with both features:
-
-```bash
-npx seedspec resolve examples/allowance-tracker \
-  --add examples/savings-goals \
-  --add examples/chore-streaks \
-  --configuration-selections examples/configuration-selections/allowance-composed.yaml \
-  --completion-scope examples/completion-scopes/allowance-composed.yaml \
-  --output .tmp/allowance-composed
-
-npx seedspec verify-lock .tmp/allowance-composed \
-  --package examples/allowance-tracker \
-  --package examples/savings-goals \
-  --package examples/chore-streaks
-
-npx seedspec completion .tmp/allowance-composed
-```
-
-Resolve the configured-system and automation example:
-
-```bash
-npx seedspec resolve examples/hubspot-daily-metric \
-  -i hubspot-native \
-  --configuration-selections examples/configuration-selections/hubspot-daily-metric.yaml \
-  --completion-scope examples/completion-scopes/hubspot-daily-metric.yaml \
-  --output .tmp/hubspot-daily-metric
+npx seedspec begin conformance/fixtures/comprehensive-application
+npx seedspec inspect conformance/fixtures/comprehensive-application
+npx seedspec inspect conformance/fixtures/portable-feature
+npx seedspec lint conformance/fixtures/profiled-workflow
+npx seedspec artifacts conformance/fixtures/comprehensive-application
+npx seedspec validate-artifact conformance/fixtures/comprehensive-application product-spec
+npx seedspec discover-features conformance/fixtures/comprehensive-application \
+  --catalog conformance/fixtures/
 ```
 
 Use `--configuration-selections <yaml>` to choose each selected package's exact example or a complete custom configuration. Omitting it preserves the examples as unreviewed placeholders and produces `status: needs-input`, never a ready project. Use `-i <profile>` or `--implementation <profile>` to record a strong preference among author-declared implementation profiles. When multiple profiles exist and none is preferred, the generated handoff requires the agent to explain them and ask the user which direction to take. Use `--completion-scope <yaml>` to select author acceptance material or record project-local observable criteria. `ready` describes implementation input, while `seedspec completion` independently reports verification progress. Use `--technical-preferences <yaml>` to record other non-product implementation preferences separately and `--artifact-selections <yaml>` to durably mark artifacts selected, declined, or deferred. A selected execution artifact still requires specific user direction before activation.
@@ -90,9 +48,9 @@ Use `--configuration-selections <yaml>` to choose each selected package's exact 
 
 - A compact declarative package DSL with versioned JSON Schemas inside a wider
   handoff and composition protocol.
-- Complete Allowance Tracker, Savings Goals, Chore Streaks, and HubSpot Daily
-  Metric packages. The HubSpot example realizes configured SaaS state and a
-  cross-system automation without requiring a standalone application.
+- Self-contained conformance fixtures for a comprehensive application,
+  portable and revision-different features, and a workflow with several
+  implementation profiles. These are test data, not reference packages.
 - A generic `seedspec` CLI with a buyer-to-agent prompt, read-only root-package bootstrap, validation, inspection, artifact adapters, feature discovery, resolution, and initialization.
 - Kind-aware authoring lint that keeps advisory scope and completeness feedback
   separate from protocol validity.
@@ -124,11 +82,12 @@ packages/
 └── cli/         the seedspec command-line interface
 conformance/     portable conformance cases and fixtures
 docs/            specification guidance and protocol decisions
-examples/        reference packages, configuration, decisions, and completion scopes
 skills/          authoring and implementation-handoff workflows
 ```
 
-This repository contains protocol-owned assets and first-party protocol tooling. Websites, marketplaces, and runnable reference applications are maintained as independent consumers.
+This repository contains protocol-owned assets and first-party protocol
+tooling. Reference packages, realized solutions, websites, and marketplaces are
+maintained as independent consumers.
 
 ## Concept flows
 
@@ -160,8 +119,8 @@ configured-system intent + optional realization guidance
 
 Manifest `kind` is a strong authoring and agent-communication hint, not a
 composition gate. Resolution position determines root versus addition. The
-HubSpot example uses `kind: workflow` and packages three implementation
-profiles while preserving one portable core intent.
+profiled-workflow fixture verifies that multiple implementation profiles can
+preserve one core intent without turning a fixture into a recommended solution.
 
 ## Validation and trust
 

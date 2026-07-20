@@ -1,9 +1,9 @@
 protocol_version: "0.1"
-id: org.seedspec.examples.hubspot-daily-metric
-name: HubSpot Daily Metric
+id: org.seedspec.fixtures.profiled-workflow
+name: Profiled Workflow Fixture
 version: 0.1.0-alpha.1
 kind: workflow
-description: Configure a HubSpot metric and dashboard, then deliver its previous-day average to Slack on a schedule.
+description: Exercise a workflow package with several conditional implementation profiles.
 definition:
   entrypoint: definition/solution.md
 configuration:
@@ -12,7 +12,7 @@ configuration:
   guide: configuration/guide.md
 provides:
   capabilities:
-    - id: org.seedspec.examples.daily-metric-briefing
+    - id: org.seedspec.fixtures.daily-metric-briefing
       version: 0.1.0
       contract: capabilities/daily-metric-briefing.md
 implementation_profiles:

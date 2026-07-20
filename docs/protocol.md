@@ -112,7 +112,7 @@ A conforming runtime MUST verify all package contents, not only manifest-referen
 Package, capability, implementation resource, resource catalog, target, domain, artifact type, concern, relationship, adapter, and extension identifiers use lowercase reverse-DNS form with at least three segments:
 
 ```text
-org.seedspec.examples.allowance-tracker
+org.example.solutions.allowance-tracker
 org.seedspec.core.transactions
 org.example.vendor-extension
 ```

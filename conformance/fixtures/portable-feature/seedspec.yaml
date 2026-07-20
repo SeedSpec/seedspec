@@ -1,9 +1,9 @@
 protocol_version: "0.1"
-id: org.seedspec.savings-goals
-name: Savings Goals
+id: org.seedspec.fixtures.portable-feature
+name: Portable Feature Fixture
 version: "0.1.0-alpha.1"
 kind: feature
-description: Let an actor reserve or track part of a balance toward named targets and see progress.
+description: Exercise a portable feature with required and provided capability contracts.
 
 metadata:
   license: Apache-2.0

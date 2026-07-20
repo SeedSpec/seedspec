@@ -2,31 +2,31 @@ suite_version: "1.8.0"
 protocol_version: "0.1"
 
 cases:
-  - id: validate-allowance-application
-    description: A complete application with contracts and a namespaced extension is valid.
+  - id: validate-comprehensive-application
+    description: A comprehensive application fixture with contracts and a namespaced extension is valid.
     operation: validate
-    package: ../examples/allowance-tracker
+    package: fixtures/comprehensive-application
     expect:
       result: pass
 
-  - id: validate-savings-feature
+  - id: validate-portable-feature
     description: A feature with tested-against capability revisions is valid.
     operation: validate
-    package: ../examples/savings-goals
+    package: fixtures/portable-feature
     expect:
       result: pass
 
-  - id: validate-chore-streaks-feature
+  - id: validate-revision-feature
     description: A feature can carry tested-against evidence and integration guidance.
     operation: validate
-    package: ../examples/chore-streaks
+    package: fixtures/revision-feature
     expect:
       result: pass
 
-  - id: validate-configured-system-and-automation-root
+  - id: validate-profiled-workflow
     description: A workflow kind hint can package configured external state and cross-system automation without requiring a standalone codebase.
     operation: validate
-    package: ../examples/hubspot-daily-metric
+    package: fixtures/profiled-workflow
     expect:
       result: pass
 
@@ -127,29 +127,29 @@ cases:
 
   - id: package-digest-is-stable
     operation: digest-stability
-    package: ../examples/allowance-tracker
+    package: fixtures/comprehensive-application
     expect:
       result: pass
-      digest: sha256:d3303a5c6feccd7e936a9b64e186a6ed2c78722044c7e84008d0a3539dd29084
+      digest: sha256:7781f5f38df147e1143a0ea8d7ecd54c979f58222f1633e1e8fa51916dbf6dfe
 
-  - id: resolve-allowance-with-savings-goals
-    description: The primary application and portable feature produce a ready project.
+  - id: resolve-application-with-portable-feature
+    description: The comprehensive application and portable feature fixtures produce a ready project.
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
-      - ../examples/savings-goals
+      - fixtures/portable-feature
     configuration_selection: examples
     expect:
       result: pass
       project_status: ready
       completion_scope_status: review
       addition_order:
-        - org.seedspec.savings-goals
+        - org.seedspec.fixtures.portable-feature
 
   - id: resolve-configured-system-and-automation-root
     description: A provider-specific non-code-first root resolves through the same configuration, decision, handoff, and verification model.
     operation: resolve
-    root: ../examples/hubspot-daily-metric
+    root: fixtures/profiled-workflow
     additions: []
     implementations:
       - hubspot-native
@@ -166,7 +166,7 @@ cases:
   - id: review-ambiguous-implementation-profiles
     description: Multiple candidate profiles without a recorded preference require the agent to ask which direction to prefer.
     operation: resolve
-    root: ../examples/hubspot-daily-metric
+    root: fixtures/profiled-workflow
     additions: []
     configuration_selection: examples
     expect:
@@ -180,7 +180,7 @@ cases:
   - id: resolve-order-independent-feature-graph
     description: Feature order is deterministic by package ID and does not claim implementation order.
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/chain-consumer
       - fixtures/chain-provider
@@ -197,7 +197,7 @@ cases:
 
   - id: review-missing-provider
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - ../packages/runtime/test/fixtures/unmet-feature
     configuration_selection: examples
@@ -210,7 +210,7 @@ cases:
 
   - id: flag-capability-revision-review
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/revision-review
     configuration_selection: examples
@@ -223,7 +223,7 @@ cases:
 
   - id: review-multiple-declared-providers
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/ambiguous-provider
     configuration_selection: examples
@@ -236,7 +236,7 @@ cases:
 
   - id: reject-duplicate-package-selection
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/chain-provider
       - fixtures/chain-provider
@@ -246,7 +246,7 @@ cases:
 
   - id: review-declared-conflict
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/conflicting-feature
     configuration_selection: examples
@@ -259,7 +259,7 @@ cases:
 
   - id: review-declared-requirement-cycle
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/cycle-a
       - fixtures/cycle-b
@@ -274,7 +274,7 @@ cases:
 
   - id: preserve-required-decision
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/decision-feature
     configuration_selection: examples
@@ -287,7 +287,7 @@ cases:
 
   - id: accept-decision-answer
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/decision-feature
     decisions: fixtures/decision-answers.yaml
@@ -300,7 +300,7 @@ cases:
 
   - id: reject-invalid-decision-answer
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions:
       - fixtures/decision-feature
     decisions: fixtures/invalid-decision-answers.yaml
@@ -312,7 +312,7 @@ cases:
   - id: preserve-unselected-configuration-as-review
     description: Omitting configuration choices produces an inspectable handoff that is not ready.
     operation: resolve
-    root: ../examples/allowance-tracker
+    root: fixtures/comprehensive-application
     additions: []
     configuration_selection: omitted
     expect:

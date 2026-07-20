@@ -68,13 +68,14 @@ The complete rationale and decision tests are in [docs/principles.md](docs/princ
 
 ## v0.1 alpha boundary
 
-This repository tests the vision with one software application root, one
-configured-system and automation root, two feature packages, authoring and
-beginner-use skills, a reference CLI, a generic artifact model, an official
-ProductSpec adapter, versioned capability contracts, author-controlled
-implementation-resource resolution, candidate implementation profiles,
-deterministic handoff output, agent
-guidance, persistent implementation notes, and acceptance information.
+This repository tests the protocol with conformance fixtures for a software
+application root, a profiled workflow root, and feature additions; authoring
+and beginner-use skills; a reference CLI; a generic artifact model; an official
+ProductSpec adapter; versioned capability contracts; author-controlled
+implementation-resource resolution; candidate implementation profiles;
+deterministic handoff output; agent guidance; persistent implementation notes;
+and acceptance information. Complete packages and realized solutions remain
+independently versioned in the reference-solutions repository.
 
 The platform does not enforce what an agent builds or changes. The resolved
 project supplies structured intent and evidence; the agent may map renamed

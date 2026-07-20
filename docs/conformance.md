@@ -37,7 +37,7 @@ A behavioral correction that changes whether an artifact passes, its error class
 
 Fixtures should isolate one rule where practical. Negative cases assert stable error codes rather than implementation-specific prose.
 
-## Operations in suite 1.7.0
+## Operations in suite 1.8.0
 
 - `validate` checks structural, referenced-file, configuration, artifact-reference, relationship, semantic, and content-safety behavior without invoking artifact adapters.
 - `digest-stability` checks repeated calculation over identical package bytes.

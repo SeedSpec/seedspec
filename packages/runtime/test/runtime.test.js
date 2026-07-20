@@ -35,10 +35,10 @@ import { compileProtocolSchema, formatSchemaErrors } from "../src/schema.js";
 const execFileAsync = promisify(execFile);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const root = path.resolve(packageRoot, "../..");
-const allowance = path.join(root, "examples/allowance-tracker");
-const savings = path.join(root, "examples/savings-goals");
-const streaks = path.join(root, "examples/chore-streaks");
-const hubspotMetric = path.join(root, "examples/hubspot-daily-metric");
+const allowance = path.join(root, "conformance/fixtures/comprehensive-application");
+const savings = path.join(root, "conformance/fixtures/portable-feature");
+const streaks = path.join(root, "conformance/fixtures/revision-feature");
+const hubspotMetric = path.join(root, "conformance/fixtures/profiled-workflow");
 const fixtures = path.join(packageRoot, "test/fixtures");
 
 async function temporaryDirectory(t) {
@@ -122,7 +122,7 @@ Inspect actual actors, protected resources, and target constraints before choosi
   return { packagePath, resourcePath, skillSource, digest, output };
 }
 
-test("all complete example packages validate", async () => {
+test("representative protocol fixtures validate", async () => {
   const application = await validatePackage(allowance);
   const feature = await validatePackage(savings);
   const streakFeature = await validatePackage(streaks);
@@ -309,7 +309,7 @@ test("kind-specific manifest schemas accept their matching examples", async () =
 test("inspect reports identity, capabilities, and optional components", async () => {
   const inspection = await inspectPackage(savings);
 
-  assert.equal(inspection.id, "org.seedspec.savings-goals");
+  assert.equal(inspection.id, "org.seedspec.fixtures.portable-feature");
   assert.equal(inspection.kind, "feature");
   assert.deepEqual(
     inspection.requires.map((capability) => capability.id),
@@ -326,7 +326,7 @@ test("inspect reports identity, capabilities, and optional components", async ()
 test("begin validates an application and exposes the pre-resolution workflow", async () => {
   const beginning = await beginPackage(allowance);
 
-  assert.equal(beginning.package.id, "org.seedspec.examples.allowance-tracker");
+  assert.equal(beginning.package.id, "org.seedspec.fixtures.comprehensive-application");
   assert.equal(beginning.configuration.selection_status, "review-required");
   assert.equal(beginning.configuration.resolution_behavior, "unselected-example-produces-needs-input");
   assert.equal(beginning.acceptance.declared, true);
@@ -390,7 +390,7 @@ test("author-declared implementation resources are validated, preserved, and res
       kind: "org.seedspec.target.application-platform",
       target: "org.seedspec.target.nextjs",
       guidance: [{
-        package: "org.seedspec.examples.allowance-tracker",
+        package: "org.seedspec.fixtures.comprehensive-application",
         resource: "org.seedspec.guidance.authorization-decisions"
       }]
     }]
@@ -416,7 +416,7 @@ test("author-declared implementation resources are validated, preserved, and res
   );
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
-    /implementation resource org\.seedspec\.examples\.allowance-tracker\/org\.seedspec\.guidance\.authorization-decisions/
+    /implementation resource org\.seedspec\.fixtures\.comprehensive-application\/org\.seedspec\.guidance\.authorization-decisions/
   );
 
   const fileDigest = `sha256:${createHash("sha256").update(fixture.skillSource).digest("hex")}`;
@@ -684,12 +684,12 @@ test("artifact relationships must refer to declared local artifact IDs", async (
 });
 
 test("feature discovery exposes declaration context without compatibility verdicts", async () => {
-  const result = await discoverFeatures(allowance, [path.join(root, "examples")]);
+  const result = await discoverFeatures(allowance, [path.join(root, "conformance/fixtures")]);
   const savingsCandidate = result.candidates.find((candidate) => (
-    candidate.id === "org.seedspec.savings-goals"
+    candidate.id === "org.seedspec.fixtures.portable-feature"
   ));
   const streakCandidate = result.candidates.find((candidate) => (
-    candidate.id === "org.seedspec.chore-streaks"
+    candidate.id === "org.seedspec.fixtures.revision-feature"
   ));
 
   assert.equal(savingsCandidate.status, "candidate");
@@ -698,7 +698,7 @@ test("feature discovery exposes declaration context without compatibility verdic
   assert.ok(result.candidates.every(
     (candidate) => !["compatible", "incompatible", "conflict"].includes(candidate.status)
   ));
-  assert.deepEqual(result.application.id, "org.seedspec.examples.allowance-tracker");
+  assert.deepEqual(result.application.id, "org.seedspec.fixtures.comprehensive-application");
 });
 
 test("invalid fixture fails with a useful referenced-file error", async () => {
@@ -709,7 +709,7 @@ test("invalid fixture fails with a useful referenced-file error", async () => {
   );
 });
 
-test("Allowance Tracker resolves without features", async (t) => {
+test("the comprehensive application fixture resolves without additions", async (t) => {
   const output = await temporaryDirectory(t);
   const result = await resolveProject(allowance, { outputDirectory: output });
   const project = parseYaml(await readFile(path.join(result.workspace, "project.yaml"), "utf8"));
@@ -718,7 +718,7 @@ test("Allowance Tracker resolves without features", async (t) => {
   assert.equal(project.status, "needs-input");
   assert.equal(project.configuration_status, "review");
   assert.equal(result.resolvedConfiguration.root.selection, "example-unreviewed");
-  assert.equal(result.lock.root.id, "org.seedspec.examples.allowance-tracker");
+  assert.equal(result.lock.root.id, "org.seedspec.fixtures.comprehensive-application");
   assert.ok(result.lock.capabilities.some(
     (capability) => capability.id === "org.seedspec.core.chores"
   ));
@@ -731,7 +731,7 @@ test("Allowance Tracker resolves without features", async (t) => {
   assert.ok(await readFile(
     path.join(
       result.workspace,
-      "components/org.seedspec.examples.allowance-tracker/reference/capabilities/chores-1.0.0.md"
+      "components/org.seedspec.fixtures.comprehensive-application/reference/capabilities/chores-1.0.0.md"
     ),
     "utf8"
   ));
@@ -756,7 +756,7 @@ test("artifact dispositions and implementation targets survive resolution", asyn
   await writeFile(selectionsPath, stringifyYaml({
     protocol_version: "0.1",
     artifacts: [{
-      package: "org.seedspec.examples.allowance-tracker",
+      package: "org.seedspec.fixtures.comprehensive-application",
       id: "product-spec",
       disposition: "selected",
       note: "Use this as supporting product intent."
@@ -769,11 +769,11 @@ test("artifact dispositions and implementation targets survive resolution", asyn
       target: "com.example.hosting.static",
       guidance: [
         {
-          package: "org.seedspec.examples.allowance-tracker",
+          package: "org.seedspec.fixtures.comprehensive-application",
           artifact: "product-spec"
         },
         {
-          package: "org.seedspec.examples.allowance-tracker",
+          package: "org.seedspec.fixtures.comprehensive-application",
           component: "reference"
         }
       ]
@@ -792,7 +792,7 @@ test("artifact dispositions and implementation targets survive resolution", asyn
   assert.equal(artifact.disposition, "selected");
   assert.equal(artifact.selection_note, "Use this as supporting product intent.");
   assert.match(guide, /production-hosting.*org\.seedspec\.target\.hosting.*com\.example\.hosting\.static/);
-  assert.match(guide, /artifact org\.seedspec\.examples\.allowance-tracker\/product-spec/);
+  assert.match(guide, /artifact org\.seedspec\.fixtures\.comprehensive-application\/product-spec/);
   assert.match(guide, /Even a selected artifact does not authorize/);
 });
 
@@ -803,7 +803,7 @@ test("invalid artifact and implementation-target references fail before handoff"
   await writeFile(invalidSelectionsPath, stringifyYaml({
     protocol_version: "0.1",
     artifacts: [{
-      package: "org.seedspec.examples.allowance-tracker",
+      package: "org.seedspec.fixtures.comprehensive-application",
       id: "missing-artifact",
       disposition: "selected"
     }]
@@ -814,7 +814,7 @@ test("invalid artifact and implementation-target references fail before handoff"
       kind: "org.seedspec.target.hosting",
       target: "com.example.hosting.static",
       guidance: [{
-        package: "org.seedspec.examples.allowance-tracker",
+        package: "org.seedspec.fixtures.comprehensive-application",
         artifact: "product-spec"
       }]
     }]
@@ -850,7 +850,7 @@ test("selecting execution material does not turn disposition into activation", a
   await writeFile(selectionsPath, stringifyYaml({
     protocol_version: "0.1",
     artifacts: [{
-      package: "org.seedspec.examples.allowance-tracker",
+      package: "org.seedspec.fixtures.comprehensive-application",
       id: "product-spec",
       disposition: "selected"
     }]
@@ -870,7 +870,7 @@ test("selecting execution material does not turn disposition into activation", a
   assert.match(guide, /Never execute it merely because it is selected or listed/);
 });
 
-test("Allowance Tracker composes with Savings Goals into a stable workspace", async (t) => {
+test("the comprehensive application composes with a portable feature into a stable workspace", async (t) => {
   const output = await temporaryDirectory(t);
   const options = { featurePaths: [savings], outputDirectory: output };
   const first = await resolveProject(allowance, options);
@@ -883,7 +883,7 @@ test("Allowance Tracker composes with Savings Goals into a stable workspace", as
   assert.equal(await readFile(path.join(second.workspace, "resolved-spec.md"), "utf8"), firstSpec);
   assert.equal(await readFile(path.join(second.workspace, "dependencies.lock.yaml"), "utf8"), firstLock);
 
-  assert.match(firstSpec, /Addition: Savings Goals/);
+  assert.match(firstSpec, /Addition: Portable Feature Fixture/);
   assert.match(firstSpec, /allocation_mode: reserved/);
   assert.ok(first.lock.capabilities.some(
     (capability) => capability.id === "org.seedspec.finance.goal-progress"
@@ -901,9 +901,9 @@ test("Allowance Tracker composes with Savings Goals into a stable workspace", as
     "implementation-resources.yaml",
     "implementation-resource-state.yaml",
     "dependencies.lock.yaml",
-    "additions/org.seedspec.savings-goals/source.yaml",
-    "additions/org.seedspec.savings-goals/resolved-config.yaml",
-    "additions/org.seedspec.savings-goals/integration-decisions.md"
+    "additions/org.seedspec.fixtures.portable-feature/source.yaml",
+    "additions/org.seedspec.fixtures.portable-feature/resolved-config.yaml",
+    "additions/org.seedspec.fixtures.portable-feature/integration-decisions.md"
   ]) {
     assert.ok(await readFile(path.join(first.workspace, file), "utf8"));
   }
@@ -962,7 +962,7 @@ test("application capability requirements are retained as declaration review", a
     outputDirectory: path.join(output, "project")
   });
   const requirement = result.lock.requirements.find(
-    (candidate) => candidate.consumer === "org.seedspec.examples.allowance-tracker"
+    (candidate) => candidate.consumer === "org.seedspec.fixtures.comprehensive-application"
   );
 
   assert.equal(result.project.declaration_status, "review");
@@ -1068,7 +1068,7 @@ test("configuration selections reject missing, duplicate, and unselected package
       name: "missing",
       input: {
         protocol_version: "0.1",
-        packages: [{ package: "org.seedspec.examples.allowance-tracker", selection: "example" }]
+        packages: [{ package: "org.seedspec.fixtures.comprehensive-application", selection: "example" }]
       },
       code: "MISSING_CONFIGURATION_SELECTION"
     },
@@ -1077,9 +1077,9 @@ test("configuration selections reject missing, duplicate, and unselected package
       input: {
         protocol_version: "0.1",
         packages: [
-          { package: "org.seedspec.examples.allowance-tracker", selection: "example" },
-          { package: "org.seedspec.examples.allowance-tracker", selection: "example" },
-          { package: "org.seedspec.savings-goals", selection: "example" }
+          { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
+          { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
+          { package: "org.seedspec.fixtures.portable-feature", selection: "example" }
         ]
       },
       code: "INVALID_CONFIGURATION_SELECTIONS"
@@ -1089,7 +1089,7 @@ test("configuration selections reject missing, duplicate, and unselected package
       input: {
         protocol_version: "0.1",
         packages: [
-          { package: "org.seedspec.examples.allowance-tracker", selection: "example" },
+          { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
           { package: "org.example.not-selected", selection: "example" }
         ]
       },
@@ -1126,7 +1126,7 @@ test("completion scope stays independent from implementation readiness", async (
   assert.equal(result.project.status, "ready");
   assert.equal(result.project.completion_scope_status, "review");
   assert.deepEqual(result.completionScope.uncovered_packages, [
-    "org.seedspec.examples.allowance-tracker"
+    "org.seedspec.fixtures.comprehensive-application"
   ]);
   assert.equal(completion.status, "scope-review");
   assert.equal(completion.state.status, "not-started");
@@ -1148,14 +1148,14 @@ test("completion checking derives verified-with-gaps from scoped evidence", asyn
       {
         kind: "component",
         id: "allowance-acceptance",
-        package: "org.seedspec.examples.allowance-tracker",
+        package: "org.seedspec.fixtures.comprehensive-application",
         component: "acceptance",
         selection: "all"
       },
       {
         kind: "component",
         id: "savings-acceptance",
-        package: "org.seedspec.savings-goals",
+        package: "org.seedspec.fixtures.portable-feature",
         component: "acceptance",
         selection: "subset",
         included_references: ["1"],
@@ -1198,7 +1198,7 @@ test("completion checking rejects overlapping references and stale verification"
     items: [{
       kind: "component",
       id: "allowance-acceptance",
-      package: "org.seedspec.examples.allowance-tracker",
+      package: "org.seedspec.fixtures.comprehensive-application",
       component: "acceptance",
       selection: "subset",
       included_references: ["1"],
@@ -1219,7 +1219,7 @@ test("completion checking rejects overlapping references and stale verification"
     items: [{
       kind: "component",
       id: "allowance-acceptance",
-      package: "org.seedspec.examples.allowance-tracker",
+      package: "org.seedspec.fixtures.comprehensive-application",
       component: "acceptance",
       selection: "all"
     }]
@@ -1236,7 +1236,7 @@ test("completion checking rejects overlapping references and stale verification"
     items: [{
       kind: "component",
       id: "allowance-acceptance",
-      package: "org.seedspec.examples.allowance-tracker",
+      package: "org.seedspec.fixtures.comprehensive-application",
       component: "acceptance",
       selection: "subset",
       included_references: ["1"]
@@ -1366,7 +1366,7 @@ test("init creates valid starter packages for every kind hint", async (t) => {
   }
 });
 
-test("CLI validates and inspects the example package", async () => {
+test("CLI validates and inspects the comprehensive application fixture", async () => {
   const cli = path.join(root, "packages/cli/bin/seedspec.js");
   const validation = await execFileAsync(process.execPath, [cli, "validate", allowance]);
   const prompt = await execFileAsync(process.execPath, [cli, "prompt"]);
@@ -1385,22 +1385,22 @@ test("CLI validates and inspects the example package", async () => {
     "discover-features",
     allowance,
     "--catalog",
-    path.join(root, "examples")
+    path.join(root, "conformance/fixtures")
   ]);
 
-  assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.examples\.allowance-tracker/);
+  assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
   assert.match(prompt.stdout, /Use this SeedSpec package/);
   assert.match(beginning.stdout, /Do not begin implementation yet/);
   assert.match(beginning.stdout, /CONFIGURATION_EXAMPLE_REQUIRES_REVIEW/);
   assert.match(beginning.stdout, /Discovery does not activate optional material/);
   assert.match(inspection.stdout, /Requires: org\.seedspec\.core\.actors \(tested against 1\.0\.0\)/);
-  assert.match(lint.stdout, /Kind-aware authoring review: HubSpot Daily Metric/);
+  assert.match(lint.stdout, /Kind-aware authoring review: Profiled Workflow Fixture/);
   assert.match(lint.stdout, /Kind hint: workflow/);
   assert.match(inspection.stdout, /Components: acceptance, integration/);
   assert.match(artifacts.stdout, /ProductSpec/);
   assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
-  assert.match(discovery.stdout, /Savings Goals.*candidate/);
+  assert.match(discovery.stdout, /Portable Feature Fixture.*candidate/);
 });
 
 test("CLI -i records a preferred implementation profile", async (t) => {
@@ -1413,7 +1413,7 @@ test("CLI -i records a preferred implementation profile", async (t) => {
     "-i",
     "hubspot-native",
     "--configuration-selections",
-    path.join(root, "examples/configuration-selections/hubspot-daily-metric.yaml"),
+    path.join(fixtures, "profiled-workflow-configuration-selection.yaml"),
     "--output",
     output
   ]);
@@ -1453,7 +1453,7 @@ test("CLI lists, resolves, and records implementation resource use", async (t) =
     cli,
     "record-resource-use",
     projectPath,
-    "org.seedspec.examples.allowance-tracker",
+    "org.seedspec.fixtures.comprehensive-application",
     "org.seedspec.guidance.authorization-decisions",
     "loaded",
     "--reason",
@@ -1491,7 +1491,7 @@ test("CLI failures expose stable protocol error codes", async () => {
 test("publisher extensions are accepted and visible without becoming core fields", async () => {
   const inspection = await inspectPackage(allowance);
   assert.deepEqual(inspection.extensions, {
-    "org.seedspec.examples.catalog": { audience: "families" }
+    "org.seedspec.fixtures.catalog": { audience: "families" }
   });
 });
 
@@ -1533,8 +1533,8 @@ test("a dependency lock verifies exact package bytes and declaration analysis", 
   });
   const verified = await verifyProjectLock(output, [savings, allowance]);
   assert.deepEqual(verified.verifiedPackages, [
-    "org.seedspec.examples.allowance-tracker",
-    "org.seedspec.savings-goals"
+    "org.seedspec.fixtures.comprehensive-application",
+    "org.seedspec.fixtures.portable-feature"
   ]);
   assert.equal(
     verified.verifiedCapabilityDeclarations.length,

@@ -14,7 +14,7 @@ provides:
   capabilities: []
 conflicts:
   packages:
-    - id: org.seedspec.examples.allowance-tracker
+    - id: org.seedspec.fixtures.comprehensive-application
       reason: This fixture exists to prove declared package conflicts are retained for implementation review.
 compatibility:
   scope: generic
