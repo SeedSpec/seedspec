@@ -81,7 +81,7 @@ Use `--configuration-selections <yaml>` to choose each selected package's exact 
   configurations, and integrations without kind-specific composition gates.
 - Explicit configuration choices, implementation profiles, completion scopes and structured verification state, structured decisions, artifact dispositions, validated implementation-target guidance, content-addressed locks, agent handoff guidance, and durable deviation records.
 - Author-controlled, independently versioned implementation resources with
-  selective skill loading, target and capability context, verified canonical
+  explicitly consulted package-scoped skills, target and capability context, verified canonical
   resolution, visible bundled fallbacks, and local use records.
 - Tooling tests and a format conformance suite.
 

@@ -54,7 +54,7 @@ Usage:
   seedspec artifacts <path> [--json]
   seedspec resources <path> [--json]
   seedspec resolve-resources <project-path> [--json]
-  seedspec record-resource-use <project-path> <package-id> <resource-id> <loaded|skipped> [--reason <text>] [--json]
+  seedspec record-resource-use <project-path> <package-id> <resource-id> <consulted|skipped> [--reason <text>] [--json]
   seedspec resource-digest <directory>
   seedspec adapters [--json]
   seedspec validate-artifact <path> <artifact-id> [--json]
@@ -242,7 +242,7 @@ async function run() {
       const projectPath = requirePositional(positional, 0, "project path");
       const packageId = requirePositional(positional, 1, "package ID");
       const resourceId = requirePositional(positional, 2, "resource ID");
-      const useStatus = requirePositional(positional, 3, "loaded or skipped status");
+      const useStatus = requirePositional(positional, 3, "consulted or skipped status");
       const result = await recordImplementationResourceUse(projectPath, {
         packageId,
         resourceId,

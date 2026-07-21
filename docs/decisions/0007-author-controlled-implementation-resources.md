@@ -45,8 +45,15 @@ Resolving instruction bytes is not tool activation. Resource usage never
 authorizes execution or external effects and does not override end-user or
 actual-project direction.
 
+Package-scoped skills remain distinct from environment-installed skills.
+SeedSpec validates their `SKILL.md`, resolves verified bytes, and presents the
+exact project-local entrypoint, but does not register them with a native skill
+loader or infer automatic invocation from frontmatter. The implementing agent
+explicitly consults the skill as subordinate guidance; consultation does not
+promote its instructions into solution intent.
+
 Resolved handoffs preserve an index and digest-bound state. Agents may record
-`loaded` or `skipped` with a reason as local project memory and potential eval
+`consulted` or `skipped` with a reason as local project memory and potential eval
 telemetry. Core does not transmit that state.
 
 ## Consequences

@@ -26,7 +26,12 @@ implementation_resources:
       update_policy: exact
       canonical:
         manifest_url: https://example.org/seedspec/authorization/0.1.0/resource.json
-        digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+        digest: sha256:b0a92bf7e5d46b8254a94a096df8b2f3bf1697e9665b5f9db7f7edaf92f26173
+      bundled:
+        path: guidance/authorization/
+        version: "0.1.0"
+        digest: sha256:b0a92bf7e5d46b8254a94a096df8b2f3bf1697e9665b5f9db7f7edaf92f26173
+        compatibility: exact
       applies_to:
         capabilities:
           - org.example.capability.authorization

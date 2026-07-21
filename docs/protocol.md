@@ -309,10 +309,27 @@ frontmatter when applicable. Bundled fallback use MUST be visible with the
 canonical failure reason. A runtime MUST NOT silently present fallback bytes as
 the requested online version.
 
-Resource discovery, author usage, content loading, and tool activation are
+Resource discovery, author usage, content consultation, and tool activation are
 separate. Resolving a resource MAY make verified instruction bytes available to
 an agent. It MUST NOT execute a tool or grant permission for external effects.
 See `docs/implementation-resources.md`.
+
+A resource with `kind: skill` is a package-scoped skill. Its entrypoint MUST be
+named `SKILL.md` and MUST contain non-empty `name` and `description` frontmatter.
+That frontmatter is descriptive metadata for validation and agent review. A
+SeedSpec runtime MUST NOT treat it as an automatic invocation rule, install the
+skill into an environment-wide skill registry, or promote its instructions into
+solution intent merely because the resource was declared or resolved. An
+external agent environment MAY install the skill through a separate,
+user-directed action outside SeedSpec resolution.
+
+After resource resolution, the runtime MUST expose the verified resource kind,
+root path, and entrypoint. An implementing agent can therefore explicitly
+consult `path + entrypoint` and resolve supporting-file references from the
+resource root. Consultation means the agent considered the guidance; it does
+not imply that the guidance was followed, that a tool was executed, or that the
+resulting solution satisfies the SeedSpec. Resource-use state records
+`consulted` or `skipped`, not native skill activation.
 
 ### 6.8 Implementation profiles
 
@@ -621,8 +638,11 @@ package's additional-guidance policy, catalogs, author-selected resource
 metadata, canonical references, capability and target applicability, and copied
 bundled fallbacks. `implementation-resource-state.yaml` conforms to
 `implementation-resource-state.schema.json`, binds to the exact index digest,
-and records canonical, bundled, fallback, unavailable, loaded, and skipped
-state. Resource use state is local telemetry; the protocol does not transmit it.
+and records each resource's kind and entrypoint, its canonical, bundled,
+fallback, or unavailable resolution, and its consulted or skipped use state.
+When resolution succeeds, `path` is the verified resource root and
+`path + entrypoint` locates the agent-facing entry file. Resource use state is
+local telemetry; the protocol does not transmit it.
 
 `implementation-profile-state.yaml` conforms to
 `implementation-profile-state.schema.json`. It is the single project-level

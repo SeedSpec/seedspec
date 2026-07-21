@@ -77,6 +77,9 @@ help implement this feature. Let the author choose usage and additional-guidance
 policy. Associate resources with capabilities or targets only as discovery
 context, not implementation-state evidence, and include a digest-verified
 bundled failsafe when offline or version-unavailable operation matters.
+Treat bundled skills as package-scoped guidance that agents explicitly consult;
+do not assume frontmatter installs or automatically invokes them, and do not put
+feature behavior or success criteria only in the skill.
 
 Validate and inspect:
 

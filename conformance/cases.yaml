@@ -46,7 +46,7 @@ cases:
       code: INVALID_MANIFEST
 
   - id: validate-implementation-resource-declarations
-    description: Authors can select versioned implementation resources and delegate additional discovery without asserting implementation capability.
+    description: Authors can bundle a digest-verified package-scoped SKILL.md, select versioned implementation resources, and delegate additional discovery without asserting implementation capability or native skill installation.
     operation: validate
     package: fixtures/implementation-resources
     expect:

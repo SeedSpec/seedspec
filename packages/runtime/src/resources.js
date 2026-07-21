@@ -333,10 +333,32 @@ export function createInitialImplementationResourceState(index) {
     resources: index.resources.map((resource) => ({
       package: resource.package,
       id: resource.id,
+      kind: resource.kind,
       usage: resource.usage,
+      entrypoint: resource.entrypoint,
       resolution_status: "not-resolved",
       use_status: "not-recorded"
     }))
+  };
+}
+
+function normalizeImplementationResourceState(state, index) {
+  if (!state || typeof state !== "object" || !Array.isArray(state.resources)) return state;
+  const declarations = new Map(index.resources.map((resource) => [
+    resourceKey(resource.package, resource.id),
+    resource
+  ]));
+  return {
+    ...state,
+    resources: state.resources.map((resource) => {
+      const declaration = declarations.get(resourceKey(resource.package, resource.id));
+      return {
+        ...resource,
+        ...(resource.kind ? {} : { kind: declaration?.kind }),
+        ...(resource.entrypoint ? {} : { entrypoint: declaration?.entrypoint }),
+        ...(resource.use_status === "loaded" ? { use_status: "consulted" } : {})
+      };
+    })
   };
 }
 
@@ -344,9 +366,13 @@ export async function reconcileImplementationResourceState(workspace, index) {
   const statePath = path.join(workspace, "implementation-resource-state.yaml");
   const initial = createInitialImplementationResourceState(index);
   if (await pathExists(statePath)) {
-    const existing = await readYamlFile(statePath, "Implementation resource state");
+    const existing = normalizeImplementationResourceState(
+      await readYamlFile(statePath, "Implementation resource state"),
+      index
+    );
     const validate = await compileProtocolSchema("implementation-resource-state.schema.json");
     if (validate(existing) && existing.index_digest === initial.index_digest) {
+      await writeFile(statePath, stringifyYaml(existing), "utf8");
       return existing;
     }
   }
@@ -591,7 +617,9 @@ function unavailableResourceState(resource, error, reason) {
   return {
     package: resource.package,
     id: resource.id,
+    kind: resource.kind,
     usage: resource.usage,
+    entrypoint: resource.entrypoint,
     resolution_status: "unavailable",
     reason_code: error?.code ?? "IMPLEMENTATION_RESOURCE_UNAVAILABLE",
     reason: explanation.slice(0, 1000),
@@ -626,7 +654,9 @@ async function resolveOneResource(workspace, resource, fetchImpl) {
       return {
         package: resource.package,
         id: resource.id,
+        kind: resource.kind,
         usage: resource.usage,
+        entrypoint: resource.entrypoint,
         resolution_status: "bundled",
         resolved_version: resource.bundled.version,
         digest: resource.bundled.digest,
@@ -647,7 +677,9 @@ async function resolveOneResource(workspace, resource, fetchImpl) {
     return {
       package: resource.package,
       id: resource.id,
+      kind: resource.kind,
       usage: resource.usage,
+      entrypoint: resource.entrypoint,
       resolution_status: "online",
       resolved_version: downloaded.version,
       digest: downloaded.digest,
@@ -672,7 +704,9 @@ async function resolveOneResource(workspace, resource, fetchImpl) {
     return {
       package: resource.package,
       id: resource.id,
+      kind: resource.kind,
       usage: resource.usage,
+      entrypoint: resource.entrypoint,
       resolution_status: "bundled-fallback",
       resolved_version: resource.bundled.version,
       digest: resource.bundled.digest,
@@ -711,7 +745,10 @@ export async function resolveImplementationResources(projectPath, {
 
   let previousUse = new Map();
   if (await pathExists(statePath)) {
-    const previous = await readYamlFile(statePath, "Implementation resource state");
+    const previous = normalizeImplementationResourceState(
+      await readYamlFile(statePath, "Implementation resource state"),
+      index
+    );
     const validatePreviousState = await compileProtocolSchema(
       "implementation-resource-state.schema.json"
     );
@@ -783,6 +820,7 @@ export function formatImplementationResourceResolution(state) {
       `- ${resource.package}/${resource.id}: ${resource.resolution_status}`,
       ...(resource.resolved_version ? [`  Version: ${resource.resolved_version}`] : []),
       ...(resource.path ? [`  Local path: ${resource.path}`] : []),
+      ...(resource.path ? [`  ${resource.kind === "skill" ? "Skill" : "Resource"} entrypoint: ${resource.path}${resource.entrypoint}`] : []),
       ...(resource.reason ? [`  Fallback/unavailable reason: ${resource.reason_code} — ${resource.reason}`] : [])
     );
   }
@@ -795,7 +833,7 @@ export async function recordImplementationResourceUse(projectPath, {
   useStatus,
   reason
 }) {
-  if (!["loaded", "skipped"].includes(useStatus)) {
+  if (!["consulted", "skipped"].includes(useStatus)) {
     throw new SeedSpecError(`Unsupported implementation resource use status: ${useStatus}`, {
       code: "INVALID_IMPLEMENTATION_RESOURCE_USE"
     });
@@ -806,7 +844,7 @@ export async function recordImplementationResourceUse(projectPath, {
     "Implementation resource index"
   );
   const statePath = path.join(workspace, "implementation-resource-state.yaml");
-  const state = await readYamlFile(statePath, "Implementation resource state");
+  const rawState = await readYamlFile(statePath, "Implementation resource state");
   const validateIndex = await compileProtocolSchema("implementation-resource-index.schema.json");
   if (!validateIndex(index)) {
     throw new SeedSpecError("Implementation resource index is invalid", {
@@ -814,6 +852,7 @@ export async function recordImplementationResourceUse(projectPath, {
       details: formatSchemaErrors(validateIndex.errors)
     });
   }
+  const state = normalizeImplementationResourceState(rawState, index);
   const validateExistingState = await compileProtocolSchema(
     "implementation-resource-state.schema.json"
   );
@@ -839,10 +878,10 @@ export async function recordImplementationResourceUse(projectPath, {
     });
   }
   if (
-    useStatus === "loaded"
+    useStatus === "consulted"
     && ["not-resolved", "unavailable"].includes(resource.resolution_status)
   ) {
-    throw new SeedSpecError(`Implementation resource cannot be recorded as loaded before resolution: ${packageId}/${resourceId}`, {
+    throw new SeedSpecError(`Implementation resource cannot be recorded as consulted before resolution: ${packageId}/${resourceId}`, {
       code: "IMPLEMENTATION_RESOURCE_NOT_RESOLVED"
     });
   }

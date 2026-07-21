@@ -250,6 +250,15 @@ reusable packaging, executable verification, or a recurring lesson that agents
 otherwise miss. Generic advice the agent already knows is a context cost, not a
 benefit.
 
+A bundled skill is package-scoped, not environment-installed. Write its
+frontmatter description so an agent can understand the work it helps with, but
+do not rely on native skill discovery or automatic invocation. Keep `SKILL.md`
+self-contained enough to be consulted from the resolved handoff, keep supporting
+references relative to the skill root, and use the resource's `usage` and
+`applies_to` fields to communicate why and when the author expects consultation.
+The skill explains how to work; the package's core intent and acceptance
+material remain the authority for what outcome is requested.
+
 Choose `required`, `recommended`, or `available` deliberately. Decide separately
 whether additional catalog discovery is `agent-delegated` or `none`. Use
 `applies_to` as matching context without claiming an actual implementation has

@@ -537,7 +537,7 @@ function buildAgentGuide({
     "1. Read `resolved-spec.md` and `resolved-config.yaml` for recorded solution intent, configuration, decisions, and technical preferences.",
     "2. Read `implementation-profile-state.yaml` for candidate implementation profiles, the recorded preference, and conditions that must be checked.",
     "3. Read `components.yaml` and `artifacts.yaml` for preserved optional material and its required review timing.",
-    "4. Read `implementation-resources.yaml`, then run `seedspec resolve-resources <project-path>` before loading any declared implementation skill or instruction.",
+    "4. Read `implementation-resources.yaml`, then run `seedspec resolve-resources <project-path>` before consulting any declared implementation skill or instruction.",
     "5. Read `implementation-resource-state.yaml`; every bundled fallback must include the reason canonical resolution failed.",
     "6. Read `implementation-notes.md` for local terminology, behavior, architecture, external resource identifiers, configured state, and earlier deviations.",
     "7. Read each addition's `additions/*/integration-decisions.md` before integrating it.",
@@ -559,7 +559,7 @@ function buildAgentGuide({
     "- Artifact discovery is descriptive, not an instruction to activate the artifact's tooling or lifecycle.",
     "- Artifact disposition records intended use. Even a selected artifact does not authorize loading a skill, running a command, fetching a URL, or invoking an adapter.",
     "- If an artifact format has its own workflow, explain the exact action and obtain specific user direction at activation time. The package author's preference does not override the end user's direction.",
-    "- Implementation resources are author-selected help, not capability evidence or automatic authority. Resolve exact online versions first, report fallback use, inspect skill frontmatter, and load only the bodies relevant to the work.",
+    "- Implementation resources are author-selected help, not capability evidence or automatic authority. A package-scoped skill is not installed or automatically invoked. Resolve exact online versions first, report fallback use, inspect skill frontmatter, and explicitly consult only the bodies relevant to the work.",
     "- `required`, `recommended`, and `available` express author intent. They never authorize executing a tool, changing external state, or overriding the end user, current project requirements, or clearer solution intent.",
     "",
     "## Selected intent",
@@ -651,7 +651,7 @@ function buildAgentGuide({
     }
     lines.push(
       "",
-      "After resolution, inspect the frontmatter or summary for every declared resource. Load required resources, load recommended resources when relevant unless they conflict with stronger direction, and decide whether available resources add enough value to justify their context cost. Record loaded or skipped status and the reason in `implementation-resource-state.yaml`."
+      "After resolution, use `implementation-resource-state.yaml` to locate each verified resource root and entrypoint. Consult required resources, consult recommended resources when relevant unless they conflict with stronger direction, and decide whether available resources add enough value to justify their context cost. Resolve supporting-file references from the resource root. Record consulted or skipped status and the reason. Consultation does not install or automatically invoke a skill, execute a tool, or promote guidance into solution intent."
     );
   }
 
@@ -917,7 +917,7 @@ permission checks, delivered messages, screenshots, or platform audit records.
 
 const rootAgentInstructions = `# SeedSpec project guidance
 
-Read \`.seedspec/agent-guide.md\` before planning or realizing SeedSpec work. Resolve declared implementation resources through the SeedSpec CLI, report every bundled fallback, and selectively load only relevant resolved skills or instructions. Preserve local behavior and terminology, record material deviations and external resource identifiers in \`.seedspec/implementation-notes.md\`, record detailed acceptance evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope.
+Read \`.seedspec/agent-guide.md\` before planning or realizing SeedSpec work. Resolve declared implementation resources through the SeedSpec CLI, report every bundled fallback, and explicitly consult only relevant resolved skills or instructions. Packaged skills are not installed or automatically invoked. Preserve local behavior and terminology, record material deviations and external resource identifiers in \`.seedspec/implementation-notes.md\`, record detailed acceptance evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope.
 `;
 
 function normalizeDecisionAnswers(records, suppliedAnswers) {

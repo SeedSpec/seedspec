@@ -145,7 +145,7 @@ If the resolved project reports `needs-input`, inspect `configuration_status`, `
 
 ### 7. Prepare the implementation agent
 
-Before loading any author-selected implementation resource, run:
+Before consulting any author-selected implementation resource, run:
 
 ```text
 $SEEDSPEC resolve-resources <project-path>
@@ -153,8 +153,11 @@ $SEEDSPEC resolve-resources <project-path>
 
 Explain every `bundled-fallback` or `unavailable` result. An unavailable required
 resource must be resolved or explicitly overridden before continuing. Inspect
-frontmatter or summaries for all resolved resources, load bodies selectively,
-and do not execute tools without separate action-time direction.
+frontmatter or summaries for all resolved resources, consult bodies selectively,
+and do not execute tools without separate action-time direction. A packaged
+skill is not installed into the environment or automatically invoked: find its
+verified root and entrypoint in `implementation-resource-state.yaml`, explicitly
+read `SKILL.md`, and resolve supporting files from that root.
 
 Have the implementation agent read, in order:
 
@@ -178,7 +181,7 @@ Ask the user about their implementation ecosystem only when it becomes relevant:
 
 During implementation, preserve established behavior and terminology unless the user requests a migration. Record material mappings and deviations in `.seedspec/implementation-notes.md`, detailed acceptance evidence in `.seedspec/verification-report.md`, and concise per-scope results in `.seedspec/verification-state.yaml`.
 
-Record each resolved resource as `loaded` or `skipped` with a concise reason by
+Record each resolved resource as `consulted` or `skipped` with a concise reason by
 using `seedspec record-resource-use`. This is local project memory and optional
 evaluation telemetry; do not transmit it without separate user or environment
 authorization.

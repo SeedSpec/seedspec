@@ -15,7 +15,7 @@ seedspec artifacts <path> [--json]
 seedspec resources <path> [--json]
 seedspec resource-digest <directory>
 seedspec resolve-resources <project-path> [--json]
-seedspec record-resource-use <project-path> <package-id> <resource-id> <loaded|skipped> [--reason <text>] [--json]
+seedspec record-resource-use <project-path> <package-id> <resource-id> <consulted|skipped> [--reason <text>] [--json]
 seedspec adapters [--json]
 seedspec validate-artifact <path> <artifact-id> [--json]
 seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
@@ -51,7 +51,7 @@ content.
 
 `resources` lists author-selected implementation resources, usage levels,
 version policy, canonical locations, bundled fallback locations, applicability,
-and additional-guidance policy without fetching or loading content.
+and additional-guidance policy without fetching or consulting content.
 `resource-digest` computes the content digest authors place on a bundled
 resource directory.
 
@@ -94,8 +94,15 @@ the reason. A
 required unavailable resource makes the command fail after state is written;
 recommended and available failures produce degraded state.
 
-`record-resource-use` records `loaded` or `skipped` plus an optional reason in
-local digest-bound state. Core does not export this telemetry.
+For every resolved resource, the command reports the verified project-local
+root and exact entrypoint. A `skill` entrypoint is a package-scoped `SKILL.md`:
+the agent explicitly consults it from that location. Resolution does not copy it
+into a native skill registry, install it globally, or cause frontmatter-based
+automatic invocation.
+
+`record-resource-use` records `consulted` or `skipped` plus an optional reason in
+local digest-bound state. `consulted` means the verified guidance was considered,
+not necessarily followed. Core does not export this telemetry.
 
 Addition argument order is not semantic. `declaration-review-v1` records additions in deterministic package-ID order and preserves all capability candidates, revision comparisons, conflicts, and cycles as author-supplied review context. Missing or multiple declarations do not reject an addition because the runtime cannot observe the real implementation. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, deterministic order, declaration candidates, and review records from explicitly supplied package directories.
 

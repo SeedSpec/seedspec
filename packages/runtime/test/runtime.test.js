@@ -539,6 +539,8 @@ test("author-declared implementation resources are validated, preserved, and res
   ));
   assert.equal(resource.bundled.digest, fixture.digest);
   assert.equal(initialState.status, "not-resolved");
+  assert.equal(initialState.resources[0].kind, "skill");
+  assert.equal(initialState.resources[0].entrypoint, "SKILL.md");
   assert.ok(await readFile(
     path.join(result.workspace, resource.bundled.path, resource.entrypoint),
     "utf8"
@@ -550,6 +552,10 @@ test("author-declared implementation resources are validated, preserved, and res
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
     /implementation resource org\.seedspec\.fixtures\.comprehensive-application\/org\.seedspec\.guidance\.authorization-decisions/
+  );
+  assert.match(
+    await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
+    /package-scoped skill is not installed or automatically invoked/i
   );
 
   const fileDigest = `sha256:${createHash("sha256").update(fixture.skillSource).digest("hex")}`;
@@ -587,6 +593,8 @@ test("author-declared implementation resources are validated, preserved, and res
   assert.equal(resolvedState.status, "resolved");
   assert.equal(resolvedState.resources[0].resolution_status, "online");
   assert.equal(resolvedState.resources[0].resolved_version, "0.1.0");
+  assert.equal(resolvedState.resources[0].kind, "skill");
+  assert.equal(resolvedState.resources[0].entrypoint, "SKILL.md");
   assert.equal(
     await readFile(
       path.join(result.workspace, resolvedState.resources[0].path, "SKILL.md"),
@@ -599,12 +607,19 @@ test("author-declared implementation resources are validated, preserved, and res
     {
       packageId: resource.package,
       resourceId: resource.id,
-      useStatus: "loaded",
+      useStatus: "consulted",
       reason: "Relevant to the selected actor and target decisions."
     }
   );
-  assert.equal(useRecord.use_status, "loaded");
+  assert.equal(useRecord.use_status, "consulted");
   assert.match(useRecord.use_reason, /selected actor and target/);
+
+  const statePath = path.join(result.workspace, "implementation-resource-state.yaml");
+  const legacyState = parseYaml(await readFile(statePath, "utf8"));
+  legacyState.resources[0].use_status = "loaded";
+  delete legacyState.resources[0].kind;
+  delete legacyState.resources[0].entrypoint;
+  await writeFile(statePath, stringifyYaml(legacyState), "utf8");
 
   const rerun = await resolveProject(fixture.packagePath, {
     outputDirectory: path.join(fixture.output, "project"),
@@ -614,7 +629,9 @@ test("author-declared implementation resources are validated, preserved, and res
     path.join(rerun.workspace, "implementation-resource-state.yaml"),
     "utf8"
   ));
-  assert.equal(preservedState.resources[0].use_status, "loaded");
+  assert.equal(preservedState.resources[0].use_status, "consulted");
+  assert.equal(preservedState.resources[0].kind, "skill");
+  assert.equal(preservedState.resources[0].entrypoint, "SKILL.md");
   assert.equal(
     await readFile(
       path.join(rerun.workspace, preservedState.resources[0].path, "SKILL.md"),
@@ -1627,7 +1644,7 @@ test("CLI lists, resolves, and records implementation resource use", async (t) =
     projectPath,
     "org.seedspec.fixtures.comprehensive-application",
     "org.seedspec.guidance.authorization-decisions",
-    "loaded",
+    "consulted",
     "--reason",
     "Relevant test fixture"
   ]);
@@ -1635,7 +1652,8 @@ test("CLI lists, resolves, and records implementation resource use", async (t) =
   assert.match(listing.stdout, /authorization-decisions.*recommended/);
   assert.equal(digest.stdout.trim(), fixture.digest);
   assert.match(resolution.stdout, /authorization-decisions: bundled/);
-  assert.match(usage.stdout, /loaded.*Relevant test fixture/);
+  assert.match(resolution.stdout, /Skill entrypoint: .*\/resolved\/SKILL\.md/);
+  assert.match(usage.stdout, /consulted.*Relevant test fixture/);
 });
 
 test("CLI failures expose stable protocol error codes", async () => {

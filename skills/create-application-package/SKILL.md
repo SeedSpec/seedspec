@@ -77,6 +77,11 @@ them, change `required`, `recommended`, or `available` usage, and choose
 frontmatter lets the implementing agent decide relevance. Do not include generic
 advice merely to make the package appear more complete.
 
+Treat a bundled skill as package-scoped guidance. It will be explicitly
+consulted from the resolved handoff, not installed or automatically invoked by
+frontmatter. Keep supporting references relative to the skill root, and keep
+solution behavior and success criteria in the SeedSpec rather than the skill.
+
 For a bundled failsafe, compute its exact bytes with
 `seedspec resource-digest <directory>`. Keep capability and target applicability advisory; it helps
 resource discovery but never claims that the resulting application implements

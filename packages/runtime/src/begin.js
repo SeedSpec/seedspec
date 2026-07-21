@@ -59,7 +59,7 @@ export async function beginPackage(inputPath) {
     ...(implementationResources?.additional_guidance === "agent-delegated" ? [{
       code: "IMPLEMENTATION_GUIDANCE_DELEGATED",
       level: "information",
-      message: "The author delegated discovery of additional implementation guidance to the agent. Inspect only the declared catalog summaries that are relevant to the actual task before loading full resources."
+      message: "The author delegated discovery of additional implementation guidance to the agent. Inspect only the declared catalog summaries that are relevant to the actual task before consulting full resources."
     }] : []),
     ...(implementationProfiles.length > 1 ? [{
       code: "IMPLEMENTATION_PROFILE_REQUIRES_REVIEW",
@@ -145,7 +145,7 @@ export async function beginPackage(inputPath) {
       {
         id: "review-implementation-resources",
         action: implementationResources
-          ? "Review the author's declared implementation-resource policy, resource summaries, usage levels, capability/target applicability, and bundled fallback availability. Resolution does not execute tools or load full skills."
+          ? "Review the author's declared implementation-resource policy, resource summaries, usage levels, capability/target applicability, and bundled fallback availability. Resolution does not execute tools, install skills, or invoke skills automatically."
           : "No implementation-resource policy was declared. Do not infer that the author accepted or rejected additional SeedSpec guidance."
       },
       {
@@ -296,7 +296,7 @@ export function formatPackageBeginning(beginning) {
 
   lines.push(
     "",
-    "Resource declarations express author intent, not proof that a capability exists or permission to execute a tool. The resolved handoff preserves bundled copies and canonical version references. Use the first-party resolver after handoff creation; any fallback must be reported with its reason.",
+    "Resource declarations express author intent, not proof that a capability exists or permission to execute a tool. A packaged skill is not installed or automatically invoked; after first-party resolution the implementing agent explicitly consults its verified SKILL.md when relevant. The resolved handoff preserves bundled copies and canonical version references. Any fallback must be reported with its reason.",
     "",
     "## Readiness notices",
     ""

@@ -13,6 +13,69 @@ They solve a different problem from capability contracts:
 - the implementing agent still determines what exists in the actual code and
   whether any guidance fits the current project and end-user request.
 
+## Core intent, implementation profiles, and skills
+
+A SeedSpec package is the portable container. Its core intent describes the
+particular solution outcome through the definition, configuration surface,
+consequential decisions, capability contracts, constraints, and acceptance
+material. Selecting and resolving the package changes what the implementing
+agent is being asked to accomplish.
+
+The same package may contain zero or more implementation profiles. Each profile
+describes a package-specific way to implement the core intent, including its
+prerequisites, blockers, tradeoffs, guidance, and relevant implementation
+resources. Multiple profiles preserve alternative realizations without changing
+the outcome they are intended to satisfy.
+
+A skill describes a reusable way of performing work. It may teach an agent how
+to make a class of decisions, use a technology, integrate a system, or verify an
+outcome. Consulting a skill does not add behavior to the solution contract and
+does not change how success is judged unless the package's core intent says so
+independently.
+
+| | Core intent | Implementation profile | Skill |
+| --- | --- | --- | --- |
+| Primary question | What should be accomplished, and how is success judged? | How could this package's core intent be implemented? | How can an agent perform a recurring kind of work well? |
+| Typical scope | One portable solution or feature shape | One package-specific realization direction | A reusable method, domain practice, or tool workflow |
+| Package cardinality | One coherent core intent | Zero or more alternatives | Zero or more bundled or referenced resources |
+| Authority | Selected solution intent and recorded end-user decisions | Strong, conditional implementation guidance | Subordinate implementation guidance |
+| Lifecycle | Validate, configure, resolve, realize, and verify | Compare, prefer, verify conditions, and apply or reconsider | Discover, resolve, consult or skip, and optionally record use |
+| Effect on success | Defines or carries the acceptance target | Must satisfy the core intent; cannot redefine it | May help achieve or verify the target; cannot redefine it |
+
+A package may carry or reference skills because a portable solution often needs
+specialized implementation knowledge. The skill remains a distinct resource;
+its Markdown does not become part of the core intent merely because it travels
+with the package.
+
+## Package-scoped skills
+
+A SeedSpec resource with `kind: skill` is a **package-scoped skill**. Its
+directory may be bundled in the package or retrieved from a canonical resource
+manifest. SeedSpec validates and resolves that directory into the project
+handoff, but does not install it into an agent environment's global or personal
+skill registry.
+
+An environment-installed skill may be registered with an agent harness and made
+discoverable or automatically selected through its frontmatter. SeedSpec makes
+no such assumption for a package-scoped skill. Its `SKILL.md` frontmatter is
+descriptive metadata used for validation and review; it is not an automatic
+invocation rule or execution authority.
+
+For package-scoped resources, **consult** means that the implementing agent:
+
+1. explicitly resolves the declared bytes through `seedspec resolve-resources`;
+2. finds the verified resource root and entrypoint in
+   `.seedspec/implementation-resource-state.yaml`;
+3. reads `SKILL.md` and only the supporting files relevant to the task, resolving
+   relative references from the resource root;
+4. applies the useful guidance beneath system, end-user, project, and SeedSpec
+   intent; and
+5. records the resource as `consulted` or `skipped`, with a reason when useful.
+
+Consulting does not install, register, automatically invoke, execute, or promise
+to obey the skill. It records that the agent considered the verified guidance.
+Any tool execution or external effect still needs its own authority.
+
 ## Author control
 
 `implementation_resources` is optional. Omission means the package contains no
@@ -24,7 +87,7 @@ When present, `additional_guidance` is explicit:
 - `none` limits SeedSpec guidance to the resources the author declared; or
 - `agent-delegated` allows the implementing agent to inspect relevant summaries
   from the declared public catalogs and decide whether any additional resource
-  deserves loading.
+  deserves consultation.
 
 This policy controls additional SeedSpec implementation resources. It does not
 prevent the implementing agent from applying its own engineering knowledge or
@@ -32,9 +95,9 @@ following stronger end-user and project direction.
 
 An author-selected resource has one usage level:
 
-- `required` means the author expects the resource to be loaded for relevant
+- `required` means the author expects the resource to be consulted for relevant
   implementation work;
-- `recommended` means the agent should normally load it when relevant, unless
+- `recommended` means the agent should normally consult it when relevant, unless
   stronger project or user direction conflicts; and
 - `available` means the agent should inspect its summary or frontmatter and
   decide whether the expected benefit justifies its context cost.
@@ -88,11 +151,13 @@ Core recognizes `skill`, `instructions`, `verification`, `tool`, and
 automatic activation.
 
 A skill entrypoint is named `SKILL.md` and has compact YAML frontmatter with a
-non-empty `name` and `description`. Agents inspect summaries first and load full
-skill bodies selectively. The resource may include supporting files beneath its
+non-empty `name` and `description`. Agents inspect summaries first and consult
+full skill bodies selectively. For package-scoped skills, this is explicit
+consultation rather than native skill installation or automatic activation. The
+resource may include supporting files beneath its
 root.
 
-Tools remain untrusted executable content. Resolving or loading tool guidance
+Tools remain untrusted executable content. Resolving or consulting tool guidance
 does not grant permission to execute it.
 
 ## Version and fallback resolution
@@ -148,7 +213,7 @@ Resolution writes:
 - `.seedspec/implementation-resources.yaml`, containing exact author policy,
   canonical references, applicability, and copied bundled fallbacks;
 - `.seedspec/implementation-resource-state.yaml`, bound to the index digest and
-  recording online, bundled, fallback, unavailable, loaded, or skipped state;
+  recording online, bundled, fallback, unavailable, consulted, or skipped state;
   and
 - `.seedspec/implementation-resources/`, containing bundled and resolved bytes.
 
@@ -156,7 +221,7 @@ After deciding whether a resolved resource helped, an implementing agent can
 record optional telemetry without exporting it:
 
 ```bash
-seedspec record-resource-use <project-path> <package-id> <resource-id> loaded \
+seedspec record-resource-use <project-path> <package-id> <resource-id> consulted \
   --reason "Relevant to the selected target and persistence design."
 ```
 

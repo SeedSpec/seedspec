@@ -37,14 +37,20 @@
       "required": [
         "package",
         "id",
+        "kind",
         "usage",
+        "entrypoint",
         "resolution_status",
         "use_status"
       ],
       "properties": {
         "package": { "$ref": "#/$defs/namespacedId" },
         "id": { "$ref": "#/$defs/namespacedId" },
+        "kind": {
+          "enum": ["skill", "instructions", "verification", "tool", "target-profile"]
+        },
         "usage": { "enum": ["required", "recommended", "available"] },
+        "entrypoint": { "$ref": "#/$defs/relativePath" },
         "resolution_status": {
           "enum": ["not-resolved", "online", "bundled", "bundled-fallback", "unavailable"]
         },
@@ -54,7 +60,7 @@
         "source_url": { "type": "string", "format": "uri" },
         "reason_code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
         "reason": { "type": "string", "minLength": 1, "maxLength": 1000 },
-        "use_status": { "enum": ["not-recorded", "loaded", "skipped"] },
+        "use_status": { "enum": ["not-recorded", "consulted", "skipped"] },
         "use_reason": { "type": "string", "minLength": 1, "maxLength": 1000 }
       }
     }

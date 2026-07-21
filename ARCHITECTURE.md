@@ -50,6 +50,8 @@ SeedSpec packages + product configuration + implementation-profile preference + 
 - Discovery is not activation; artifact presence does not authorize an agent workflow.
 - Authors choose which versioned implementation resources travel with a package;
   agents inspect summaries and apply them against actual project and user context.
+- Package-scoped skills are resolved and explicitly consulted from the handoff;
+  they are not installed into a native skill registry or automatically invoked.
 - The end user directs the implementation agent.
 - Official adapters add optional depth without becoming protocol dependencies.
 - Handoff and lineage over permanent control of a realized solution.
