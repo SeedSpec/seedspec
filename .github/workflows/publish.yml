@@ -1,0 +1,120 @@
+name: Stage npm packages
+
+run-name: Stage npm packages by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage_protocol:
+        description: Stage @seedspec/protocol
+        required: true
+        default: false
+        type: boolean
+      stage_runtime:
+        description: Stage @seedspec/runtime
+        required: true
+        default: false
+        type: boolean
+      stage_cli:
+        description: Stage @seedspec/cli
+        required: true
+        default: false
+        type: boolean
+      dist_tag:
+        description: npm distribution tag
+        required: true
+        default: next
+        type: choice
+        options:
+          - next
+          - latest
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-stage
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    name: Test and stage selected packages
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - name: Require main and at least one package
+        env:
+          STAGE_PROTOCOL: ${{ inputs.stage_protocol }}
+          STAGE_RUNTIME: ${{ inputs.stage_runtime }}
+          STAGE_CLI: ${{ inputs.stage_cli }}
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "npm packages may only be staged from main; received $GITHUB_REF" >&2
+            exit 1
+          fi
+
+          if [[ "$STAGE_PROTOCOL" != "true" && "$STAGE_RUNTIME" != "true" && "$STAGE_CLI" != "true" ]]; then
+            echo "Select at least one package to stage." >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install staged-publishing npm version
+        run: npm install --global npm@11.18.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check packages
+        run: npm run check
+
+      - name: Check protocol conformance
+        run: npm run conformance
+
+      - name: Stage @seedspec/protocol
+        if: ${{ inputs.stage_protocol }}
+        working-directory: packages/protocol
+        env:
+          NPM_DIST_TAG: ${{ inputs.dist_tag }}
+        run: npm stage publish --tag "$NPM_DIST_TAG"
+
+      - name: Stage @seedspec/runtime
+        if: ${{ inputs.stage_runtime }}
+        working-directory: packages/runtime
+        env:
+          NPM_DIST_TAG: ${{ inputs.dist_tag }}
+        run: npm stage publish --tag "$NPM_DIST_TAG"
+
+      - name: Stage @seedspec/cli
+        if: ${{ inputs.stage_cli }}
+        working-directory: packages/cli
+        env:
+          NPM_DIST_TAG: ${{ inputs.dist_tag }}
+        run: npm stage publish --tag "$NPM_DIST_TAG"
+
+      - name: Record approval instructions
+        env:
+          STAGE_PROTOCOL: ${{ inputs.stage_protocol }}
+          STAGE_RUNTIME: ${{ inputs.stage_runtime }}
+          STAGE_CLI: ${{ inputs.stage_cli }}
+          NPM_DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          {
+            echo "## Packages staged for npm review"
+            echo
+            echo "Distribution tag: \`$NPM_DIST_TAG\`"
+            echo
+            echo "- @seedspec/protocol: $STAGE_PROTOCOL"
+            echo "- @seedspec/runtime: $STAGE_RUNTIME"
+            echo "- @seedspec/cli: $STAGE_CLI"
+            echo
+            echo "Review the staged packages on npm and approve them with 2FA in dependency order: protocol, runtime, then CLI."
+          } >> "$GITHUB_STEP_SUMMARY"
