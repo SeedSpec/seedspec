@@ -10,5 +10,5 @@ and incident response expectation before implementation. Use least-privilege
 HubSpot and Slack access, make the daily operation idempotent, and record durable
 resource and deployment identifiers.
 
-The implementation agent should choose architecture with the end user after
+The implementing agent should choose architecture with the end user after
 inspecting the target environment and technical preferences.

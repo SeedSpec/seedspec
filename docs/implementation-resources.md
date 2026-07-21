@@ -1,8 +1,11 @@
 # Implementation resources
 
+> **Informative guidance.** Normative resource declarations, resolution state,
+> and trust boundaries are defined by the protocol specification and schemas.
+
 SeedSpec implementation resources let an author package or reference skills,
 instructions, verification material, tools, and target profiles without turning
-those materials into claims about the resulting application.
+those materials into claims about the resulting realization.
 
 They solve a different problem from capability contracts:
 
@@ -238,4 +241,4 @@ guidance without placing provider-specific behavior in SeedSpec core.
 
 Target guidance must be resolved before architecture choices that it can
 affect. It remains guidance: neither its selection nor a successful download
-proves that the final application is deployable to that target.
+proves that the final realization satisfies that target.

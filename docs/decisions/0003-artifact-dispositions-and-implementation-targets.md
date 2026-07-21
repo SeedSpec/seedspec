@@ -1,5 +1,8 @@
 # ADR 0003: Artifact dispositions and implementation targets
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 Status: accepted for the design alpha
 
 ## Context
@@ -45,7 +48,7 @@ selected, declined, explicitly deferred, or never reviewed. Executable material
 can be selected as intended input without converting a data record into broad
 action authority.
 
-Hosting providers, including future SeedSpec commercial products, can publish
+Hosting and platform providers can publish
 namespaced targets and guidance without becoming part of the neutral protocol.
 The implementing agent remains responsible for the actual architecture, conflict
 resolution, testing, and deployment readiness.

@@ -1183,7 +1183,7 @@ async function buildResolvedSpecification({
   );
 
   if (unresolvedDecisions.length === 0) {
-    lines.push("No package-declared decisions remain unresolved. An implementation agent must still surface any new semantic conflict it discovers.");
+    lines.push("No package-declared decisions remain unresolved. An implementing agent must still surface any new semantic conflict it discovers.");
   } else {
     lines.push(...unresolvedDecisions.map((decision) => (
       `- **${decision.package}/${decision.id}**${decision.required ? " (required)" : ""}: ${decision.question}`

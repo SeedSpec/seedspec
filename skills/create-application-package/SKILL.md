@@ -5,7 +5,7 @@ description: Turn a rough software product idea into a portable, implementation-
 
 # Create SeedSpec application package
 
-Create durable product intent, not an implementation plan. Accept starting material ranging from one sentence to a detailed specification or working application. Keep frameworks, databases, cloud providers, and repository layouts out of the package unless the product outcome genuinely depends on them. The runtime supplies general coding-agent handoff guidance separately.
+Create durable core intent, not an implementation plan. Accept starting material ranging from one sentence to a detailed specification or working application. Keep frameworks, databases, cloud providers, and repository layouts out of the package unless the intended outcome genuinely depends on them. The runtime supplies general coding-agent handoff guidance separately.
 
 ## 1. Select authoring depth
 
@@ -36,7 +36,7 @@ Separate required core behavior from optional features. Do not fold optional ide
 
 ## 3. Resolve only material ambiguity
 
-Ask a targeted question only when different answers would materially change product behavior, permissions, accounting, irreversible data treatment, or package portability. Group closely related decisions. Continue with clearly recorded, reversible example values for routine details; the example is not automatically a buyer-selected default.
+Ask a targeted question only when different answers would materially change product behavior, permissions, accounting, irreversible data treatment, or package portability. Group closely related decisions. Continue with clearly recorded, reversible example values for routine details; the example is not automatically an end-user-selected default.
 
 Never ask the user to choose manifest syntax, directories, schema mechanics, or implementation technology as part of product discovery.
 

@@ -1,5 +1,8 @@
 # Package composition
 
+> **Informative guidance.** The normative composition algorithm and resolved
+> state requirements are defined in `docs/protocol.md` and the conformance suite.
+
 The normative algorithm is `declaration-review-v1` in `docs/protocol.md`.
 Resolution begins with one root package and an unordered user selection of
 additions. Manifest kind hints do not constrain either position.
@@ -36,7 +39,7 @@ Resolution does not fail merely because:
 - a provider revision differs from `tested_against`; or
 - compatibility scope does not name the root package.
 
-Those conditions become review context. The implementation agent may discover
+Those conditions become review context. The implementing agent may discover
 that the real solution already implements an equivalent capability under
 different terminology, that an addition should supply missing behavior, that two
 declarations can be mapped together, or that an author concern genuinely blocks

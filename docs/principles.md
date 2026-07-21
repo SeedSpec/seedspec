@@ -1,5 +1,8 @@
 # SeedSpec Protocol decision principles
 
+> **Informative design guidance.** These principles guide protocol evolution;
+> they are not independently conformance requirements.
+
 SeedSpec packages intent and the context that helps an agent realize it. The
 protocol makes those materials portable, discoverable, composable, and
 verifiable without claiming control over agent execution or promising identical
@@ -72,7 +75,7 @@ Declaring an artifact makes it discoverable. It does not:
 - execute the artifact;
 - load an artifact-provided skill or prompt;
 - activate an artifact-specific workflow;
-- make the artifact authoritative to an implementation agent;
+- make the artifact authoritative to an implementing agent;
 - authorize changes to the artifact, codebase, or external system.
 
 Runtimes may inspect descriptive metadata needed to explain an artifact and locate compatible tooling. Behavior-changing tooling requires an explicit user action.
@@ -89,11 +92,11 @@ from its frontmatter. The implementing agent explicitly consults the verified
 `SKILL.md` when relevant. The skill supplies reusable implementation knowledge;
 it does not become solution intent or a success criterion.
 
-## The end user directs the implementation agent
+## The end user directs the implementing agent
 
 SeedSpec authors describe an intended solution and may record decisions,
 constraints, relationships, alternatives, and evidence. They cannot guarantee
-that a later implementation agent will follow those materials.
+that a later implementing agent will follow those materials.
 
 An execution engine should surface consequential choices, relevant artifacts,
 and material conflicts to its end user. The agent may compare alternatives and
@@ -159,7 +162,7 @@ Capability, compatibility, and conflict fields record what package authors
 designed, tested, or expect. SeedSpec does not continuously inspect the realized
 solution and cannot prove that a capability is present, absent, compatible,
 or conflicting. Composition preserves those declarations as review context; the
-implementation agent evaluates them against actual code, external state, and
+implementing agent evaluates them against actual code, external state, and
 user intent.
 
 Implementation resources do not change this boundary. A resource associated

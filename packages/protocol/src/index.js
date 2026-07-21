@@ -1,6 +1,11 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const protocolVersion = "0.1";
+export const protocolPackageVersion = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+).version;
+export const conformanceSuiteVersion = "1.9.0";
 
 export const protocolSchemaNames = Object.freeze([
   "seedspec.schema.json",

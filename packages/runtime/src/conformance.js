@@ -9,7 +9,26 @@ import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { validatePackage } from "./validate.js";
 
 function resolveFixture(indexDirectory, relativePath) {
-  return path.resolve(indexDirectory, relativePath);
+  const resolved = path.resolve(indexDirectory, relativePath);
+  const relative = path.relative(indexDirectory, resolved);
+  if (relative.startsWith(`..${path.sep}`) || relative === ".." || path.isAbsolute(relative)) {
+    throw new SeedSpecError(`Conformance fixture path escapes the suite directory: ${relativePath}`, {
+      code: "INVALID_CONFORMANCE_SUITE"
+    });
+  }
+  return resolved;
+}
+
+function validateFixturePaths(suite, indexDirectory) {
+  for (const testCase of suite.cases) {
+    const paths = [
+      testCase.package,
+      testCase.root,
+      testCase.decisions,
+      ...(testCase.additions ?? [])
+    ].filter(Boolean);
+    for (const fixturePath of paths) resolveFixture(indexDirectory, fixturePath);
+  }
 }
 
 async function executeCase(testCase, indexDirectory, outputDirectory) {
@@ -232,6 +251,7 @@ export async function runConformanceSuite(indexPath) {
       details: formatSchemaErrors(validateSuite.errors)
     });
   }
+  validateFixturePaths(suite, indexDirectory);
 
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-conformance-"));
   const results = [];
@@ -285,7 +305,7 @@ export function formatConformanceResult(result) {
   ));
   lines.push(
     "",
-    `${result.passed}/${result.total} cases passed for SeedSpec Protocol ${result.protocolVersion}`
+    `${result.passed}/${result.total} cases passed for SeedSpec Protocol ${result.protocolVersion} (suite ${result.suiteVersion})`
   );
   return lines.join("\n");
 }

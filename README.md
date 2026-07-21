@@ -25,15 +25,16 @@ Independently versioned packages and their realized outputs live in
 Run the CLI without installing it globally:
 
 ```bash
-npx @seedspec/cli --help
-npx @seedspec/cli validate <package-path>
-npx @seedspec/cli audit <package-path>
-npx @seedspec/cli begin <package-path>
+npx --yes @seedspec/cli@next --help
+npx --yes @seedspec/cli@next version
+npx --yes @seedspec/cli@next validate <package-path>
+npx --yes @seedspec/cli@next audit <package-path>
+npx --yes @seedspec/cli@next begin <package-path>
 ```
 
-The npm packages use prerelease versions while the protocol remains a design
-alpha. Pin exact versions when building tools that depend on its schemas or
-runtime behavior.
+The `next` tag identifies the current public design-alpha CLI. Pin exact
+prerelease versions when building tools that depend on schemas, conformance
+behavior, or runtime output.
 
 ## Work on the protocol
 
@@ -66,13 +67,14 @@ Use `--configuration-selections <yaml>` to choose each selected package's exact 
 - Self-contained conformance fixtures for a comprehensive application,
   portable and revision-different features, and a workflow with several
   implementation profiles. These are test data, not reference packages.
-- A generic `seedspec` CLI with a buyer-to-agent prompt, kind-aware authoring
+- A generic `seedspec` CLI with a package-to-agent instruction, kind-aware authoring
   audits, bundled authoring guidance, read-only root-package bootstrap,
   validation, inspection, artifact adapters, feature discovery, resolution,
   and initialization.
 - Kind-aware authoring lint that keeps advisory scope and completeness feedback
   separate from protocol validity.
-- Authoring skills for application and feature packages, plus a beginner-facing `use-seedspec` lifecycle skill.
+- Authoring skills for application and feature packages, plus a guided
+  `use-seedspec` lifecycle skill.
 - A generic artifact model and explicit ProductSpec adapter backed by the official ProductSpec parser.
 - Versioned capability contracts, provider candidates, compatibility statements,
   and conflicts that create implementation review context rather than dependency
@@ -85,7 +87,24 @@ Use `--configuration-selections <yaml>` to choose each selected package's exact 
   resolution, visible bundled fallbacks, and local use records.
 - Tooling tests and a format conformance suite.
 
-The layers and alpha boundary are summarized in [ARCHITECTURE.md](ARCHITECTURE.md). The protocol's decision principles are recorded in [docs/principles.md](docs/principles.md). [Use cases](docs/use-cases.md) include applications, configured SaaS systems, cross-system automations, composite enterprise solutions, and distribution models. The decision to keep those outcomes in one protocol is recorded in [ADR 0008](docs/decisions/0008-one-protocol-for-agent-realized-solutions.md); kind hints and implementation profiles are defined in [ADR 0009](docs/decisions/0009-kind-hints-and-implementation-profiles.md), with operational guidance in [kind-aware authoring](docs/kind-guidance.md) and [implementation profiles and state](docs/implementation-profiles.md). The artifact and ProductSpec boundary is documented in [docs/adapters.md](docs/adapters.md). The current format is described in [docs/protocol.md](docs/protocol.md) and [packages/protocol/schemas/v0.1/](packages/protocol/schemas/v0.1/).
+The layers and alpha boundary are summarized in [ARCHITECTURE.md](ARCHITECTURE.md),
+the public vocabulary is defined in the [glossary](docs/glossary.md), and the
+release domains are explained in [versioning](docs/versioning.md). The
+protocol's decision principles are recorded in
+[docs/principles.md](docs/principles.md). [Use cases](docs/use-cases.md) include
+applications, configured SaaS systems, cross-system automations, composite
+enterprise solutions, and distribution models. The decision to keep those
+outcomes in one protocol is recorded in [ADR
+0008](docs/decisions/0008-one-protocol-for-agent-realized-solutions.md); kind
+hints and implementation profiles are defined in [ADR
+0009](docs/decisions/0009-kind-hints-and-implementation-profiles.md), with
+operational guidance in [kind-aware authoring](docs/kind-guidance.md) and
+[implementation profiles and state](docs/implementation-profiles.md). The
+artifact and ProductSpec boundary is documented in
+[docs/adapters.md](docs/adapters.md). The normative format is defined by
+[docs/protocol.md](docs/protocol.md), the
+[schemas](packages/protocol/schemas/v0.1/), and the
+[conformance suite](conformance/cases.yaml).
 
 Capability contracts and author-selected skills, instructions, verification,
 tools, and target profiles are separated in
@@ -99,7 +118,7 @@ packages/
 ├── runtime/     reference validation, resolution, and conformance library
 └── cli/         the seedspec command-line interface
 conformance/     portable conformance cases and fixtures
-docs/            specification guidance and protocol decisions
+docs/            normative specification, informative guidance, and rationale
 skills/          authoring and implementation-handoff workflows
 ```
 
@@ -112,7 +131,7 @@ maintained as independent consumers.
 ```text
 idea + optional native artifacts
   -> SeedSpec root package
-  -> addition discovery + product configuration
+  -> addition discovery + package configuration
   -> resolved project specification
   -> user-directed agent handoff
   -> agent-realized solution + verification evidence
@@ -124,7 +143,7 @@ existing project
   -> SeedSpec feature package
   -> updated resolved specification
   -> integration review
-  -> implementation agent adapts the existing solution
+  -> implementing agent adapts the existing solution
 ```
 
 ```text

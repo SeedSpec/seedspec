@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harden SeedSpec Protocol"
+  short_description: "Audit protocol language and publication readiness"
+  default_prompt: "Use $harden-seedspec-protocol to audit and harden the SeedSpec protocol for publication."

@@ -1,5 +1,8 @@
 # ADR 0004: Capability declarations are review context
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 Status: accepted for the design alpha; package-kind gating and feature-order terminology are superseded by ADR 0009
 
 ## Context
@@ -9,7 +12,7 @@ manager state. It rejected a selected feature when no package declared a
 required capability, multiple packages declared the same capability, an author
 declared a conflict, or declared requirements formed a cycle.
 
-SeedSpec does not implement or continuously inspect the resulting application.
+SeedSpec does not implement or continuously inspect the resulting realization.
 It cannot know whether equivalent behavior already exists under different
 terminology, whether a feature should add missing behavior, whether declarations
 can be mapped together, or whether an author concern applies to current code.
@@ -43,7 +46,7 @@ been factually wrong.
 
 ## Consequences
 
-An implementation agent receives more complete and honest context. It must
+An implementing agent receives more complete and honest context. It must
 inspect actual code, tests, data, permissions, and local concepts, then map,
 adapt, implement, or decline behavior with the end user.
 

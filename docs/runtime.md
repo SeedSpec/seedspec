@@ -1,11 +1,16 @@
 # SeedSpec Runtime
 
-The runtime is a neutral CLI and JavaScript library. It does not know about
-marketplace commercial editions or any particular agent prompt format.
+> **Informative reference documentation.** This document describes the
+> first-party CLI and JavaScript runtime, not requirements for every conforming
+> implementation.
+
+The runtime is a neutral CLI and JavaScript library. It does not depend on
+marketplace product policy or any particular agent prompt format.
 
 ## Commands
 
 ```text
+seedspec version [--json]
 seedspec prompt
 seedspec begin <root-package-path> [--json]
 seedspec validate <path>
@@ -26,7 +31,14 @@ seedspec verify-lock <project-path> --package <path> [--package <path>]
 seedspec completion <project-path> [--json]
 ```
 
-`prompt` prints a short, agent-agnostic instruction that a package distributor or buyer can give to an implementation agent. It delegates the detailed workflow to version-compatible official tooling rather than embedding a long marketplace-maintained prompt.
+`prompt` prints a short, agent-agnostic instruction that a distributor or end
+user can give to an implementing agent. It delegates the detailed workflow to
+version-compatible official tooling rather than embedding a separately
+maintained distributor prompt.
+
+`version` reports the CLI, runtime, protocol-schema-package, conformance-suite, and
+protocol-family versions. Integrations should use `--json` and record all five
+values with interoperability results.
 
 The CLI ships a compatible local copy of the operational instructions needed to
 use SeedSpec. An environment that supports independently versioned online core
@@ -34,9 +46,8 @@ instructions must request the version selected by protocol compatibility first.
 If it must use the bundled compatible copy, it must tell the user the requested
 and resolved versions and why canonical resolution failed. Core operational
 instructions are not an author-selectable implementation resource. The 0.1
-reference CLI currently uses its bundled instructions; the separate public core
-instruction channel and its resolver are not part of this implementation-
-resource change.
+reference CLI currently uses its bundled instructions; a separate online core
+instruction channel and resolver are outside the current reference runtime.
 
 `begin` is the read-only entry point for an agent that has received a root package. It validates the package, inventories configuration, decisions, implementation profiles, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, select configuration or an implementation profile, execute package content, fetch remote artifacts, or activate an artifact workflow.
 
@@ -77,10 +88,10 @@ runs or workspaces rather than write competing states into one handoff.
 `completion` validates the resolved scope and structured verification state,
 checks their digest and exact item coverage, and derives `scope-review`,
 `not-started`, `in-progress`, `failed`, `verified-with-gaps`, or `verified`. It
-does not run application tests or inspect external systems; the implementation
+does not run application tests or inspect external systems; the implementing
 agent records truthful results and evidence first.
 
-Technical preferences may include provider-neutral `implementation_targets` with namespaced kind and target IDs plus validated references to selected package guidance. Referenced artifacts must be selected. The generated guide surfaces targets before architecture planning but does not claim that the final application is compatible or deployable.
+Technical preferences may include provider-neutral `implementation_targets` with namespaced kind and target IDs plus validated references to selected package guidance. Referenced artifacts must be selected. The generated guide surfaces targets before architecture planning but does not claim that the final realization is compatible or deployable.
 
 Target guidance may reference an author-declared implementation resource as
 well as a component or selected artifact.
@@ -135,7 +146,7 @@ The resulting workspace is:
 └── additions/
 ```
 
-The output is deliberately readable by both people and implementation agents.
+The output is deliberately readable by both people and implementing agents.
 The runtime supplies implementation guidance and project-memory scaffolding,
 but the end user directs how the agent uses optional artifact workflows and
 whether it may make consequential changes. SeedSpec does not choose or change

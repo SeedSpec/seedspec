@@ -1,8 +1,33 @@
-# SeedSpec Package Format 0.1 Alpha
+# SeedSpec Protocol 0.1: Package and Handoff Specification
 
-Status: published design alpha
+**Status:** Published design alpha
 
-This document describes the current package and handoff format. The JSON Schemas in `packages/protocol/schemas/v0.1/` define what the reference tooling accepts. Everything remains open to reconsideration before a later public release.
+| Release identifier | Value |
+| --- | --- |
+| Protocol family | `0.1` |
+| Schema package | `@seedspec/protocol@0.1.0-alpha.2` |
+| Conformance suite | `1.9.0` |
+
+This document defines the normative SeedSpec package and handoff format for
+Protocol 0.1. The normative release bundle consists of this specification, the
+JSON Schemas in `packages/protocol/schemas/v0.1/`, and the conformance contract
+indexed by `conformance/cases.yaml`. These surfaces are coequal parts of the
+contract. A contradiction among them is a protocol defect; an implementation
+MUST NOT silently choose a preferred source and claim conformance.
+
+Documents marked informative explain authoring, runtime use, security, and
+examples. Architecture decision records preserve non-normative rationale. The
+informative `docs/glossary.md` defines the terminology used across those public
+surfaces.
+
+Informative release guidance for the independent version domains is available
+in `docs/versioning.md`.
+
+Protocol 0.1 is published for implementation and interoperability testing.
+Design-alpha revisions may contain incompatible corrections. Each release MUST
+identify its exact protocol family, schema-package version, and conformance-suite
+version; tooling and integrations that require reproducibility SHOULD pin those
+revisions explicitly.
 
 Format validation constrains SeedSpec artifacts and deterministic runtime
 output. It does not make agent execution deterministic or constrain the
@@ -134,7 +159,10 @@ Four version domains are independent:
 
 A runtime MUST reject an unsupported protocol version with `UNSUPPORTED_PROTOCOL_VERSION`. It MUST NOT guess compatibility from a numerically close version.
 
-Within the alpha, a schema path identifies the format revision used for testing. Pre-release revisions may still change before a durable public contract exists.
+Within the design alpha, `"0.1"` identifies the protocol family. The exact
+prerelease contract is identified by the published schema-package and
+conformance-suite versions. An implementation MUST report those exact versions
+when presenting conformance results.
 
 ### 5.2 Package version
 
@@ -251,7 +279,7 @@ A package-local artifact path MUST exist and may reference a regular file or dir
 Artifact declaration is discovery, not activation or authority. Protocol 0.1
 deliberately has no artifact `authority`, `governing`, or `advisory` field.
 Lineage or precedence claims may be recorded as descriptive relationships, but
-they do not require an implementation agent to adopt the artifact's workflow,
+they do not require an implementing agent to adopt the artifact's workflow,
 keep a realized solution synchronized with it, or treat it as current system
 truth. Adapter-specific behavior requires explicit invocation by a user or
 execution environment.
@@ -350,21 +378,21 @@ expectation, and optional guidance. Core methods are `user-confirmation`,
 `environment-inspection`, `tool-check`, `document-review`, and
 `manual-observation`; `evidence` is `none`, `optional`, or `required`.
 Publishers MAY use a namespaced custom method. Generic tooling MUST preserve
-it and SHOULD ask the agent to follow supplied guidance or obtain user
-direction.
+it and SHOULD surface supplied guidance and any need for user direction.
 
 These are conditions to establish, not predetermined question wording or
-authorization to perform the check. An agent SHOULD use available read-only
-evidence first and ask the user when confirmation, access, or consequential
-interpretation is required. Package validation and profile resolution MUST NOT
-execute a tool, access an account, or claim that a condition holds.
+authorization to perform the check. Generated handoff guidance SHOULD direct an
+implementing agent to use available read-only evidence first and request user
+confirmation when access or consequential interpretation is required. Package
+validation and profile resolution MUST NOT execute a tool, access an account,
+or claim that a condition holds.
 
 A new verification method belongs in the core enum only when it has recurring
 use across independent packages, is semantically distinct from existing
 methods, gives a generic agent a clear responsibility, has a documented
 evidence and trust model, has safe fallback behavior, and is covered by schema,
 conformance, authoring-diagnostic, and end-to-end example tests. Namespaced
-experimentation SHOULD precede core promotion. See
+experimentation should precede core promotion. See
 `docs/implementation-profiles.md`.
 
 Profile IDs MUST be unique within a package. Condition IDs MUST be unique within
@@ -384,8 +412,8 @@ material differences and ask which direction to prefer. When a preference is
 recorded, the handoff MUST preserve all candidates, emphasize the preferred
 profile, and instruct the agent to verify its prerequisites and blocker
 conditions. If the preference conflicts with the actual environment or core
-intent, the agent MUST present the conflict and request direction rather than
-silently switching profiles.
+intent, the handoff MUST instruct the implementing agent to present the conflict
+and request direction rather than silently switching profiles.
 
 Resolution MUST produce exactly one project-level implementation profile state.
 That state preserves the profiles from every selected package and records at
@@ -433,7 +461,7 @@ supply a human-readable reason.
 
 When a declaration matches selected packages or capability declarations,
 resolution preserves a review record with the declaring author's reason. It
-does not reject the handoff. The implementation agent must determine whether
+does not reject the handoff. The implementing agent determines whether
 the concern applies to the actual code, configuration, or external state and
 resolve consequential conflicts with the end user.
 
@@ -457,8 +485,9 @@ Resolution preserves unanswered declarations. A project has:
 - `status: needs-input` otherwise.
 
 Unanswered decisions and unselected configuration do not disappear or silently
-become defaults. Execution engines SHOULD refuse consequential implementation
-choices while project status is `needs-input`.
+become defaults. A handoff with `status: needs-input` MUST identify the unresolved
+inputs and instruct the implementing agent not to make consequential choices
+until they are resolved.
 
 ### 9.1 Completion scope and verification
 
@@ -480,8 +509,8 @@ the runtime does not claim that a named reference exists inside the prose.
 Every selected package needs at least one included component or criterion item
 for `completion_scope_status: recorded`. Otherwise the resolved scope lists the
 package under `uncovered_packages` and reports `review`. Completion-scope review
-does not change project input readiness, but an implementing agent MUST NOT
-claim verified completion while selected packages remain uncovered.
+does not change project input readiness. Completion tooling MUST NOT report
+`verified` while selected packages remain uncovered.
 
 Resolution creates `verification-state.yaml` only when missing. It binds to a
 canonical digest of `completion-scope.yaml` and creates one result for every
@@ -673,19 +702,24 @@ verification state stale until an agent reconciles it.
 
 ## 13. Conformance
 
-The reference runtime's format checks:
+An implementation conforms to Protocol 0.1 when it:
 
-1. pass every applicable case in `conformance/cases.yaml`;
-2. produce schema-valid project and lock documents;
-3. calculate identical package digests;
-4. produce the declared deterministic addition order;
-5. return the specified stable error code for negative cases.
+1. passes every applicable case in `conformance/cases.yaml`;
+2. produces schema-valid project and lock documents;
+3. calculates identical package digests;
+4. produces the declared deterministic addition order; and
+5. returns the specified stable error code for negative cases.
 
-Human-readable error wording may vary. Error codes used by the alpha suite keep the reference tooling testable.
+Human-readable error wording MAY vary. Stable error codes are interoperability
+outputs asserted by the conformance suite.
 
 Schema validation alone is insufficient because content safety, digests,
 deterministic declaration analysis, review records, reference integrity, and
 decisions require semantic validation.
+
+Conformance establishes agreement with the package and handoff contract. It
+does not certify a package, evaluate an implementing agent, or prove that a
+realization satisfies its core intent.
 
 ## 14. Trust and non-goals
 

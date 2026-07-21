@@ -1,5 +1,8 @@
 # ADR 0008: One protocol for agent-realized solutions
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 - Status: accepted for the 0.1 design alpha; the kind decision is superseded by ADR 0009
 - Date: 2026-07-19
 
@@ -34,7 +37,7 @@ larger solution.
 ## Decision
 
 SeedSpec remains one protocol for packaging intent that an agent can realize.
-The intended result MAY be software, configured system state, an automation, a
+The intended result may be software, configured system state, an automation, a
 generated operational artifact, or a composite of those forms.
 
 SeedSpec does not promise deterministic agent execution or identical outputs.
@@ -43,9 +46,9 @@ context, offer resources and alternative approaches, record constraints, and
 define observable success. Specificity of intent is not prescription of
 execution.
 
-The end user directs the implementation agent. The agent MAY compare authored
+The end user directs the implementing agent. The agent may compare authored
 approaches, identify conflicts with the actual environment, and recommend that
-the user reconsider a choice. It MUST NOT silently replace an explicit user
+the user reconsider a choice. It must not silently replace an explicit user
 choice merely because another authored approach appears preferable.
 
 Protocol 0.1 originally deferred new package kinds while non-application
@@ -55,13 +58,13 @@ of the decision: `kind` is now descriptive, root/addition role comes from
 resolution position, and implementation profiles carry candidate realization
 context.
 
-Authoring tools MAY branch their questions and quality checks for applications,
+Authoring tools may branch their questions and quality checks for applications,
 configured systems, automations, and composite solutions without making those
 flows separate protocols or making a sparse but honest package invalid.
 
 ## Alternative realizations
 
-One package MAY preserve several suggested ways to realize the same intent.
+One package may preserve several suggested ways to realize the same intent.
 These alternatives are decision context, not automatically active execution
 instructions. A resolved handoff should make the user's selected direction
 prominent while retaining concise information about declined, deferred, or

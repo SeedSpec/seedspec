@@ -1,11 +1,14 @@
 # Kind-aware authoring guidance
 
+> **Informative guidance.** Manifest `kind` semantics are normative; the
+> authoring questions and diagnostics in this document are recommendations.
+
 Manifest `kind` is a strong hint about the expected shape of a package. It does
 not determine whether the package may be a composition root or addition, and it
 does not add kind-specific conformance requirements.
 
 That flexibility must not make `kind` decorative. Authoring and inspection
-tools SHOULD ask different questions, recommend different levels of detail, and
+tools should ask different questions, recommend different levels of detail, and
 surface likely scope mistakes based on the hint selected by the author.
 
 ## Validation and authoring review are different
@@ -17,7 +20,7 @@ the outcome the author says it describes.
 A sparse but honest package can be protocol-valid while receiving several
 recommendations. Likewise, a detailed package can be valid while receiving a
 review diagnostic that some content appears to prescribe implementation rather
-than describe core intent. Kind-aware diagnostics MUST NOT silently rewrite the
+than describe core intent. Kind-aware diagnostics must not silently rewrite the
 package or become hidden publication gates.
 
 The reference CLI exposes this distinction:
@@ -41,7 +44,7 @@ diagnostic codes for likely missing kind concepts, implementation technology in
 core intent, application-UI scope in configurations or integrations,
 unspecified profile applicability or tradeoffs, question-shaped conditions,
 custom verification methods, and evidence-producing methods that decline to
-record evidence. Tooling MAY improve detection without changing package
+record evidence. Tooling may improve detection without changing package
 validity; changes to the meaning of a diagnostic code should be treated as a
 tooling compatibility change.
 
@@ -118,7 +121,7 @@ usually belong in profiles.
 
 ## Scope diagnostics
 
-Authoring tools SHOULD identify content that appears inconsistent with the kind
+Authoring tools should identify content that appears inconsistent with the kind
 without asserting that the content is always wrong. Useful diagnostics include:
 
 - missing concepts normally material to that kind;

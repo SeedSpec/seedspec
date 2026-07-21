@@ -27,7 +27,7 @@ claim that such an adaptation is tested or lossless.
 - A Slack administrator or channel owner authorizes message delivery to the
   intended workspace and channel.
 - Sales leaders view the dashboard and receive the briefing.
-- The implementation agent may inspect and change only the accounts and
+- The implementing agent may inspect and change only the accounts and
   resources explicitly placed in scope by the end user.
 
 ## Intended state

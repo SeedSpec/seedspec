@@ -6,13 +6,14 @@ SeedSpec packages.
 ## Run without installing
 
 ```bash
-npx @seedspec/cli --help
+npx --yes @seedspec/cli@next --help
+npx --yes @seedspec/cli@next version
 ```
 
 ## Install
 
 ```bash
-npm install --global @seedspec/cli
+npm install --global @seedspec/cli@next
 seedspec --help
 ```
 
@@ -20,6 +21,7 @@ Common entry points:
 
 ```bash
 seedspec validate <package-path>
+seedspec version --json
 seedspec audit <package-path>
 seedspec audit <package-path> --area material-ambiguity
 seedspec audit <package-path> --status

@@ -1,5 +1,9 @@
 # Security and trust model
 
+> **Informative security guidance.** This document explains the reference threat
+> model and operational safeguards. Protocol validity is not a security
+> endorsement.
+
 SeedSpec packages are untrusted input. Validation is not a security endorsement.
 
 ## Runtime requirements
@@ -41,9 +45,9 @@ of change; use an approved credential provider or an explicitly authorized
 authenticated session; preview consequential or irreversible operations when
 possible; and obtain any direction required by the environment's safety model.
 
-Packages may declare credential requirements and handling constraints, but MUST
+Packages may declare credential requirements and handling constraints, but must
 NOT contain live credentials, session tokens, private keys, recovery codes, or
-secrets. Execution receipts and verification evidence SHOULD record stable
+secrets. Execution receipts and verification evidence should record stable
 resource identifiers and observations without copying credentials or sensitive
 customer data.
 

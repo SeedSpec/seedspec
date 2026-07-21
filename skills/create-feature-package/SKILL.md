@@ -1,6 +1,6 @@
 ---
 name: create-feature-package
-description: Turn a feature idea into a validated SeedSpec feature package, either for an existing resolved SeedSpec project or as a standalone reusable capability. Use when defining a feature before implementation, adding durable product intent to a project, declaring required and provided capabilities, documenting integration behavior, or generalizing an application-specific feature for reuse.
+description: Turn a feature idea into a validated SeedSpec feature package, either for an existing resolved SeedSpec project or as a standalone reusable capability. Use when defining a feature before implementation, adding durable core intent to a project, declaring required and provided capabilities, documenting integration behavior, or generalizing an application-specific feature for reuse.
 ---
 
 # Create SeedSpec feature package
@@ -37,7 +37,7 @@ Define:
 - failure, retry, concurrency, deletion, and historical behavior;
 - observable acceptance criteria.
 
-Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as a buyer-selected default.
+Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as an end-user-selected default.
 
 ## 3. Set the portability boundary
 
@@ -50,7 +50,7 @@ Use `compatibility.scope` deliberately:
 Do not claim generic compatibility merely because names can be changed. Remove unnecessary screen, route, framework, publisher, and host-specific assumptions.
 
 Compatibility scope records where the author intended or tested the feature. It
-does not prove compatibility or incompatibility with a future implementation.
+does not prove compatibility or incompatibility with a realization.
 
 ## 4. Declare capabilities and configuration
 
@@ -69,7 +69,7 @@ Run `seedspec init feature --output <package-path>` when available, then write:
 - `integration/requirements.md` with host mappings, authorization, atomicity, and unresolved-decision rules;
 - `acceptance/criteria.md` with observable host-independent behavior.
 
-Preserve useful source specifications, designs, execution plans, infrastructure descriptions, and evidence as separately declared artifacts. Label their concerns and relationships without claiming they govern the future implementation agent. Do not require ProductSpec or any other native format simply to make a SeedSpec feature package appear rigorous.
+Preserve useful source specifications, designs, execution plans, infrastructure descriptions, and evidence as separately declared artifacts. Label their concerns and relationships without claiming they govern the implementing agent. Do not require ProductSpec or any other native format simply to make a SeedSpec feature package appear rigorous.
 
 At packaging time, optionally select independently versioned skills,
 instructions, verification material, tools, or target profiles that materially
@@ -113,4 +113,4 @@ When asked to generalize an existing feature:
 7. Reassess compatibility scope honestly.
 8. Validate and resolve again without relying on undocumented origin context.
 
-Finish only when the package validates, its requirements are sufficient but minimal, and a future integrator can identify every host-specific decision that remains.
+Finish only when the package validates, its requirements are sufficient but minimal, and an independent integrator can identify every host-specific decision that remains.

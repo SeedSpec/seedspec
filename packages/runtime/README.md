@@ -6,7 +6,7 @@ verifying SeedSpec packages.
 ## Install
 
 ```bash
-npm install @seedspec/runtime
+npm install @seedspec/runtime@next
 ```
 
 ## Example

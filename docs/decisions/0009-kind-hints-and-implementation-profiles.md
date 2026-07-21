@@ -1,5 +1,8 @@
 # ADR 0009: Kind hints and implementation profiles
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 - Status: accepted for the 0.1 design alpha
 - Date: 2026-07-20
 

@@ -9,13 +9,15 @@ leaving execution to an implementing agent under the end user's direction.
 ## Install
 
 ```bash
-npm install @seedspec/protocol
+npm install @seedspec/protocol@next
 ```
 
 ## Use
 
 ```js
 import {
+  conformanceSuiteVersion,
+  protocolPackageVersion,
   protocolSchemaNames,
   protocolVersion,
   schemaDirectory
@@ -30,4 +32,7 @@ Protocol `0.1` is a design alpha. Pin exact prerelease versions when building
 interoperable tools.
 
 - Documentation: [seedspec.dev](https://seedspec.dev)
+- Specification: [Protocol 0.1](https://github.com/SeedSpec/seedspec/blob/main/docs/protocol.md)
+- Canonical schemas: [seedspec.dev/schemas/v0.1](https://seedspec.dev/schemas/v0.1/seedspec.schema.json)
+- Conformance suite: [cases.yaml](https://github.com/SeedSpec/seedspec/blob/main/conformance/cases.yaml)
 - Source: [SeedSpec/seedspec](https://github.com/SeedSpec/seedspec)

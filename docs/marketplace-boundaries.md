@@ -1,5 +1,8 @@
 # Marketplace Boundaries
 
+> **Informative guidance.** This document separates portable protocol behavior
+> from registry and marketplace policy; it does not define a marketplace API.
+
 The SeedSpec Protocol defines portable packages and artifact discovery
 metadata. It does not define remote registry search, related-solution ranking,
 package acquisition, payments, licensing, reviews, certification, or publisher

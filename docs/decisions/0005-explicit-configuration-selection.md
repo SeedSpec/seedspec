@@ -1,5 +1,8 @@
 # ADR 0005: Configuration examples are not defaults
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 Status: accepted for the design alpha
 
 ## Context

@@ -1,4 +1,4 @@
-suite_version: "1.8.0"
+suite_version: "1.9.0"
 protocol_version: "0.1"
 
 cases:
@@ -199,7 +199,7 @@ cases:
     operation: resolve
     root: fixtures/comprehensive-application
     additions:
-      - ../packages/runtime/test/fixtures/unmet-feature
+      - fixtures/unmet-capability-feature
     configuration_selection: examples
     expect:
       result: pass

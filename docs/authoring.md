@@ -1,5 +1,8 @@
 # SeedSpec Authoring
 
+> **Informative guidance.** This document describes authoring practices and
+> reference tooling; it does not define package conformance.
+
 Authoring is a guided intent-discovery and refinement workflow, not a
 requirement to hand-edit manifests. The reference interfaces below all produce
 the same portable protocol package and leave room for additional authoring
@@ -23,17 +26,17 @@ currently provides:
   tool version; and
 - agent-guided application and feature authoring skills under `skills/`.
 
-Future tooling MAY offer web forms, conversational agent flows, visual editors,
+Additional tooling may offer web forms, conversational agent flows, visual editors,
 language-specific builders, or other higher-level frontends that compile to the
 canonical package. Such frontends could provide reusable helpers, stronger
 construction errors, collaborative review, and organization-specific
 conventions without becoming dependencies of the generated SeedSpec.
 
-Generated output MUST pass ordinary package validation and MUST be usable by a
+Generated output must pass ordinary package validation and must be usable by a
 consumer that has none of the authoring frontend installed. Executable authoring
-source MAY travel as an optional artifact, but validation or implementation
-MUST NOT execute it implicitly. Reproducible authoring tools SHOULD produce the
-same package bytes from the same source and inputs and SHOULD surface generated
+source may travel as an optional artifact, but validation or implementation
+must not execute it implicitly. Reproducible authoring tools should produce the
+same package bytes from the same source and inputs and should surface generated
 changes for author review.
 
 ## Agent-guided audit lifecycle
@@ -84,7 +87,7 @@ The ordered review areas are:
    review across package concerns.
 5. **Progressive hardening** evaluates the requested capture, shape, harden,
    compose, or package depth without treating depth as a quality score.
-6. **Agent-ready handoff** tests the package as a cold implementation handoff,
+6. **Agent-ready handoff** tests the package as an independent implementation handoff,
    including the actual output of `seedspec begin`.
 
 One nonterminal pass is active at a time. `needs-author` keeps the pass active
@@ -233,13 +236,17 @@ when a person must observe the result. Set evidence to `none`, `optional`, or
 
 Authors may include existing product documents, structured specifications, designs, execution plans, infrastructure descriptions, or evidence as optional `artifacts`. Preserve each artifact's native format and label the concern it addresses; do not merge separate concerns merely to make the SeedSpec look more complete.
 
-Declaring an artifact does not select its workflow for a future user or implementation agent. An author may explain why the artifact is useful, but should not encode `governing`, `advisory`, or automatic activation policy. Artifact-specific validation and transformation belong to adapters that a user invokes explicitly.
+Declaring an artifact does not select its workflow for an end user or
+implementing agent. An author may explain why the artifact is useful, but should
+not encode `governing`, `advisory`, or automatic activation policy.
+Artifact-specific validation and transformation belong to adapters that a user
+invokes explicitly.
 
 ## Implementation resources
 
 Authors may select public, versioned skills, instructions, verification
 material, tools, and target profiles through `implementation_resources`.
-Authoring tools should offer tested first-party resources as defaults, but MUST
+Authoring tools should offer tested first-party resources as defaults, but must
 allow the author to exclude them. SeedSpec core does not inject a universal
 guidance pack merely because it exists.
 
@@ -271,7 +278,7 @@ time change and the resolver's exact resolved version will be recorded.
 
 ## Application workflow
 
-Start at the level of detail the user supplies. For shaping or hardening, identify the intended outcome, actors, roles, domain concepts, fundamental workflows, permissions, business rules, state transitions, failure behavior, meaningful configuration candidates, and acceptance criteria. Ask only questions whose answers materially change behavior; use reversible values in the package example for the rest without implying that every buyer selected them.
+Start at the level of detail the user supplies. For shaping or hardening, identify the intended outcome, actors, roles, domain concepts, fundamental workflows, permissions, business rules, state transitions, failure behavior, meaningful configuration candidates, and acceptance criteria. Ask only questions whose answers materially change behavior; use reversible values in the package example for the rest without implying that an end user selected them.
 
 For capture-only work, preserve the original idea, use an empty configuration object when no behavioral choices are known, allow an empty capability list, and record important unknowns without forcing the user through full product discovery.
 
@@ -289,6 +296,6 @@ When a resolved project exists, inspect `.seedspec/project.yaml`, `resolved-spec
 Keep origin context, the portable feature, and project integration decisions distinct. Before sharing a feature broadly, remove application-private assumptions, replace narrow terminology, convert variable behavior into configuration, declare known conflicts and unresolved decisions, and select an explicit compatibility scope.
 
 Capability, compatibility, and conflict declarations describe author intent and
-testing evidence. Do not claim they prove that a future application implements a
+testing evidence. Do not claim they prove that a realization implements a
 capability or that a feature is compatible. The implementing agent makes that
 determination from the actual project.

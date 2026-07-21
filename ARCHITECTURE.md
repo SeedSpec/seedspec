@@ -1,5 +1,9 @@
 # SeedSpec Protocol Architecture
 
+> **Informative architecture.** This document explains the protocol's layers
+> and boundaries. The normative contract is defined by the versioned protocol
+> specification, schemas, and conformance suite.
+
 The SeedSpec Protocol packages **intent and the resources that help an agent
 realize it** while leaving implementation choices open. A SeedSpec package is a
 versioned, human-readable collection of intent, configuration, capabilities,
@@ -52,7 +56,7 @@ SeedSpec packages + product configuration + implementation-profile preference + 
   agents inspect summaries and apply them against actual project and user context.
 - Package-scoped skills are resolved and explicitly consulted from the handoff;
   they are not installed into a native skill registry or automatically invoked.
-- The end user directs the implementation agent.
+- The end user directs the implementing agent.
 - Official adapters add optional depth without becoming protocol dependencies.
 - Handoff and lineage over permanent control of a realized solution.
 - Markdown for behavior; structured data only for discovery, validation, configuration, and composition.
@@ -72,7 +76,7 @@ The complete rationale and decision tests are in [docs/principles.md](docs/princ
 
 This repository tests the protocol with conformance fixtures for a software
 application root, a profiled workflow root, and feature additions; authoring
-and beginner-use skills; a reference CLI; a generic artifact model; an official
+and guided-use skills; a reference CLI; a generic artifact model; an official
 ProductSpec adapter; versioned capability contracts; author-controlled
 implementation-resource resolution; candidate implementation profiles;
 deterministic handoff output; agent guidance; persistent implementation notes;

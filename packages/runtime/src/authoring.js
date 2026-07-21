@@ -395,11 +395,11 @@ function hardeningInstructions(target) {
 
 function handoffInstructions() {
   return [
-    "Simulate receiving this package as a capable implementation agent with no access to the authoring conversation.",
+    "Simulate receiving this package as a capable implementing agent with no access to the authoring conversation.",
     "Explain the intended outcome, genuine constraints, configuration choices, unresolved product decisions, implementation profiles, optional artifacts and resources, and observable success conditions.",
     "Identify facts the implementing agent would otherwise guess, instructions that could be misread as authority, important material buried in excessive context, and acceptance criteria that cannot be observed.",
     "Run `seedspec begin <package-path>` and inspect the actual versioned handoff instructions. Review the emitted workflow rather than an idealized reading of source files.",
-    "Recommend only changes to the package that improve a cold handoff; do not prescribe the future architecture or implementation workflow."
+    "Recommend only changes to the package that improve an independent handoff; do not prescribe architecture or implementation workflow."
   ];
 }
 

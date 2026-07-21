@@ -1,5 +1,15 @@
+import { readFileSync } from "node:fs";
+
+export const runtimeVersion = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+).version;
+export {
+  conformanceSuiteVersion,
+  protocolPackageVersion,
+  protocolVersion
+} from "@seedspec/protocol";
 export { SeedSpecError, formatError } from "./errors.js";
-export { beginPackage, formatBuyerAgentPrompt, formatPackageBeginning } from "./begin.js";
+export { beginPackage, formatPackageAgentPrompt, formatPackageBeginning } from "./begin.js";
 export { discoverFeatures, formatFeatureDiscovery } from "./discovery.js";
 export {
   PRODUCTSPEC_ARTIFACT_TYPE,

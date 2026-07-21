@@ -25,7 +25,7 @@ technical preferences and security requirements.
 
 ## Comparing the paths
 
-The implementation agent should inspect the actual customer environment,
+The implementing agent should inspect the actual customer environment,
 explain material tradeoffs, and follow the preferred implementation profile
 recorded with `-i` or `--implementation`. If no preference is recorded while
 multiple profiles are available, the agent must explain the choices and ask the

@@ -1,11 +1,14 @@
 # ADR 0006: Completion is separate from readiness
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 Status: accepted for the design alpha
 
 ## Context
 
 Protocol 0.1 permits packages without acceptance components, while rich
-packages may contain more acceptance behavior than a buyer selects for one
+packages may contain more acceptance behavior than an end user selects for one
 implementation pass. The original project status described input readiness but
 generated an unstructured verification report that could be mistaken for a
 completion claim.

@@ -1,5 +1,8 @@
 # ADR 0002: Artifacts, adapters, and agent choice
 
+> **Non-normative rationale.** This record explains an accepted design decision;
+> the protocol specification, schemas, and conformance suite define conformance.
+
 Status: accepted for the design alpha
 
 ## Context
@@ -22,6 +25,6 @@ Treating every format as opaque would limit useful tooling. Automatically adopti
 
 ## Consequences
 
-SeedSpec can officially support rigorous external formats without requiring them. Implementation agents receive enough context to explain available artifacts to end users, while end users retain control over whether an artifact-specific workflow is used.
+SeedSpec can officially support rigorous external formats without requiring them. Implementing agents receive enough context to explain available artifacts to end users, while end users retain control over whether an artifact-specific workflow is used.
 
 The protocol remains responsible for identity, safe location, relationships, integrity, and handoff. Adapters remain responsible for format-specific interpretation. Continuous synchronization between source artifacts and generated software remains outside core protocol conformance.

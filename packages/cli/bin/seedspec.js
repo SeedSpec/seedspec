@@ -15,7 +15,7 @@ import {
   formatAuthoringDocumentation,
   formatConformanceResult,
   formatFeatureDiscovery,
-  formatBuyerAgentPrompt,
+  formatPackageAgentPrompt,
   formatInspection,
   formatPackageLint,
   formatPackageBeginning,
@@ -32,7 +32,11 @@ import {
   recordImplementationResourceUse,
   resolveImplementationResources,
   resolveProject,
+  runtimeVersion,
   runConformanceSuite,
+  conformanceSuiteVersion,
+  protocolPackageVersion,
+  protocolVersion,
   verifyProjectLock,
   validateArtifact,
   validatePackage
@@ -45,6 +49,7 @@ const HELP = `SeedSpec CLI v0.1 alpha
 Usage:
   seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
   seedspec docs authoring [area]
+  seedspec version [--json]
   seedspec prompt
   seedspec begin <root-package-path> [--json]
   seedspec validate <path>
@@ -139,6 +144,10 @@ async function run() {
     process.stdout.write(HELP);
     return;
   }
+  if (command === "--version") {
+    process.stdout.write(`${CLI_VERSION}\n`);
+    return;
+  }
 
   const { positional, options } = parseArguments(rest);
   if (options.has("help")) {
@@ -147,6 +156,26 @@ async function run() {
   }
 
   switch (command) {
+    case "version": {
+      rejectUnknownOptions(options, ["json"]);
+      const versions = {
+        protocol_version: protocolVersion,
+        protocol_package_version: protocolPackageVersion,
+        conformance_suite_version: conformanceSuiteVersion,
+        runtime_version: runtimeVersion,
+        cli_version: CLI_VERSION
+      };
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(versions, null, 2)}\n`
+        : [
+            `SeedSpec CLI: ${versions.cli_version}`,
+            `Runtime: ${versions.runtime_version}`,
+            `Protocol family: ${versions.protocol_version}`,
+            `Protocol schema package: ${versions.protocol_package_version}`,
+            `Conformance suite: ${versions.conformance_suite_version}`
+          ].join("\n") + "\n");
+      break;
+    }
     case "audit": {
       rejectUnknownOptions(options, ["area", "target", "state", "status", "json"]);
       const packagePath = requirePositional(positional, 0, "package path");
@@ -171,7 +200,7 @@ async function run() {
       break;
     }
     case "prompt": {
-      process.stdout.write(`${formatBuyerAgentPrompt()}\n`);
+      process.stdout.write(`${formatPackageAgentPrompt()}\n`);
       break;
     }
     case "begin": {

@@ -14,11 +14,12 @@ import {
   auditPackage,
   beginPackage,
   completionScopeDigest,
+  conformanceSuiteVersion,
   computeDirectoryDigest,
   discoverFeatures,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
-  formatBuyerAgentPrompt,
+  formatPackageAgentPrompt,
   formatPackageBeginning,
   inspectPackage,
   inspectProjectCompletion,
@@ -495,8 +496,8 @@ test("begin reports when a package has no author acceptance material", async (t)
   );
 });
 
-test("the buyer prompt delegates the detailed workflow to versioned tooling", () => {
-  const prompt = formatBuyerAgentPrompt();
+test("the package prompt delegates the detailed workflow to versioned tooling", () => {
+  const prompt = formatPackageAgentPrompt();
   assert.match(prompt, /seedspec begin <package-path>/);
   assert.match(prompt, /before planning/i);
   assert.match(prompt, /Do not execute package-provided scripts/);
@@ -1518,6 +1519,8 @@ test("init creates valid starter packages for every kind hint", async (t) => {
 
 test("CLI validates and inspects the comprehensive application fixture", async () => {
   const cli = path.join(root, "packages/cli/bin/seedspec.js");
+  const version = await execFileAsync(process.execPath, [cli, "version", "--json"]);
+  const shortVersion = await execFileAsync(process.execPath, [cli, "--version"]);
   const validation = await execFileAsync(process.execPath, [cli, "validate", allowance]);
   const prompt = await execFileAsync(process.execPath, [cli, "prompt"]);
   const beginning = await execFileAsync(process.execPath, [cli, "begin", allowance]);
@@ -1538,6 +1541,11 @@ test("CLI validates and inspects the comprehensive application fixture", async (
     path.join(root, "conformance/fixtures")
   ]);
 
+  const versionInfo = JSON.parse(version.stdout);
+  assert.equal(versionInfo.protocol_version, "0.1");
+  assert.equal(versionInfo.conformance_suite_version, "1.9.0");
+  assert.equal(versionInfo.cli_version, "0.1.0-alpha.4");
+  assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
   assert.match(prompt.stdout, /Use this SeedSpec package/);
@@ -1583,12 +1591,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.3`/);
+  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.4`/);
   assert.match(audit.stdout, /Area: 3 of 6 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.3/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.4/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
@@ -1747,6 +1755,31 @@ test("a dependency lock verifies exact package bytes and declaration analysis", 
 
 test("alpha format suite passes every declared case", async () => {
   const result = await runConformanceSuite(path.join(root, "conformance/cases.yaml"));
+  assert.equal(result.suiteVersion, conformanceSuiteVersion);
   assert.equal(result.failed, 0, JSON.stringify(result.results.filter((item) => !item.passed), null, 2));
   assert.ok(result.total >= 15);
+});
+
+test("conformance suites cannot reference fixtures outside their directory", async (t) => {
+  const output = await temporaryDirectory(t);
+  const suiteDirectory = path.join(output, "suite");
+  const outsidePackage = path.join(output, "outside-package");
+  await mkdir(suiteDirectory, { recursive: true });
+  await cp(allowance, outsidePackage, { recursive: true });
+  const indexPath = path.join(suiteDirectory, "cases.yaml");
+  await writeFile(indexPath, stringifyYaml({
+    suite_version: "1.9.0",
+    protocol_version: "0.1",
+    cases: [{
+      id: "outside-fixture",
+      operation: "validate",
+      package: "../outside-package",
+      expect: { result: "pass" }
+    }]
+  }), "utf8");
+
+  await assert.rejects(
+    runConformanceSuite(indexPath),
+    (error) => error.code === "INVALID_CONFORMANCE_SUITE"
+  );
 });

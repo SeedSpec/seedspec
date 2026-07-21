@@ -1,5 +1,8 @@
 # Implementation profiles and profile state
 
+> **Informative guidance.** Normative profile and profile-state behavior is
+> defined by the protocol specification and schemas.
+
 SeedSpec separates durable intent from authored ways to realize it.
 
 - **Core intent** is the package definition, behavioral configuration,
@@ -28,7 +31,7 @@ Evaluating several candidates does not create multiple states. The candidates
 remain together in one state until a preference is recorded. If a user wants to
 compare complete what-if implementations as independent alternatives, tooling
 should create separate resolution runs or workspaces. A single implementation
-handoff MUST NOT contain competing project-level profile states.
+handoff must not contain competing project-level profile states.
 
 ## Authored profile
 
@@ -73,7 +76,7 @@ asks for direction rather than silently choosing another candidate.
 
 Prerequisites state what must be true. Blockers state what, if true, makes a
 profile unsuitable. Both use declarative assertions rather than fixed question
-wording so an implementation agent can inspect evidence or ask an appropriate
+wording so an implementing agent can inspect evidence or ask an appropriate
 question in context.
 
 Core verification methods are:
@@ -123,7 +126,8 @@ languages, hosting, cost boundaries, data residency, compliance requirements,
 or operating constraints.
 
 Protocol 0.1 records project-specific preferences through technical preferences
-and implementation targets. A persistent user- or organization-level preference
-store belongs to tooling for now. Tooling may use those preferences to rank or
-explain profiles, but it must preserve authored candidates and must not turn a
-ranking into a profile preference without making that decision visible.
+and implementation targets. Persistent user- or organization-level preference
+stores are tooling concerns rather than portable package state. Tooling may use
+those preferences to rank or explain profiles, but it must preserve authored
+candidates and must not turn a ranking into a profile preference without making
+that decision visible.

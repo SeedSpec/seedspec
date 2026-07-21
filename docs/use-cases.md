@@ -1,5 +1,8 @@
 # SeedSpec use cases
 
+> **Informative examples.** These scenarios illustrate the protocol's intended
+> range without requiring a particular realization or market.
+
 SeedSpec is a protocol for packaging intent into portable, agent-ready
 specifications. Each package describes what should be accomplished, provides
 relevant context and resources, and defines the criteria for success while
@@ -145,7 +148,7 @@ Sales performance solution
 └── Scheduled briefing without a persistent UI
 ```
 
-The preferred profile receives the implementation agent's primary attention.
+The preferred profile receives the implementing agent's primary attention.
 Other approaches remain useful decision context: they can expose tradeoffs,
 prevent accidental drift into a declined architecture, provide reusable ideas,
 or justify asking the user to reconsider a choice that conflicts with the

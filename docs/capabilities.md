@@ -1,5 +1,8 @@
 # Capability authoring and evolution
 
+> **Informative guidance.** Normative capability fields and resolution behavior
+> are defined by the protocol specification and schemas.
+
 Capabilities let independently published packages describe expected observable
 product contracts without agreeing on source code or infrastructure. They are
 integration context for an agent, not proof of what the actual realization
@@ -63,7 +66,7 @@ local terminology; and verify the composed use case.
 `declaration-review-v1` records every selected package that declares a
 capability. Zero candidates and multiple candidates both create review signals;
 neither rejects the handoff. A declaration is not an installed dependency, and
-the implementation agent may map equivalent existing behavior, adapt one or
+the implementing agent may map equivalent existing behavior, adapt one or
 more candidates, implement missing behavior, or surface a genuine conflict to
 the user.
 
