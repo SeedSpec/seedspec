@@ -1,6 +1,6 @@
 {
   "name": "seedspec",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "private": true,
   "description": "Protocol, reference runtime, CLI, conformance suite, and authoring tools for SeedSpec",
   "type": "module",

@@ -20,6 +20,10 @@ Common entry points:
 
 ```bash
 seedspec validate <package-path>
+seedspec audit <package-path>
+seedspec audit <package-path> --area material-ambiguity
+seedspec audit <package-path> --status
+seedspec docs authoring
 seedspec inspect <package-path> --json
 seedspec begin <package-path>
 seedspec digest <package-path>
@@ -28,6 +32,13 @@ seedspec digest <package-path>
 `seedspec begin` is the read-only agent handoff. It validates the package and
 surfaces configuration, implementation-profile, optional-content, trust, and
 completion-scope choices before implementation begins.
+
+`seedspec audit` creates or continues an authoring review outside the
+distributable package and prints versioned Markdown instructions for a capable
+agent. The same command advances after a completed pass; `--area` targets one
+of the six review areas and `--status` is read-only. The CLI does not embed a
+model or modify package content. See `seedspec docs authoring` for guidance
+bundled with the installed version.
 
 Protocol `0.1` is a design alpha. Discovery or validation never authorizes
 package activation or execution.

@@ -13,6 +13,15 @@ export {
 export { inspectPackage, formatInspection } from "./inspect.js";
 export { formatPackageLint, lintPackage } from "./lint.js";
 export { initPackage } from "./init.js";
+export {
+  AUTHORING_AREAS,
+  AUTHORING_INSTRUCTION_FORMAT,
+  AUTHORING_RESULT_FORMAT,
+  AUTHORING_STATE_FORMAT,
+  auditPackage,
+  formatAuthoringAudit,
+  formatAuthoringDocumentation
+} from "./authoring.js";
 export { computeDirectoryDigest, computePackageDigest } from "./integrity.js";
 export {
   createInitialImplementationResourceState,

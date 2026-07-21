@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -9,10 +9,15 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
+  AUTHORING_AREAS,
+  AUTHORING_RESULT_FORMAT,
+  auditPackage,
   beginPackage,
   completionScopeDigest,
   computeDirectoryDigest,
   discoverFeatures,
+  formatAuthoringAudit,
+  formatAuthoringDocumentation,
   formatBuyerAgentPrompt,
   formatPackageBeginning,
   inspectPackage,
@@ -198,6 +203,125 @@ test("kind-aware linting separates protocol validity from authoring feedback", a
   assert.ok(codes.includes("PROFILE_CONDITION_IS_QUESTION"));
 });
 
+test("authoring audit emits a versioned agent pass and advances without a next command", async (t) => {
+  const output = await temporaryDirectory(t);
+  const stateDirectory = path.join(output, "authoring-state");
+  const first = await auditPackage(allowance, {
+    stateDirectory,
+    target: "harden",
+    toolVersion: "0.1.0-test"
+  });
+
+  assert.equal(first.current.id, "0001-concern-separation");
+  assert.equal(first.result_format, AUTHORING_RESULT_FORMAT);
+  assert.equal(first.current.area, "concern-separation");
+  assert.equal(first.areas.length, AUTHORING_AREAS.length);
+  assert.match(first.current.instructions, /The package, not the conversation, is the durable source of truth/);
+  assert.match(first.current.instructions, /no `next` command is required/);
+  assert.match(formatAuthoringAudit(first), /1\. Concern separation — in-progress/);
+  assert.match(formatAuthoringAudit(first), /After this pass is completed: 2 of 6 — Kind-aware discovery/);
+
+  const result = parseYaml(await readFile(first.current.result, "utf8"));
+  result.outcome = "completed";
+  result.summary = "The package separates durable intent from implementation material.";
+  result.package_digest_after = first.package.digest;
+  result.validation.commands = [
+    "seedspec validate <package-path>",
+    "seedspec lint <package-path>",
+    "seedspec digest <package-path>"
+  ];
+  await writeFile(first.current.result, stringifyYaml(result), "utf8");
+
+  const second = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test"
+  });
+  assert.equal(second.current.id, "0002-kind-aware-discovery");
+  assert.equal(second.areas[0].status, "completed");
+  assert.equal(second.areas[1].status, "in-progress");
+
+  const status = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test",
+    statusOnly: true
+  });
+  assert.equal(status.current.id, second.current.id);
+  assert.match(formatAuthoringAudit(status, { statusOnly: true }), /Run `seedspec audit/);
+});
+
+test("authoring audit supports targeted areas and keeps state outside the package", async (t) => {
+  const output = await temporaryDirectory(t);
+  const targeted = await auditPackage(hubspotMetric, {
+    area: "material-ambiguity",
+    stateDirectory: path.join(output, "hubspot-authoring"),
+    toolVersion: "0.1.0-test"
+  });
+  assert.equal(targeted.current.id, "0001-material-ambiguity");
+  assert.match(targeted.current.instructions, /two or more plausible interpretations/);
+  assert.match(formatAuthoringDocumentation("material-ambiguity"), /Material ambiguity objective/);
+
+  await assert.rejects(
+    auditPackage(allowance, {
+      stateDirectory: path.join(allowance, ".seedspec-authoring"),
+      toolVersion: "0.1.0-test"
+    }),
+    (error) => error.code === "AUTHORING_STATE_INSIDE_PACKAGE"
+  );
+});
+
+test("completed authoring passes accept pinned npm CLI commands", async (t) => {
+  const output = await temporaryDirectory(t);
+  const stateDirectory = path.join(output, "authoring-state");
+  const audit = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test"
+  });
+  const result = parseYaml(await readFile(audit.current.result, "utf8"));
+  result.outcome = "completed";
+  result.summary = "Validated through the exact npm CLI package.";
+  result.validation.commands = [
+    "npx --yes @seedspec/cli@0.1.0-alpha.3 validate package",
+    "npx --yes @seedspec/cli@0.1.0-alpha.3 lint package",
+    "npx --yes @seedspec/cli@0.1.0-alpha.3 digest package"
+  ];
+  await writeFile(audit.current.result, stringifyYaml(result), "utf8");
+
+  const advanced = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test"
+  });
+  assert.equal(advanced.current.area, "kind-aware-discovery");
+});
+
+test("authoring audit status is read-only and accepts portable workspace paths", async (t) => {
+  const output = await temporaryDirectory(t);
+  const missingState = path.join(output, "missing-state");
+  const emptyStatus = await auditPackage(allowance, {
+    stateDirectory: missingState,
+    toolVersion: "0.1.0-test",
+    statusOnly: true
+  });
+  assert.equal(emptyStatus.passes.length, 0);
+  assert.match(formatAuthoringAudit(emptyStatus, { statusOnly: true }), /No authoring pass exists/);
+  await assert.rejects(access(missingState), { code: "ENOENT" });
+
+  const stateDirectory = path.join(output, "reviews", "allowance");
+  await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test"
+  });
+  const workspacePath = path.join(stateDirectory, "workspace.yaml");
+  const workspace = parseYaml(await readFile(workspacePath, "utf8"));
+  assert.equal(path.isAbsolute(workspace.package.path), false);
+  const before = await readFile(workspacePath, "utf8");
+  await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.1.0-test",
+    statusOnly: true
+  });
+  assert.equal(await readFile(workspacePath, "utf8"), before);
+});
+
 test("implementation profiles require user choice when ambiguous and preserve profile state", async (t) => {
   const output = await temporaryDirectory(t);
   const configurationSelectionsPath = await writeExampleConfigurationSelections(
@@ -212,11 +336,15 @@ test("implementation profiles require user choice when ambiguous and preserve pr
     path.join(unresolved.workspace, "agent-guide.md"),
     "utf8"
   );
+  const beginning = formatPackageBeginning(await beginPackage(hubspotMetric));
 
   assert.equal(unresolved.project.status, "needs-input");
   assert.equal(unresolved.project.implementation_profile_status, "review");
   assert.match(unresolvedGuide, /Do not choose silently/);
   assert.match(unresolvedGuide, /ask the end user which direction to prefer/);
+  assert.match(beginning, /Guidance: `implementation\/hubspot-native\.md`/);
+  assert.match(beginning, /`supports-native-operations`: The active HubSpot edition/);
+  assert.match(beginning, /Minimizes separately operated infrastructure/);
 
   const preferred = await resolveProject(hubspotMetric, {
     configurationSelectionsPath,
@@ -327,6 +455,7 @@ test("inspect reports identity, capabilities, and optional components", async ()
 
 test("begin validates an application and exposes the pre-resolution workflow", async () => {
   const beginning = await beginPackage(allowance);
+  const formatted = formatPackageBeginning(beginning);
 
   assert.equal(beginning.package.id, "org.seedspec.fixtures.comprehensive-application");
   assert.equal(beginning.configuration.selection_status, "review-required");
@@ -344,6 +473,8 @@ test("begin validates an application and exposes the pre-resolution workflow", a
       && /selection does not authorize activation/.test(action.action)
   ));
   assert.ok(beginning.next_actions.some((action) => action.id === "resolve-handoff"));
+  assert.ok(formatted.indexOf("No package-declared solution decisions were supplied.")
+    < formatted.indexOf("## Implementation profiles"));
 });
 
 test("begin reports when a package has no author acceptance material", async (t) => {
@@ -1403,6 +1534,45 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.match(artifacts.stdout, /ProductSpec/);
   assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
   assert.match(discovery.stdout, /Portable Feature Fixture.*candidate/);
+});
+
+test("CLI audit emits agent instructions, status, and bundled documentation", async (t) => {
+  const output = await temporaryDirectory(t);
+  const stateDirectory = path.join(output, "authoring-state");
+  const cli = path.join(root, "packages/cli/bin/seedspec.js");
+  const audit = await execFileAsync(process.execPath, [
+    cli,
+    "audit",
+    hubspotMetric,
+    "--area",
+    "material-ambiguity",
+    "--target",
+    "harden",
+    "--state",
+    stateDirectory
+  ]);
+  const status = await execFileAsync(process.execPath, [
+    cli,
+    "audit",
+    hubspotMetric,
+    "--state",
+    stateDirectory,
+    "--status"
+  ]);
+  const docs = await execFileAsync(process.execPath, [
+    cli,
+    "docs",
+    "authoring",
+    "material-ambiguity"
+  ]);
+
+  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.3`/);
+  assert.match(audit.stdout, /Area: 3 of 6 — Material ambiguity/);
+  assert.match(audit.stdout, /no `next` command is required/);
+  assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
+  assert.doesNotMatch(status.stdout, /## Area objective/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.3/);
+  assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
 test("CLI -i records a preferred implementation profile", async (t) => {

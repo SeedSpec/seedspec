@@ -27,6 +27,7 @@ Run the CLI without installing it globally:
 ```bash
 npx @seedspec/cli --help
 npx @seedspec/cli validate <package-path>
+npx @seedspec/cli audit <package-path>
 npx @seedspec/cli begin <package-path>
 ```
 
@@ -65,7 +66,10 @@ Use `--configuration-selections <yaml>` to choose each selected package's exact 
 - Self-contained conformance fixtures for a comprehensive application,
   portable and revision-different features, and a workflow with several
   implementation profiles. These are test data, not reference packages.
-- A generic `seedspec` CLI with a buyer-to-agent prompt, read-only root-package bootstrap, validation, inspection, artifact adapters, feature discovery, resolution, and initialization.
+- A generic `seedspec` CLI with a buyer-to-agent prompt, kind-aware authoring
+  audits, bundled authoring guidance, read-only root-package bootstrap,
+  validation, inspection, artifact adapters, feature discovery, resolution,
+  and initialization.
 - Kind-aware authoring lint that keeps advisory scope and completeness feedback
   separate from protocol validity.
 - Authoring skills for application and feature packages, plus a beginner-facing `use-seedspec` lifecycle skill.
