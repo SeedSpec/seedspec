@@ -39,7 +39,7 @@ before implementation begins.
 `seedspec audit` creates or continues an authoring review outside the
 distributable package and prints versioned Markdown instructions for a capable
 agent. The same command advances after a completed pass; `--area` targets one
-of the six review areas and `--status` is read-only. The CLI does not embed a
+of the seven review areas and `--status` is read-only. The CLI does not embed a
 model or modify package content. See `seedspec docs authoring` for guidance
 bundled with the installed version.
 

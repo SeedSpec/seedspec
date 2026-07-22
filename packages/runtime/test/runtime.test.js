@@ -243,7 +243,7 @@ test("authoring audit emits a versioned agent pass and advances without a next c
   assert.match(first.current.instructions, /The package, not the conversation, is the durable source of truth/);
   assert.match(first.current.instructions, /no `next` command is required/);
   assert.match(formatAuthoringAudit(first), /1\. Concern separation — in-progress/);
-  assert.match(formatAuthoringAudit(first), /After this pass is completed: 2 of 6 — Kind-aware discovery/);
+  assert.match(formatAuthoringAudit(first), /After this pass is completed: 2 of 7 — Kind-aware discovery/);
 
   const result = parseYaml(await readFile(first.current.result, "utf8"));
   result.outcome = "completed";
@@ -283,6 +283,15 @@ test("authoring audit supports targeted areas and keeps state outside the packag
   assert.equal(targeted.current.id, "0001-material-ambiguity");
   assert.match(targeted.current.instructions, /two or more plausible interpretations/);
   assert.match(formatAuthoringDocumentation("material-ambiguity"), /Material ambiguity objective/);
+
+  const provenance = await auditPackage(allowance, {
+    area: "decision-provenance",
+    stateDirectory: path.join(output, "allowance-decisions"),
+    toolVersion: "0.1.0-test"
+  });
+  assert.match(provenance.current.instructions, /A greater author share is not inherently better/);
+  assert.match(provenance.current.instructions, /normative, preferred, or illustrative/);
+  assert.match(formatAuthoringDocumentation("decision-provenance"), /Decision provenance objective/);
 
   await assert.rejects(
     auditPackage(allowance, {
@@ -1840,7 +1849,7 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
   ]);
 
   assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.5`/);
-  assert.match(audit.stdout, /Area: 3 of 6 — Material ambiguity/);
+  assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);

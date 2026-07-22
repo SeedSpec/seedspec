@@ -59,7 +59,7 @@ The command emits a Markdown work order for the agent and initializes a
 standardized YAML result. After the agent records a completed result, running
 the same command advances to the next incomplete area. There is deliberately no
 `next` command: progression is derived from durable pass state rather than a
-transient cursor. The output lists all six areas and tells the agent which area
+transient cursor. The output lists all seven areas and tells the agent which area
 would follow an accepted pass.
 
 Target one area for an initial or repeated review with `--area`:
@@ -85,11 +85,15 @@ The ordered review areas are:
 3. **Material ambiguity** identifies competing interpretations that could
    materially alter behavior, authority, data treatment, portability, or
    success.
-4. **Internal consistency** combines deterministic diagnostics with semantic
+4. **Decision provenance** describes consequential decisions, their
+   materiality, expected latitude, proposed and selecting parties, constraining
+   sources, and attribution confidence without treating author control as a
+   quality score.
+5. **Internal consistency** combines deterministic diagnostics with semantic
    review across package concerns.
-5. **Progressive hardening** evaluates the requested capture, shape, harden,
+6. **Progressive hardening** evaluates the requested capture, shape, harden,
    compose, or package depth without treating depth as a quality score.
-6. **Agent-ready handoff** tests the package as an independent implementation handoff,
+7. **Agent-ready handoff** tests the package as an independent implementation handoff,
    including the actual output of `seedspec begin`.
 
 One nonterminal pass is active at a time. `needs-author` keeps the pass active
@@ -132,6 +136,13 @@ and `candidates/` holds speculative material. Each pass records the exact
 instruction, tool, and protocol versions plus before-and-after package digests,
 findings, questions, changes, and validation evidence.
 
+The concern-separation pass records a proposed canonical owner for misplaced or
+duplicated material before an agent restructures the package. The
+decision-provenance pass records the authored decision surface as structured
+findings: materiality, expected latitude, proposing and selecting parties,
+constraints, evidence, and confidence. These records remain authoring state;
+they do not become package authority merely because an evaluator produced them.
+
 Authoring state is local and is never bundled, uploaded, synchronized, or
 exported implicitly. The stable layout is intended to support manual sharing
 now and an explicit export or hosted scratch-space flow later.
@@ -152,8 +163,37 @@ physically compact and make four semantic areas easy to find:
    user, and choices delegated to the implementing agent.
 
 These are semantic areas, not a requirement to create four files. A single
-clear Markdown document is preferable to scattering small fragments. Kind-aware
-questions add relevant depth inside these areas.
+clear Markdown document is preferable to scattering small fragments, but a
+large document should not absorb acceptance, implementation-profile guidance,
+configuration, resources, or agent routing merely to minimize file count.
+Agent-facing instructions should identify authoritative locations and conflict
+rules instead of repeating their content. Kind-aware questions add relevant
+depth inside these areas.
+
+## Describe the decision surface
+
+Decision provenance is descriptive. A package that deliberately delegates
+architecture to an agent is not weaker than one that ships normative reference
+code merely because the author made fewer choices. The useful question is
+whether the package makes the intended distribution of decision authority
+clear enough to compare with a later realization.
+
+For each consequential decision, distinguish who proposed an option, who is
+expected to select it, what constrains it, and who will implement it. Use
+`fixed`, `preferred`, `delegated`, `open`, and `unresolved` to describe expected
+latitude. Classify materiality as critical, material, or minor and record the
+basis for the classification. Preserve mixed or unknown attribution rather
+than manufacturing precision.
+
+Reference implementations and other realization artifacts should make their
+influence on identified consequential decisions clear when it matters:
+normative decisions are expected to be preserved, preferred decisions are
+strong defaults, and illustrative decisions teach without silently
+constraining the realization. Do not label an entire reference artifact
+normative by default. Decision influence also does not activate an artifact or
+its native workflow. A later evaluation can compare this authored decision
+surface with observed agent choices, including whether material inferences
+were disclosed or made ambiently.
 
 The primary source may instead use a recognized external intent format. Declare
 the same package-local file as an artifact with the intent concern and reference

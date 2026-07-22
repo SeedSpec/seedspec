@@ -13,6 +13,7 @@ export const AUTHORING_AREAS = Object.freeze([
   "concern-separation",
   "kind-aware-discovery",
   "material-ambiguity",
+  "decision-provenance",
   "internal-consistency",
   "progressive-hardening",
   "agent-ready-handoff"
@@ -33,6 +34,7 @@ const areaTitles = Object.freeze({
   "concern-separation": "Concern separation",
   "kind-aware-discovery": "Kind-aware discovery",
   "material-ambiguity": "Material ambiguity",
+  "decision-provenance": "Decision provenance",
   "internal-consistency": "Internal consistency",
   "progressive-hardening": "Progressive hardening",
   "agent-ready-handoff": "Agent-ready handoff"
@@ -344,9 +346,13 @@ function concernSeparationInstructions() {
     "- implementation resource: versioned help for an implementing agent;",
     "- package evidence: material supporting a claim about the package, its testing, or known compatibility;",
     "- applied intent: project-local end-user adaptation, which does not belong in a reusable source package.",
-    "Identify misplaced or conflated content with its file and heading. Do not move content when the correct concern depends on author intent; explain the alternatives and ask for direction.",
+    "Identify misplaced, conflated, duplicated, or conflicting content with its file and heading. For each finding, name one proposed canonical owner and classify every other occurrence as a useful reference, summary, or duplication that should be removed.",
+    "Treat agent-facing instructions as a routing and authority map, not a shadow copy of core intent. Prefer links to authoritative concerns over repeated obligations, boundaries, configuration, or acceptance criteria.",
+    "Propose the smallest coherent restructuring plan before editing: content to move, its destination and semantic reason, references to repair, and claims whose correct owner still requires author judgment.",
+    "When restructuring is authorized, preserve meaning and provenance, repair package references, and report any wording change separately from a mechanical move. Do not describe a semantic rewrite as file organization.",
+    "Do not move content when the correct concern depends on author intent; explain the alternatives and ask for direction.",
     "Check especially for technology in primary intent, implementation choices disguised as configuration, acceptance criteria that prescribe architecture, optional features folded into the root outcome, forbidden states mislabeled as non-goals, and evidence offered for a different subject than the claim it supposedly proves.",
-    "Prefer fewer physical files with explicit semantic headings. Do not fragment intent merely because the vocabulary distinguishes its concerns."
+    "Prefer the fewest physical files that still give each material concern an unambiguous canonical owner. Report both monolithic overload and unnecessary fragmentation; do not split intent merely because the vocabulary distinguishes its concerns."
   ];
 }
 
@@ -367,6 +373,19 @@ function ambiguityInstructions() {
     "Rank ambiguities by authority, irreversible data treatment, accounting, safety, portability, and cost of changing the decision after implementation.",
     "Group closely related questions and ask the author no more than three at once. Do not turn ordinary implementation freedom into an authoring question.",
     "Move confirmed answers into the appropriate package concern. Keep deferred questions in `open-questions.yaml`, not in distributable intent as speculative prose."
+  ];
+}
+
+function decisionProvenanceInstructions() {
+  return [
+    "Build a descriptive inventory of consequential decisions exposed by the package. Do not score the package by how many decisions the author controls.",
+    "For each decision, record a stable ID, domain, description, plausible alternatives, and evidence locations. Classify materiality as `critical`, `material`, or `minor`, state whether that classification came from author declaration, a protocol default, evaluator judgment, or a mixture, and explain why.",
+    "Separate decision roles instead of forcing one owner: who proposed the choice, who is expected to select it, what constrains it, and who will implement it. Sources may include package-author intent, end-user applied intent, an implementation profile, a reference artifact, an existing system, the environment, or the implementing agent.",
+    "Classify expected latitude as `fixed`, `preferred`, `delegated`, `open`, or `unresolved`. A greater author share is not inherently better; the goal is an explicit distribution that matches the author's intent.",
+    "For included reference code or other realization artifacts, determine whether identified consequential decisions are normative, preferred, or illustrative. Do not label an entire artifact normative by default, and do not confuse decision influence with artifact activation. If influence is not clear, record a material ambiguity rather than guessing.",
+    "Identify decisions an implementing agent would otherwise make without an attributable source. Distinguish deliberately delegated choices from ambient choices caused by missing or conflicting authority.",
+    "Record attribution confidence and limitations. Preserve `mixed` and `unknown` classifications when the package does not support a stronger conclusion.",
+    "Store the inventory as structured findings in the pass result. This is an authored-package decision surface, not evidence of decisions an implementation agent actually made."
   ];
 }
 
@@ -419,6 +438,7 @@ function areaInstructions(area, context) {
     case "concern-separation": return concernSeparationInstructions();
     case "kind-aware-discovery": return kindAwareInstructions(context.kind);
     case "material-ambiguity": return ambiguityInstructions();
+    case "decision-provenance": return decisionProvenanceInstructions();
     case "internal-consistency": return consistencyInstructions(context.lint);
     case "progressive-hardening": return hardeningInstructions(context.target);
     case "agent-ready-handoff": return handoffInstructions();
@@ -781,7 +801,7 @@ export function formatAuthoringAudit(result, { statusOnly = false } = {}) {
   if (result.complete) {
     lines.push(
       "",
-      "All six authoring audit areas have completed results.",
+      `All ${result.areas.length} authoring audit areas have completed results.`,
       "Completed audit areas mean review records exist; they are not a completeness or quality certification."
     );
     if (result.questions.open > 0) {
@@ -799,7 +819,7 @@ export function formatAuthoringAudit(result, { statusOnly = false } = {}) {
     if (result.after_current) {
       lines.push(`After this pass is completed: ${result.after_current.index} of ${result.areas.length} — ${result.after_current.name}`);
     } else {
-      lines.push("After this pass is completed: all six audit areas will have completed results.");
+      lines.push(`After this pass is completed: all ${result.areas.length} audit areas will have completed results.`);
     }
     if (!statusOnly && result.current.instructions) {
       lines.push("", result.current.instructions.trimEnd());
