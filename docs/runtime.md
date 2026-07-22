@@ -160,15 +160,17 @@ declared canonical version first, validates remote manifest identity, version
 policy, file digests, aggregate digest, file count, and size, and then writes
 verified bytes to the resolved resource directory. If canonical resolution
 fails, it re-verifies and uses an eligible bundled copy and prints and records
-the reason. A
-required unavailable resource makes the command fail after state is written;
-recommended and available failures produce degraded state.
+the reason. An `expected` unavailable resource makes the command fail after
+state is written; `recommended` and `available` failures produce degraded
+state. This enforces availability of the author's expected guidance, not agent
+obedience to it. Use is still recorded separately as `consulted` or `skipped`.
 
 For every resolved resource, the command reports the verified project-local
 root and exact entrypoint. A `skill` entrypoint is a package-scoped `SKILL.md`:
-the agent explicitly consults it from that location. Resolution does not copy it
-into a native skill registry, install it globally, or cause frontmatter-based
-automatic invocation.
+the agent may explicitly consult it from that location according to the
+author's usage level and the actual task, then record `consulted` or `skipped`.
+Resolution does not copy it into a native skill registry, install it globally,
+or cause frontmatter-based automatic invocation.
 
 `record-resource-use` records `consulted` or `skipped` plus an optional reason in
 local digest-bound state. `consulted` means the verified guidance was considered,

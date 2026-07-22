@@ -322,7 +322,7 @@ export function formatPackageBeginning(beginning) {
 
   lines.push(
     "",
-    "Resource declarations express author intent, not proof that a capability exists or permission to execute a tool. A packaged skill is not installed or automatically invoked; after first-party resolution the implementing agent explicitly consults its verified SKILL.md when relevant. The resolved handoff preserves bundled copies and canonical version references. Any fallback must be reported with its reason.",
+    "Resource declarations express author intent, not proof that a capability exists or permission to execute a tool. A packaged skill is not installed or automatically invoked; after first-party resolution the implementing agent may explicitly consult its verified SKILL.md according to the author's usage level and the actual task, then record consulted or skipped. The resolved handoff preserves bundled copies and canonical version references. Any fallback must be reported with its reason.",
     "",
     "## Readiness notices",
     ""

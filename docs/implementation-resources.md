@@ -110,6 +110,29 @@ changes, deployment, credential use, or other external effects. An agent that
 skips even an expected resource may do so when stronger direction or the actual
 project requires it, but should record the reason.
 
+`expected` is deliberately not named `required`. The runtime requires verified
+bytes for an expected resource before it considers resource resolution
+successful, but it cannot require an agent to obey—or even mechanically prove
+that it understood—the resource. The observable use boundary is `consulted` or
+`skipped`, with an optional reason.
+
+## Tooling recommendations
+
+Package declarations express the package author's guidance. SeedSpec authoring
+or execution tooling may also recommend a tested skill when it is relevant and
+the package is silent, including a skill for shaping applied intent before
+implementation. Such a recommendation must identify itself as tooling or
+agent guidance, remain subordinate to package-author and end-user intent, and
+must not be reported as an author-selected resource unless the author actually
+adds it.
+
+`additional_guidance: none` is the package author's explicit instruction not to
+discover additional SeedSpec resources. When the package omits
+`implementation_resources`, the author's position is unspecified: tooling may
+offer help, but must not treat silence as approval, automatically consult the
+resource, or turn it into solution intent. The author or end user can decline
+the recommendation.
+
 ## Declaration example
 
 ```yaml
@@ -197,9 +220,10 @@ Resolution follows this order:
    exists after re-verifying its entrypoint and digest at use time.
 4. Record `bundled-fallback` and the exact failure reason. Never substitute it
    silently.
-5. Record `unavailable` when neither source can be used. An unavailable required
-   resource fails the resource-resolution command after state is written;
-   optional resources leave the handoff in a visible degraded state.
+5. Record `unavailable` when neither source can be used. An unavailable
+   `expected` resource fails the resource-resolution command after state is
+   written; `recommended` and `available` resources leave the handoff in a
+   visible degraded state.
 
 Run:
 

@@ -121,9 +121,10 @@ according to author intent, actual project state, and end-user direction.
 
 A packaged skill is scoped to the resolved SeedSpec handoff. SeedSpec does not
 install it into an agent's native skill registry or infer automatic invocation
-from its frontmatter. The implementing agent explicitly consults the verified
-`SKILL.md` when relevant. The skill supplies reusable implementation knowledge;
-it does not become solution intent or a success criterion.
+from its frontmatter. The implementing agent may explicitly consult the
+verified `SKILL.md` when relevant and records `consulted` or `skipped`. The
+skill supplies reusable implementation knowledge; it does not become solution
+intent or a success criterion.
 
 ## The end user directs the implementing agent
 

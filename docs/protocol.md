@@ -338,6 +338,13 @@ An extension cannot relax core validation or override a core field.
 the author's position on additional SeedSpec guidance is `unspecified`; a
 runtime MUST NOT reinterpret omission as acceptance or rejection.
 
+An authoring or execution environment MAY separately recommend relevant
+guidance when the package author is silent. It MUST identify the recommendation
+as tooling, agent, or end-user direction; MUST NOT attribute it to the package
+author; and MUST NOT automatically add it to the package, consult it, or promote
+it into solution intent. `additional_guidance: none` is the package author's
+explicit direction not to discover additional SeedSpec resources.
+
 When present it declares `additional_guidance` as `none` or
 `agent-delegated`, zero or more public versioned catalogs, and zero or more
 author-selected resources. Catalogs are permitted only with

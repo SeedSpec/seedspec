@@ -43,9 +43,9 @@ the normative protocol specification, or a resolved project specification.
   tooling declared by a package author. Core kinds include skills,
   instructions, verification material, tools, and target profiles.
 - **package-scoped skill**: an implementation resource whose verified
-  `SKILL.md` is explicitly consulted from the resolved handoff. SeedSpec
-  resolution does not install it into a native skill registry or invoke it
-  automatically.
+  `SKILL.md` may be explicitly consulted from the resolved handoff, with use
+  recorded as `consulted` or `skipped`. SeedSpec resolution does not install it
+  into a native skill registry or invoke it automatically.
 - **artifact**: related material preserved in its native format. Discovery,
   materialization, and disposition do not activate the artifact's workflow.
 
