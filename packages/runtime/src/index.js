@@ -60,4 +60,5 @@ export {
 } from "./capabilities.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
 export { resolveProject } from "./resolve.js";
+export { formatResolvedIntentSummary, resolveAppliedIntent } from "./intent.js";
 export { validatePackage } from "./validate.js";

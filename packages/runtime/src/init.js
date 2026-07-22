@@ -63,10 +63,12 @@ const definitionSectionsByKind = Object.freeze({
 });
 
 function starterDefinition(title, kind) {
-  const sections = definitionSectionsByKind[kind]
-    .map(([heading, prompt]) => `## ${heading}\n\n${prompt}`)
+  const [purpose, ...remaining] = definitionSectionsByKind[kind];
+  const success = remaining.at(-1);
+  const obligations = remaining.slice(0, -1)
+    .map(([heading, prompt]) => `### ${heading}\n\n${prompt}`)
     .join("\n\n");
-  return `# ${title}\n\n> \`${kind}\` is an authoring hint that shapes these prompts, not an implementation constraint.\n\n${sections}\n\n## Portability boundary\n\nSeparate durable core intent from provider-, architecture-, or tool-specific implementation profiles.\n`;
+  return `# ${title}\n\n> \`${kind}\` is an authoring hint that shapes these prompts, not an implementation constraint.\n\n## Purpose\n\n### ${purpose[0]}\n\n${purpose[1]} Explain why the outcome matters and whose situation should change.\n\n## Obligations and boundaries\n\nState required outcomes, invariants, genuine constraints, forbidden states, and non-goals explicitly. A non-goal is not required; a forbidden state is not allowed.\n\n${obligations}\n\n## Success and evidence\n\n${success[1]} Separate the verification plan from actual evidence. Identify whether each observation proves the realization itself or a later outcome; neither proves that the package is generally trustworthy.\n\n## Decision latitude\n\nState what is fixed by intent, what the end user must decide for a realization, and what a capable implementing agent may choose. Keep provider-, architecture-, and tool-specific suggestions in implementation profiles unless they are genuine outcome constraints.\n`;
 }
 
 function titleFromDirectory(directory) {
@@ -145,7 +147,7 @@ export async function initPackage(kind, outputDirectory) {
     writeFile(path.join(root, manifest.definition.entrypoint), definition, "utf8"),
     writeFile(path.join(root, "configuration/schema.json"), `${JSON.stringify(configurationSchema, null, 2)}\n`, "utf8"),
     writeFile(path.join(root, "configuration/example.yaml"), "{}\n", "utf8"),
-    writeFile(path.join(root, "acceptance/criteria.md"), `# ${title} acceptance criteria\n\n1. Replace this item with an observable product behavior.\n`, "utf8")
+    writeFile(path.join(root, "acceptance/criteria.md"), `# ${title} acceptance criteria\n\n1. Replace this item with an observable condition of the realization.\n\nFor each criterion, explain what observation would prove it and whether the evidence concerns the realization or a later outcome. Actual evidence is recorded only after work begins.\n`, "utf8")
   ]);
 
   await validatePackage(root);

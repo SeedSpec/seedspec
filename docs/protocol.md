@@ -1,12 +1,12 @@
 # SeedSpec Protocol 0.1: Package and Handoff Specification
 
-**Status:** Published design alpha
+**Status:** Design alpha
 
 | Release identifier | Value |
 | --- | --- |
 | Protocol family | `0.1` |
-| Schema package | `@seedspec/protocol@0.1.0-alpha.2` |
-| Conformance suite | `1.9.0` |
+| Schema package | `@seedspec/protocol@0.1.0-alpha.3` |
+| Conformance suite | `2.0.0` |
 
 This document defines the normative SeedSpec package and handoff format for
 Protocol 0.1. The normative release bundle consists of this specification, the
@@ -23,7 +23,7 @@ surfaces.
 Informative release guidance for the independent version domains is available
 in `docs/versioning.md`.
 
-Protocol 0.1 is published for implementation and interoperability testing.
+Protocol 0.1 is available for implementation and interoperability testing.
 Design-alpha revisions may contain incompatible corrections. Each release MUST
 identify its exact protocol family, schema-package version, and conformance-suite
 version; tooling and integrations that require reproducibility SHOULD pin those
@@ -52,7 +52,8 @@ package can help an agent produce software, adapt a feature, configure an
 external system, establish an automation, generate an operational artifact, or
 realize a composite solution. The protocol standardizes package identity,
 discovery, configuration, capabilities, artifact relationships, composition,
-decisions, integrity, and resolved project state.
+decisions, applied intent, evidence subjects, integrity, and resolved project
+state.
 
 It does not standardize programming languages, frameworks, data stores, clouds,
 repository layouts, user interfaces, deployment, external-service operation,
@@ -211,11 +212,27 @@ Unknown top-level fields are forbidden. Publisher- or tool-specific data belongs
 
 ### 6.1 Definition
 
-`definition.entrypoint` references the primary Markdown intent definition. It
+`definition.entrypoint` references the package author's primary Markdown intent
+definition. It
 SHOULD describe what should be accomplished, why it matters, relevant actors
-and permissions, concepts, workflows, state transitions, rules, configuration
-behavior, failures, edge cases, and observable conformance without prescribing
-an execution path that the intended outcome does not require.
+and permissions, desired outcomes, invariants, constraints, forbidden states,
+non-goals, concepts, workflows, state transitions, rules, configuration
+behavior, failures, edge cases, decision latitude, and observable success
+without prescribing an execution path that the intended outcome does not
+require.
+
+The entrypoint MAY use native SeedSpec Markdown or another declared intent
+format. `definition.artifact`, when present, references an artifact declared by
+the same package. That artifact MUST use a package-local `path` identical to
+`definition.entrypoint` and MUST declare
+`org.seedspec.concern.intent`. The artifact's `type`, `format_version`, and
+`conforms_to` metadata identify the entrypoint's native format.
+
+An artifact used this way is the primary intent source and therefore
+participates in core intent. Package validation still MUST NOT invoke the
+external format's parser implicitly. Reading the intent content does not
+activate the external format's skills, MCP server, synchronization behavior,
+or other workflow.
 
 ### 6.2 Configuration
 
@@ -258,13 +275,20 @@ Presence makes a component discoverable but does not imply a standardized execut
 
 ### 6.4 Related artifacts
 
-`artifacts` declares optional material in its native format. Every artifact has:
+`artifacts` declares material preserved in its native format. Supporting
+artifacts are optional; an artifact referenced by `definition.artifact` is the
+primary intent source. Every artifact has:
 
 - a package-local `id`;
 - a globally namespaced `type`;
 - exactly one package-relative `path` or absolute `url`.
 
-An artifact MAY also declare a label, description, media type, native format version, conformance URI, and namespaced `concerns`. Concern identifiers are descriptive classification. Core conventions include:
+An artifact MAY also declare a label, description, media type, native format
+version, conformance URI, namespaced `concerns`, and `evidence_for` claims.
+`evidence_for` is limited to the `package` subject: it states which package
+claim the artifact is offered to support and MUST NOT be represented as proof
+of a later realization. Concern identifiers are descriptive classification.
+Core conventions include:
 
 - `org.seedspec.concern.intent`
 - `org.seedspec.concern.design`
@@ -276,13 +300,20 @@ A package-local artifact path MUST exist and may reference a regular file or dir
 
 `relationships` MAY connect two artifact IDs declared by the same package. The relationship `type` is globally namespaced and descriptive. Examples such as `org.seedspec.relation.derived-from`, `org.seedspec.relation.implements`, and `org.seedspec.relation.validates` communicate traceability but have no automatic execution semantics in protocol 0.1. Both endpoints MUST exist.
 
-Artifact declaration is discovery, not activation or authority. Protocol 0.1
-deliberately has no artifact `authority`, `governing`, or `advisory` field.
+Artifact declaration alone is discovery, not activation or authority. Protocol
+0.1 deliberately has no generic artifact `authority`, `governing`, or
+`advisory` field.
 Lineage or precedence claims may be recorded as descriptive relationships, but
 they do not require an implementing agent to adopt the artifact's workflow,
 keep a realized solution synchronized with it, or treat it as current system
 truth. Adapter-specific behavior requires explicit invocation by a user or
 execution environment.
+
+`definition.artifact` is the narrow exception to artifact-only discovery: it
+identifies that artifact's content as the package's primary intent. Resolution
+MUST preserve it with `intent_role: primary` and `disposition: selected`. An
+artifact-selection input MUST NOT decline or defer it. These rules select the
+content's intent role, not its native tooling or lifecycle.
 
 ### 6.5 Metadata
 
@@ -480,8 +511,12 @@ Resolution preserves unanswered declarations. A project has:
 - `configuration_status: selected` when every package has an explicit
   configuration selection;
 - `configuration_status: review` when examples are only unreviewed placeholders;
+- `intent_status: affirmed` when the end user has recorded how every selected
+  package applies and no project-local agent proposal remains unconfirmed;
+- `intent_status: review` otherwise;
 - `status: ready` only when configuration is selected, no required decision is
-  unanswered, and no implementation-profile choice requires review; and
+  unanswered, applied intent is affirmed, and no implementation-profile choice
+  requires review; and
 - `status: needs-input` otherwise.
 
 Unanswered decisions and unselected configuration do not disappear or silently
@@ -489,7 +524,44 @@ become defaults. A handoff with `status: needs-input` MUST identify the unresolv
 inputs and instruct the implementing agent not to make consequential choices
 until they are resolved.
 
-### 9.1 Completion scope and verification
+### 9.1 Applied intent and fit
+
+An optional resolution input conforming to
+`applied-intent-input.schema.json` records the end user's application of the
+selected package intent. It MAY include at most one entry for each selected
+package and records that package as `as-authored`, `adapted`, or `partial`.
+`adapted` and `partial` MUST include a note explaining the intended difference.
+Duplicate or unselected package references are invalid. Applied intent is
+`affirmed` only when every selected package has an entry.
+
+The input MAY add project-local contributions categorized as `objective`,
+`outcome`, `invariant`, `constraint`, `forbidden-state`, `non-goal`,
+`preference`, `decision-right`, or `baseline-observation`. Every contribution
+records its source as `end-user` or `agent` and its status as `affirmed`,
+`proposed`, or `observed`. An agent-proposed contribution MUST remain
+`proposed` until the end user affirms it. A baseline observation MUST be
+`observed` and MUST include one or more baseline evidence references. Each
+reference identifies its source and MAY record when it was observed. It
+describes current state and does not prove completion.
+
+A contribution MAY include a verification plan specifying a `baseline`,
+`realization`, or `outcome` subject, a core or namespaced method, timing,
+required or optional evidence, and guidance. The plan describes how a claim
+could be established. It is not verification state and is not evidence.
+
+Resolution produces `resolved-intent.yaml`, preserving for every package its
+version, digest, entrypoint, package-author provenance, native format, and
+recorded use. It also preserves every local contribution and unresolved agent
+proposal. When the input is omitted, any selected package is missing, or a
+proposal remains unconfirmed, resolution MUST set `intent_status: review` and
+MUST NOT report the project as ready.
+
+An implementing agent SHOULD compare resolved intent with observed environment
+state before selecting an implementation path. It MAY recommend adaptation,
+partial reuse, or rejection when the package is a poor fit. It MUST NOT silently
+cherry-pick package material and claim the complete package was satisfied.
+
+### 9.2 Completion scope, verification plan, and verification state
 
 Implementation readiness and completion are independent. An optional input
 conforming to `completion-scope-input.schema.json` records project-local scope
@@ -500,6 +572,13 @@ selects either all material or a named subset. A subset MUST name included
 references and MAY record deferred or excluded references. A criterion item
 states an observable project-local expectation and marks it `included`,
 `deferred`, or `excluded`.
+
+Every included component or criterion item MUST declare a verification plan.
+The plan identifies whether the item proves the `realization` or a later
+`outcome`, the observation method, `completion` or `post-realization` timing,
+and required evidence. It MAY include human-readable guidance. A verification
+plan is agreed before implementation and MUST NOT be treated as a passing
+result.
 
 The runtime MUST validate selected package and component relationships,
 project-local item ID uniqueness, and non-overlapping included, deferred, and
@@ -518,10 +597,19 @@ included criterion or component item. Non-`not-run` results require evidence.
 Runtimes MUST detect a stale scope digest, missing or extra item results, and a
 recorded status that contradicts deterministic derivation.
 
-Evidence MAY describe code and test results or observable external state such
-as created resource identifiers, permission checks, queries against known data,
-delivered messages, screenshots, or platform audit records. Protocol validity
-does not establish that the evidence is truthful or sufficient.
+Every evidence reference records a `realization` or `outcome` subject, a
+reference, and its source. Its subject MUST match the completion item's
+verification plan. Evidence MAY describe code and test results or observable
+external state such as created resource identifiers, permission checks, queries
+against known data, delivered messages, screenshots, or platform audit records.
+Protocol validity does not establish that the evidence is truthful or
+sufficient.
+
+Package evidence, verification plans, baseline evidence, realization evidence,
+and outcome evidence have different subjects. No one category proves another.
+In particular, author evidence about a package does not prove a resolved
+realization, and a successful realization does not prove that the package is
+generally trustworthy or portable.
 
 Core derived completion statuses are `scope-review`, `not-started`,
 `in-progress`, `failed`, `verified-with-gaps`, and `verified`. Any failure yields
@@ -530,7 +618,7 @@ partial result or explicit deferral yields `verified-with-gaps`; only all-pass
 evidence with no deferral yields `verified`. Exclusions narrow the stated scope
 and do not themselves create a verification gap.
 
-### 9.2 Artifact dispositions
+### 9.3 Artifact dispositions
 
 Artifact discovery, preservation, disposition, review timing, and activation are
 separate concepts.
@@ -594,10 +682,13 @@ these steps in order:
    `self-declared-provider`, and `revision-difference` issues as applicable.
 7. Record matched package conflicts, capability conflicts, and deterministic
    declared requirement cycles as review context.
-8. Resolve implementation-profile preferences. Preserve every candidate, make
+8. Resolve applied intent and preserve the package-author and project-local
+   provenance of every intent source. Require review for missing package use or
+   unconfirmed agent proposals.
+9. Resolve implementation-profile preferences. Preserve every candidate, make
    a recorded preference prominent, and require user review when a selected
    package has multiple candidates without a preference.
-9. Generate the resolved handoff without treating those review records as
+10. Generate the resolved handoff without treating those review records as
    installation gates.
 
 CLI argument order has no semantic effect. Structural invalidity, unsafe
@@ -636,6 +727,7 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 .seedspec/
 ├── project.yaml
 ├── agent-guide.md
+├── resolved-intent.yaml
 ├── components.yaml
 ├── components/
 ├── artifacts.yaml
@@ -655,11 +747,38 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 └── additions/
 ```
 
-`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`. It records combined readiness, `selected` or `review` configuration status, `not-declared`, `recorded`, or `review` implementation-profile status, independent `recorded` or `review` completion-scope status, `no-declared-concerns` or `review` declaration status, `recorded` or `review` artifact status, exact root and addition references, and handoff file locations. Declaration status summarizes package evidence only; it is not an implementation-compatibility verdict. Artifact status is `review` while any declared artifact remains `unreviewed`; it does not make every optional artifact a product-readiness gate.
+`project.yaml` conforms to `packages/protocol/schemas/v0.1/project.schema.json`.
+It records combined readiness, `affirmed` or `review` intent status, `selected`
+or `review` configuration status, `not-declared`, `recorded`, or `review`
+implementation-profile status, independent `recorded` or `review`
+completion-scope status, `no-declared-concerns` or `review` declaration status,
+`recorded` or `review` artifact status, exact root and addition references, and
+handoff file locations. Declaration status summarizes package evidence only; it
+is not an implementation-compatibility verdict. Artifact status is `review`
+while any non-primary artifact remains `unreviewed`; it does not make every
+optional artifact a product-readiness gate.
+
+`resolved-intent.yaml` conforms to `resolved-intent.schema.json`. It records the
+package-author primary intent source, format, exact package revision, and end-
+user use disposition for every selected package, plus project-local intent
+contributions and unconfirmed agent proposals. It is the first provenance index
+an implementing agent reads; the full content remains in `resolved-spec.md` and
+preserved artifact paths.
 
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
-`artifacts.yaml` conforms to `packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every selected package's artifact metadata, relationships, deterministic review timing, and `selected`, `declined`, `deferred`, or `unreviewed` disposition. Execution artifacts also record that activation requires specific user direction. Resolution copies package-local artifacts beneath `.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source package path and resolved path regardless of disposition. Remote URLs remain URLs and are not fetched. Materialization preserves auditability and later choice without activating an artifact-specific workflow.
+`artifacts.yaml` conforms to
+`packages/protocol/schemas/v0.1/artifact-index.schema.json`. It records every
+selected package's artifact metadata, package-evidence claims, relationships,
+deterministic review timing, and `selected`, `declined`, `deferred`, or
+`unreviewed` disposition. A primary intent artifact is labeled
+`intent_role: primary` and selected as core intent. Execution artifacts also
+record that activation requires specific user direction. Resolution copies
+package-local artifacts beneath
+`.seedspec/artifacts/<package-id>/<artifact-id>/` and records both the source
+package path and resolved path regardless of disposition. Remote URLs remain
+URLs and are not fetched. Materialization preserves auditability and later
+choice without activating an artifact-specific workflow.
 
 `implementation-resources.yaml` conforms to
 `implementation-resource-index.schema.json`. It preserves each selected
@@ -686,10 +805,12 @@ package.
 `resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves root configuration, addition configurations keyed by package ID, and each configuration's `example-unreviewed`, `example`, or `custom` selection provenance. Answered decisions and technical preferences remain separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 
 `completion-scope.yaml` conforms to `completion-scope.schema.json` and records
-included, deferred, excluded, and uncovered completion context.
+included, deferred, excluded, and uncovered completion context plus the agreed
+verification plan for every included item.
 `verification-state.yaml` conforms to `verification-state.schema.json`, remains
 bound to the exact scope digest, and is created only when missing so resolution
-does not erase implementation evidence. `verification-report.md` remains the
+does not erase implementation evidence. Every evidence reference identifies the
+realization or outcome subject it proves. `verification-report.md` remains the
 human-readable detailed evidence companion.
 
 `resolved-spec.md` is human- and agent-readable solution intent.

@@ -50,6 +50,21 @@
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/namespacedId" }
         },
+        "intent_role": { "const": "primary" },
+        "evidence_for": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["subject", "claim"],
+            "properties": {
+              "subject": { "const": "package" },
+              "claim": { "type": "string", "minLength": 1, "maxLength": 500 }
+            }
+          }
+        },
         "review": {
           "enum": [
             "before-planning",
@@ -68,6 +83,17 @@
       "oneOf": [
         { "required": ["path", "source_path"], "not": { "required": ["url"] } },
         { "required": ["url"], "not": { "anyOf": [{ "required": ["path"] }, { "required": ["source_path"] }] } }
+      ],
+      "allOf": [
+        {
+          "if": { "required": ["intent_role"] },
+          "then": {
+            "properties": {
+              "review": { "const": "before-planning" },
+              "disposition": { "const": "selected" }
+            }
+          }
+        }
       ]
     },
     "resolvedRelationship": {

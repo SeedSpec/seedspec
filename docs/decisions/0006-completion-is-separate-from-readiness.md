@@ -21,12 +21,15 @@ completion claim.
 - Let scope items select all or a referenced subset of a preserved acceptance
   component, or state project-local criteria for a selected package.
 - Preserve included, deferred, and excluded expectations distinctly.
+- Require every included item to declare before implementation whether it
+  verifies the realization or a later outcome, plus method, timing, and
+  evidence requirement.
 - Report uncovered selected packages as `completion_scope_status: review`
   without blocking an otherwise ready implementation handoff.
 - Generate structured verification state bound to a digest of the resolved
   scope and preserve it across resolution reruns.
-- Derive completion status from scope coverage, item results, evidence, and
-  explicit deferrals through `seedspec completion`.
+- Derive completion status from scope coverage, item results, subject-matched
+  evidence, and explicit deferrals through `seedspec completion`.
 
 ## Consequences
 
@@ -35,4 +38,5 @@ A project can truthfully be `ready` and `not-started`, and it can be
 agent-authored observable criteria without making acceptance a required package
 file. Arbitrary Markdown reference labels are preserved assertions: core can
 validate their package/component relationship but cannot prove that the label
-exists in the source prose.
+exists in the source prose. A verification plan is not actual evidence, and
+package or baseline evidence cannot satisfy a realization or outcome item.

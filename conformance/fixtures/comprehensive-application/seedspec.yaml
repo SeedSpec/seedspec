@@ -3,13 +3,14 @@ id: org.seedspec.fixtures.comprehensive-application
 name: Comprehensive Application Fixture
 version: "0.1.0-alpha.1"
 kind: application
-description: Exercise a complete application package with capabilities, components, configuration, and an optional artifact.
+description: Exercise a complete application package whose primary intent uses the ProductSpec format.
 
 metadata:
   license: Apache-2.0
 
 definition:
-  entrypoint: definition/app.md
+  entrypoint: intent/allowance-tracker.product-spec.md
+  artifact: product-spec
 
 configuration:
   schema: configuration/schema.json
@@ -49,10 +50,10 @@ artifacts:
     type: org.seedspec.artifact.product-spec
     path: intent/allowance-tracker.product-spec.md
     label: Allowance Tracker ProductSpec
-    description: An optional, more rigorous expression of the application's product intent.
+    description: The package author's primary expression of the application's product intent.
     media_type: text/markdown
     format_version: "0.1"
-    conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/d286a8e9a7a83e0be15a0d9c360c549590134440/SPEC.md
+    conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/SPEC.md
     concerns:
       - org.seedspec.concern.intent
 

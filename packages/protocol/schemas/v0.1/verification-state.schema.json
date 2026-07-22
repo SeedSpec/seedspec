@@ -31,7 +31,7 @@
         "evidence": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+          "items": { "$ref": "#/$defs/evidenceReference" }
         },
         "note": { "type": "string", "minLength": 1, "maxLength": 1000 }
       },
@@ -45,6 +45,21 @@
           "else": { "properties": { "evidence": { "minItems": 1 } } }
         }
       ]
+    },
+    "evidenceReference": {
+      "description": "Evidence about this realization or its outcome. It cannot be used as package-author evidence merely because it appears in verification state.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "reference", "source"],
+      "properties": {
+        "subject": { "enum": ["realization", "outcome"] },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "source": {
+          "enum": ["implementing-agent", "end-user", "tool", "external-system"]
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "observed_at": { "type": "string", "format": "date-time" }
+      }
     }
   }
 }

@@ -13,7 +13,10 @@ export async function inspectPackage(inputPath) {
     kind: manifest.kind,
     description: manifest.description ?? null,
     metadata: manifest.metadata ?? {},
-    definition: manifest.definition.entrypoint,
+    definition: {
+      entrypoint: manifest.definition.entrypoint,
+      artifact: manifest.definition.artifact ?? null
+    },
     configuration: {
       schema: manifest.configuration.schema,
       example: manifest.configuration.example,
@@ -41,7 +44,7 @@ export function formatInspection(inspection) {
     `Digest: ${inspection.digest}`,
     `Description: ${inspection.description ?? "not declared"}`,
     `Metadata: ${Object.keys(inspection.metadata).length ? Object.keys(inspection.metadata).sort().join(", ") : "none"}`,
-    `Definition: ${inspection.definition}`,
+    `Definition: ${inspection.definition.entrypoint}${inspection.definition.artifact ? ` (primary intent artifact: ${inspection.definition.artifact})` : " (native SeedSpec intent)"}`,
     `Configuration: ${inspection.configuration.schema} (example: ${inspection.configuration.example})`,
     `Requires: ${inspection.requires.length ? inspection.requires.map((requirement) => (
       `${requirement.id} (tested against ${requirement.tested_against})`

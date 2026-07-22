@@ -15,6 +15,11 @@
   definition, configuration surface, decisions, capability contracts,
   constraints, and acceptance material. Core intent is a logical part of the
   package, not a required file named `core-spec`.
+- **primary intent source**: the package author's principal intent document,
+  referenced by `definition.entrypoint`. It may use native SeedSpec Markdown or
+  a declared external format such as ProductSpec. When `definition.artifact`
+  identifies that same file, the artifact's format is first-class core intent;
+  its native workflow is still not activated automatically.
 - **kind hint**: author-supplied metadata describing the likely realization
   shape. It guides tooling but does not determine composition role or required
   fields.
@@ -50,6 +55,14 @@ may reference one or more skills without turning them into core intent.
 
 ## Handoff and outcome
 
+- **applied intent**: project-local input recording how the end user intends to
+  use each selected package and any local objectives, outcomes, invariants,
+  constraints, forbidden states, non-goals, preferences, decision rights, or
+  baseline observations. Agent proposals remain labeled and non-authoritative
+  until affirmed.
+- **resolved intent**: the provenance-preserving combination of package-author
+  primary intent sources and applied intent used for one resolved handoff.
+
 - **resolved project specification** or **resolved handoff**: the project-local
   output created from selected packages and explicit end-user inputs. It
   includes resolved intent, configuration, profile state, resource state,
@@ -61,6 +74,27 @@ may reference one or more skills without turning them into core intent.
   project-local criteria used for one completion claim.
 - **verification state**: structured results and evidence references bound to
   the exact completion scope.
+
+## Evidence
+
+- **package evidence**: material offered in support of a claim about the
+  package, its design, testing, or known compatibility. It does not prove a
+  later realization.
+- **verification plan**: a pre-implementation declaration of what a completion
+  item is intended to prove, how and when it should be observed, and what
+  evidence is required. It is not a result.
+- **baseline evidence**: referenced observations about the end user's
+  environment before consequential implementation, recorded with applied
+  intent. It informs fit and planning but does not prove completion.
+- **realization evidence**: evidence that the produced software, configured
+  state, workflow, automation, or other realization satisfies a scoped claim.
+- **outcome evidence**: evidence of effects after realization, such as changed
+  behavior or an operational metric. A functioning realization may exist before
+  enough time has passed to collect outcome evidence.
+
+Evidence is not transferable merely because two claims are related. Package
+evidence does not prove a realization; realization or outcome evidence does not
+retroactively prove that the package is generally trustworthy.
 
 ## Actors
 

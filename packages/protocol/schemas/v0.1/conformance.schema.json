@@ -28,6 +28,7 @@
         },
         "project_status": { "enum": ["ready", "needs-input"] },
         "configuration_status": { "enum": ["selected", "review"] },
+        "intent_status": { "enum": ["affirmed", "review"] },
         "implementation_profile_status": { "enum": ["not-declared", "recorded", "review"] },
         "completion_scope_status": { "enum": ["recorded", "review"] },
         "review_count": { "type": "integer", "minimum": 0 },
@@ -69,6 +70,8 @@
           "items": { "type": "string", "minLength": 2 }
         },
         "configuration_selection": { "enum": ["examples", "omitted"] },
+        "intent_selection": { "enum": ["affirmed", "omitted"] },
+        "applied_intent": { "type": "string", "minLength": 1 },
         "expect": { "$ref": "#/$defs/expectation" }
       },
       "allOf": [
@@ -79,6 +82,9 @@
         {
           "if": { "properties": { "operation": { "const": "resolve" } } },
           "then": { "required": ["root", "additions"] }
+        },
+        {
+          "not": { "required": ["intent_selection", "applied_intent"] }
         }
       ]
     }

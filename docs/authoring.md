@@ -76,8 +76,10 @@ web documentation.
 
 The ordered review areas are:
 
-1. **Concern separation** checks core intent, configuration, additions,
-   implementation profiles, artifacts, resources, and acceptance boundaries.
+1. **Concern separation** checks the primary intent source, purpose,
+   obligations and boundaries, success and evidence, decision latitude,
+   configuration, additions, implementation profiles, supporting artifacts,
+   resources, and package-evidence boundaries.
 2. **Kind-aware discovery** applies the selected `kind` as an authoring lens,
    never as a fixed template or validity gate.
 3. **Material ambiguity** identifies competing interpretations that could
@@ -134,6 +136,56 @@ Authoring state is local and is never bundled, uploaded, synchronized, or
 exported implicitly. The stable layout is intended to support manual sharing
 now and an explicit export or hosted scratch-space flow later.
 
+## One primary intent source
+
+Every package has one package-author primary intent source at
+`definition.entrypoint`. Native SeedSpec authoring should keep this source
+physically compact and make four semantic areas easy to find:
+
+1. **Purpose** explains the problem, objective, desired change, and affected
+   actors.
+2. **Obligations and boundaries** distinguish required outcomes, invariants,
+   constraints, forbidden states, and non-goals.
+3. **Success and evidence** separates realization acceptance from later outcome
+   evidence and explains credible observation methods.
+4. **Decision latitude** identifies fixed intent, choices reserved for the end
+   user, and choices delegated to the implementing agent.
+
+These are semantic areas, not a requirement to create four files. A single
+clear Markdown document is preferable to scattering small fragments. Kind-aware
+questions add relevant depth inside these areas.
+
+The primary source may instead use a recognized external intent format. Declare
+the same package-local file as an artifact with the intent concern and reference
+its artifact ID from `definition.artifact`. The file is then core intent in its
+native format. Adapter validation remains separate from SeedSpec package
+validation, and the format's own workflow is not activated automatically.
+
+## Author intent and end-user applied intent
+
+Package authoring defines a reusable baseline. Resolution asks the end user the
+same classes of questions for one realization: what the package should solve
+here, which obligations and boundaries apply, what the agent may decide, and
+what observations would establish success.
+
+The agent should infer a concise draft from the user's request, package, and
+read-only environment evidence before asking questions. It should ask only
+about material uncertainty, label its additions `proposed`, and let the user
+affirm or correct a compact summary. The resulting applied-intent input records
+each package as `as-authored`, `adapted`, or `partial` and may add local intent
+contributions. It is project state, not a mutation of the published package.
+
+Authoring and adoption tools should use the same semantic vocabulary while
+changing the lens:
+
+- package author: what should generally be true for a faithful realization;
+- end user: what must be true in this environment for this use; and
+- agent: what can be observed, safely inferred, or must be confirmed.
+
+If the two intent layers conflict materially, the agent should recommend
+adaptation, partial reuse, or rejection before selecting an implementation
+profile. It must not silently convert partial reuse into a full-package claim.
+
 ## Starting altitude
 
 SeedSpec authoring may begin from a sentence, an existing product document, a
@@ -146,7 +198,9 @@ Authoring can proceed progressively:
 
 1. **Capture** preserves the source idea in a minimal conforming package.
 2. **Shape** identifies actors, outcomes, workflows, domain concepts, and meaningful variations.
-3. **Harden** adds permissions, invariants, failure behavior, edge cases, and observable acceptance criteria.
+3. **Harden** adds permissions, invariants, constraints, forbidden states,
+   non-goals, failure behavior, edge cases, observable acceptance criteria, and
+   explicit evidence subjects.
 4. **Compose** identifies capability context, SeedSpec feature candidates, and related artifacts.
 5. **Package** optionally selects versioned implementation resources and
    decides whether additional guidance discovery is delegated to the agent.
@@ -232,13 +286,42 @@ from actual state, `tool-check` for an authorized non-mutating probe,
 when a person must observe the result. Set evidence to `none`, `optional`, or
 `required` independently from the method.
 
+## Distinguish evidence before collecting it
+
+Authors should state what an observation is meant to prove:
+
+- package evidence supports a claim about the package, its testing, or known
+  compatibility;
+- a verification plan states how a future scoped realization or outcome should
+  be judged;
+- baseline evidence references observations about the end user's current
+  environment before work and belongs with an `observed` applied-intent
+  contribution;
+- realization evidence demonstrates the produced solution or configured state;
+  and
+- outcome evidence demonstrates later effects such as changed behavior or an
+  operational metric.
+
+These categories do not substitute for one another. A tested reference
+realization does not prove the user's realization. A successful user
+realization does not prove that the package is generally portable or safe.
+Authoring audits should flag evidence language whose subject or lifecycle stage
+is ambiguous.
+
+Every included completion-scope item receives an explicit verification plan
+before implementation. The plan states the realization or outcome subject,
+method, timing, and evidence requirement. Actual results belong only in
+verification state after work begins.
+
 ## Related artifacts
 
 Authors may include existing product documents, structured specifications, designs, execution plans, infrastructure descriptions, or evidence as optional `artifacts`. Preserve each artifact's native format and label the concern it addresses; do not merge separate concerns merely to make the SeedSpec look more complete.
 
-Declaring an artifact does not select its workflow for an end user or
-implementing agent. An author may explain why the artifact is useful, but should
-not encode `governing`, `advisory`, or automatic activation policy.
+Declaring an artifact alone does not select its workflow for an end user or
+implementing agent. `definition.artifact` may identify the artifact content as
+the package's primary intent, but even that does not activate its native
+workflow. An author may explain why supporting material is useful, but should
+not encode generic `governing`, `advisory`, or automatic activation policy.
 Artifact-specific validation and transformation belong to adapters that a user
 invokes explicitly.
 
@@ -291,7 +374,12 @@ seedspec inspect <package-path>
 
 ## Feature workflow
 
-When a resolved project exists, inspect `.seedspec/project.yaml`, `resolved-spec.md`, `agent-guide.md`, `implementation-notes.md`, and `dependencies.lock.yaml` before asking questions. Reuse known actors, terminology, configuration decisions, and capabilities. Declare only the capabilities the feature truly uses and the capabilities it adds.
+When a resolved project exists, inspect `.seedspec/project.yaml`,
+`resolved-intent.yaml`, `resolved-spec.md`, `agent-guide.md`,
+`implementation-notes.md`, and `dependencies.lock.yaml` before asking
+questions. Reuse known actors, terminology, configuration decisions, and
+capabilities. Declare only the capabilities the feature truly uses and the
+capabilities it adds.
 
 Keep origin context, the portable feature, and project integration decisions distinct. Before sharing a feature broadly, remove application-private assumptions, replace narrow terminology, convert variable behavior into configuration, declare known conflicts and unresolved decisions, and select an explicit compatibility scope.
 

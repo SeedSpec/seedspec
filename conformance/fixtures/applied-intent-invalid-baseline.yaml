@@ -1,0 +1,10 @@
+protocol_version: "0.1"
+packages:
+  - package: org.seedspec.fixtures.comprehensive-application
+    use: as-authored
+contributions:
+  - id: existing-identities
+    category: baseline-observation
+    statement: The target environment already has a household identity model.
+    source: agent
+    status: observed

@@ -332,15 +332,21 @@ function commonInstructions({ pass }) {
 function concernSeparationInstructions() {
   return [
     "Classify each consequential statement by the concern it actually serves:",
-    "- core intent: behavior or outcomes that should survive legitimate implementation choices;",
+    "- primary intent: the package-author source named by `definition.entrypoint`; if `definition.artifact` is present, preserve that external format rather than duplicating it into native Markdown;",
+    "- purpose: the problem, objective, desired change, affected actors, and outcomes that should survive legitimate implementation choices;",
+    "- obligations and boundaries: required behavior, invariants, constraints, forbidden states, and explicit non-goals;",
+    "- success and evidence: observable success claims and future verification plans, with realization outcomes distinguished from later operational outcomes;",
+    "- decision latitude: choices fixed by the package author, reserved for the end user, or delegated to the implementing agent;",
     "- configuration: meaningful product behavior that installations may choose differently;",
     "- addition: independently composable behavior that extends or changes the solution;",
     "- implementation profile: a materially different platform, architecture, provider, or realization direction for the same core intent;",
     "- artifact: useful source material preserved in its native format;",
     "- implementation resource: versioned help for an implementing agent;",
-    "- acceptance: observable evidence used to judge success.",
+    "- package evidence: material supporting a claim about the package, its testing, or known compatibility;",
+    "- applied intent: project-local end-user adaptation, which does not belong in a reusable source package.",
     "Identify misplaced or conflated content with its file and heading. Do not move content when the correct concern depends on author intent; explain the alternatives and ask for direction.",
-    "Check especially for technology in core intent, implementation choices disguised as configuration, acceptance criteria that prescribe architecture, and optional features folded into the root outcome."
+    "Check especially for technology in primary intent, implementation choices disguised as configuration, acceptance criteria that prescribe architecture, optional features folded into the root outcome, forbidden states mislabeled as non-goals, and evidence offered for a different subject than the claim it supposedly proves.",
+    "Prefer fewer physical files with explicit semantic headings. Do not fragment intent merely because the vocabulary distinguishes its concerns."
   ];
 }
 
@@ -388,6 +394,9 @@ function hardeningInstructions(target) {
   return [
     `Review toward the requested \`${target}\` depth: ${targetFocus}.`,
     "Do not expand product scope, manufacture enterprise requirements, or convert authoring depth into a quality score.",
+    "For every material success claim, distinguish the verification plan from actual evidence and label its subject as package, baseline, realization, or outcome. Never use evidence for one subject as proof of another.",
+    "Distinguish a non-goal, which declines to require an outcome, from a forbidden state, which the realization must prevent.",
+    "Make the agent's decision latitude explicit: what is fixed, what requires end-user choice, and what may be decided during implementation.",
     "Report material gaps, intentional omissions, and blockers separately. A package may be valid and useful without exhausting every possible detail.",
     "Recommend the smallest refinement that meaningfully reduces implementation risk at the requested depth."
   ];
@@ -396,8 +405,10 @@ function hardeningInstructions(target) {
 function handoffInstructions() {
   return [
     "Simulate receiving this package as a capable implementing agent with no access to the authoring conversation.",
-    "Explain the intended outcome, genuine constraints, configuration choices, unresolved product decisions, implementation profiles, optional artifacts and resources, and observable success conditions.",
+    "Explain the package-author primary intent and its native format, intended outcome, obligations, boundaries, decision latitude, configuration choices, unresolved product decisions, implementation profiles, optional artifacts and resources, and observable success conditions.",
+    "Before choosing an implementation profile, draft the minimum applied-intent questions needed to determine whether the end user wants each package as authored, adapted, partially reused, or rejected. Separate safe environmental observation from agent inference and required user affirmation.",
     "Identify facts the implementing agent would otherwise guess, instructions that could be misread as authority, important material buried in excessive context, and acceptance criteria that cannot be observed.",
+    "Identify every evidence claim by subject. Package evidence, baseline evidence, realization evidence, and outcome evidence are not interchangeable; a verification plan is not evidence.",
     "Run `seedspec begin <package-path>` and inspect the actual versioned handoff instructions. Review the emitted workflow rather than an idealized reading of source files.",
     "Recommend only changes to the package that improve an independent handoff; do not prescribe architecture or implementation workflow."
   ];

@@ -103,5 +103,10 @@ direction or that composition is deterministic.
   protocol validation, preserving intentional exceptions.
 - Implementation profiles remain subordinate to core intent and end-user
   direction.
+
+[ADR 0010](0010-primary-and-applied-intent-with-scoped-evidence.md) further
+requires end-user applied intent to be resolved before profile evaluation. A
+profile must therefore fit both the reusable package intent and the affirmed
+project-local application of that intent.
 - Registries may index kinds and profiles as discovery hints but must not imply
   compatibility, selection, or authorization.

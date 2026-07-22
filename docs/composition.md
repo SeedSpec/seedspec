@@ -20,6 +20,12 @@ capability + compatibility + conflict declarations
 provider candidates + review records
           |
           v
+package-author intent + end-user applied intent
+          |
+          v
+implementation-profile evaluation
+          |
+          v
 resolved agent handoff
           |
           v
@@ -46,18 +52,26 @@ declarations can be mapped together, or that an author concern genuinely blocks
 the user's desired outcome. SeedSpec cannot know which answer is correct without
 the actual implementation.
 
-Root, addition, decision, implementation-profile, artifact, and technical
-configuration stay in separate namespaces. Every explicit package configuration
-is complete; resolution never fills a custom selection from an example. Missing
-configuration selection, required decision answers, or an ambiguous
-implementation-profile preference produce a valid project
+Root, addition, applied-intent, decision, implementation-profile, artifact, and
+technical-configuration state stay in separate namespaces. Every explicit
+package configuration is complete; resolution never fills a custom selection
+from an example. Missing applied-intent affirmation, configuration selection,
+required decision answers, or an ambiguous implementation-profile preference
+produce a valid project
 with `status: needs-input`; they do not disappear into implementation
 assumptions.
+
+Resolution compares package-author and end-user applied intent before profile
+evaluation. A package may apply as authored, require adaptation, be only
+partially useful, or be a poor fit. Agent-proposed intent remains visible and
+review-required until the end user affirms it.
 
 Completion scope and verification remain independent from that readiness state.
 A ready project can still have `completion_scope_status: review` or structured
 verification status `not-started`. Package acceptance material becomes part of
-a completion claim only through an explicit scope record.
+a completion claim only through an explicit scope record with a verification
+plan. Evidence later attached to the item must identify the same realization or
+outcome subject.
 
 The dependency lock records exact package digests, deterministic addition order,
 all capability declarations, all provider candidates, revision comparisons, and

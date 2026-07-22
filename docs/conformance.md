@@ -18,8 +18,9 @@ The index and fixtures are self-contained and runtime-neutral. Paths are
 relative to the index and MUST remain within the conformance directory. Each
 case declares an operation, input packages, and expected success or stable
 error code. Resolution cases may also assert deterministic addition order,
-implementation-profile preferences, and project status. Resolved-state checks
-include `artifacts.yaml` and `implementation-profile-state.yaml`.
+applied-intent status, implementation-profile preferences, and project status.
+Resolved-state checks include `resolved-intent.yaml`, `artifacts.yaml`, and
+`implementation-profile-state.yaml`.
 
 Core SeedSpec conformance and adapter conformance are separate. The core suite verifies artifact declaration, references, relationships, materialization, and schema-valid indexing. Adapter tests verify native formats such as ProductSpec by invoking their upstream validators explicitly.
 
@@ -48,11 +49,12 @@ A behavioral correction that changes whether an artifact passes, its error class
 
 Fixtures should isolate one rule where practical. Negative cases assert stable error codes rather than implementation-specific prose.
 
-## Operations in suite 1.9.0
+## Operations in suite 2.0.0
 
 - `validate` checks structural, referenced-file, configuration, artifact-reference, relationship, semantic, and content-safety behavior without invoking artifact adapters.
 - `digest-stability` checks repeated calculation over identical package bytes.
-- `resolve` checks deterministic declaration analysis, review records, and resolved project state.
+- `resolve` checks deterministic declaration analysis, applied-intent
+  readiness, review records, and resolved project state.
 
 Design-alpha corrections increment `suite_version` and may change expected
 results. A conformance report is incomplete unless it identifies the exact

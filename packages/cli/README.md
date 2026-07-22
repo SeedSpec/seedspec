@@ -32,8 +32,9 @@ seedspec digest <package-path>
 ```
 
 `seedspec begin` is the read-only agent handoff. It validates the package and
-surfaces configuration, implementation-profile, optional-content, trust, and
-completion-scope choices before implementation begins.
+surfaces package-author intent, applied-intent, configuration,
+implementation-profile, supporting-material, trust, and verification-plan choices
+before implementation begins.
 
 `seedspec audit` creates or continues an authoring review outside the
 distributable package and prints versioned Markdown instructions for a capable

@@ -1,4 +1,4 @@
-suite_version: "1.9.0"
+suite_version: "2.0.0"
 protocol_version: "0.1"
 
 cases:
@@ -125,12 +125,20 @@ cases:
       result: fail
       code: INVALID_MANIFEST_SEMANTICS
 
+  - id: reject-invalid-primary-intent-artifact
+    description: A primary intent artifact must match the definition entrypoint and declare the intent concern.
+    operation: validate
+    package: fixtures/invalid-primary-intent
+    expect:
+      result: fail
+      code: INVALID_MANIFEST_SEMANTICS
+
   - id: package-digest-is-stable
     operation: digest-stability
     package: fixtures/comprehensive-application
     expect:
       result: pass
-      digest: sha256:7781f5f38df147e1143a0ea8d7ecd54c979f58222f1633e1e8fa51916dbf6dfe
+      digest: sha256:4c12b067833393a6ab3b27caba7dfcfc027933c8807d4a42bac5a2aef97d72bd
 
   - id: resolve-application-with-portable-feature
     description: The comprehensive application and portable feature fixtures produce a ready project.
@@ -139,9 +147,11 @@ cases:
     additions:
       - fixtures/portable-feature
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       completion_scope_status: review
       addition_order:
         - org.seedspec.fixtures.portable-feature
@@ -154,10 +164,12 @@ cases:
     implementations:
       - hubspot-native
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
       configuration_status: selected
+      intent_status: affirmed
       implementation_profile_status: recorded
       completion_scope_status: review
       addition_order: []
@@ -169,10 +181,12 @@ cases:
     root: fixtures/profiled-workflow
     additions: []
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: needs-input
       configuration_status: selected
+      intent_status: affirmed
       implementation_profile_status: review
       completion_scope_status: review
       addition_order: []
@@ -185,9 +199,11 @@ cases:
       - fixtures/chain-consumer
       - fixtures/chain-provider
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.chain-consumer
         - org.example.chain-provider
@@ -201,9 +217,11 @@ cases:
     additions:
       - fixtures/unmet-capability-feature
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.teleportation
       review_count: 1
@@ -214,9 +232,11 @@ cases:
     additions:
       - fixtures/revision-review
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.revision-review
       review_count: 1
@@ -227,9 +247,11 @@ cases:
     additions:
       - fixtures/ambiguous-provider
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.ambiguous-provider
       review_count: 1
@@ -250,9 +272,11 @@ cases:
     additions:
       - fixtures/conflicting-feature
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.conflicting-feature
       review_count: 1
@@ -264,9 +288,11 @@ cases:
       - fixtures/cycle-a
       - fixtures/cycle-b
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.cycle-a
         - org.example.cycle-b
@@ -278,10 +304,12 @@ cases:
     additions:
       - fixtures/decision-feature
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: needs-input
       configuration_status: selected
+      intent_status: affirmed
       addition_order:
         - org.example.decision-feature
 
@@ -292,9 +320,11 @@ cases:
       - fixtures/decision-feature
     decisions: fixtures/decision-answers.yaml
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: ready
+      intent_status: affirmed
       addition_order:
         - org.example.decision-feature
 
@@ -305,6 +335,7 @@ cases:
       - fixtures/decision-feature
     decisions: fixtures/invalid-decision-answers.yaml
     configuration_selection: examples
+    intent_selection: affirmed
     expect:
       result: fail
       code: INVALID_DECISIONS
@@ -315,8 +346,60 @@ cases:
     root: fixtures/comprehensive-application
     additions: []
     configuration_selection: omitted
+    intent_selection: affirmed
     expect:
       result: pass
       project_status: needs-input
       configuration_status: review
+      intent_status: affirmed
+      addition_order: []
+
+  - id: preserve-unaffirmed-intent-as-review
+    description: Omitting applied intent preserves package-authored sources but requires end-user review before implementation.
+    operation: resolve
+    root: fixtures/comprehensive-application
+    additions: []
+    configuration_selection: examples
+    intent_selection: omitted
+    expect:
+      result: pass
+      project_status: needs-input
+      configuration_status: selected
+      intent_status: review
+
+  - id: resolve-rich-applied-intent
+    description: Applied intent preserves package adaptation, end-user outcomes, verification plans, and evidenced baseline observations.
+    operation: resolve
+    root: fixtures/comprehensive-application
+    additions: []
+    configuration_selection: examples
+    applied_intent: fixtures/applied-intent-rich.yaml
+    expect:
+      result: pass
+      project_status: ready
+      configuration_status: selected
+      intent_status: affirmed
+      addition_order: []
+
+  - id: reject-unexplained-intent-adaptation
+    description: Adapted or partial package use must explain how the reusable intent changes for this realization.
+    operation: resolve
+    root: fixtures/comprehensive-application
+    additions: []
+    configuration_selection: examples
+    applied_intent: fixtures/applied-intent-invalid-adaptation.yaml
+    expect:
+      result: fail
+      code: INVALID_APPLIED_INTENT
+
+  - id: reject-unevidenced-baseline-observation
+    description: A baseline fact cannot be recorded as observed without evidence references to the inspected state.
+    operation: resolve
+    root: fixtures/comprehensive-application
+    additions: []
+    configuration_selection: examples
+    applied_intent: fixtures/applied-intent-invalid-baseline.yaml
+    expect:
+      result: fail
+      code: INVALID_APPLIED_INTENT
       addition_order: []

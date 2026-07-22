@@ -6,9 +6,11 @@
 
 The SeedSpec Protocol packages **intent and the resources that help an agent
 realize it** while leaving implementation choices open. A SeedSpec package is a
-versioned, human-readable collection of intent, configuration, capabilities,
-evidence, optional related artifacts, and optional author-selected
-implementation resources.
+versioned, human-readable collection of package-author intent, configuration,
+capabilities, package evidence, optional related artifacts, and optional
+author-selected implementation resources. Resolution adds end-user applied
+intent and keeps baseline, realization, and outcome evidence attached to the
+claims they can establish.
 
 The structured package format is a small declarative DSL. SeedSpec as a whole
 is a protocol: it defines identity, composition, integrity, trust, resolution,
@@ -29,16 +31,19 @@ mechanism.
 5. **Implementation and integration** — replaceable agents interpret the handoff, adapt it to the actual environment, realize the selected outcome, and record verification evidence.
 
 ```text
-SeedSpec packages + product configuration + implementation-profile preference + technical preferences
+SeedSpec packages + applied intent + product configuration
                               |
                               v
-                 resolved project specification
+      resolved intent + implementation-profile preference
                               |
                               v
-                 replaceable execution engine
+          resolved project specification + verification plan
                               |
                               v
-                  agent-realized solution
+             replaceable agent + harness
+                              |
+                              v
+          agent-realized solution + scoped evidence
 ```
 
 ## Design principles
@@ -49,6 +54,8 @@ SeedSpec packages + product configuration + implementation-profile preference + 
 - Agentically composable packages and implementation profiles under end-user direction.
 - Kind hints guide tools and agents without constraining root or addition roles.
 - Core intent remains separate from candidate implementation profiles.
+- Package-author intent remains distinguishable from end-user applied intent
+  and agent proposals.
 - Separate intent, design, execution, and infrastructure.
 - Package and relate artifacts without imposing one universal specification format.
 - Discovery is not activation; artifact presence does not authorize an agent workflow.
@@ -67,7 +74,8 @@ SeedSpec packages + product configuration + implementation-profile preference + 
 - Capability versions as testing evidence and review signals, not installation gates.
 - Agent adaptation over forced contract conformity.
 - Portability without forced generality.
-- Observable evidence over architectural prescription.
+- Verification plans before execution; scoped evidence after observation.
+- Package, baseline, realization, and outcome evidence are not interchangeable.
 - Escape hatches for users who want to work directly in code or a target system.
 
 The complete rationale and decision tests are in [docs/principles.md](docs/principles.md). Protocol-level adapter boundaries are recorded in [ADR 0002](docs/decisions/0002-artifacts-adapters-and-agent-choice.md). The broader agent-realized solution scope is recorded in [ADR 0008](docs/decisions/0008-one-protocol-for-agent-realized-solutions.md); kind hints and implementation profiles are recorded in [ADR 0009](docs/decisions/0009-kind-hints-and-implementation-profiles.md) and illustrated in [docs/use-cases.md](docs/use-cases.md).
@@ -79,8 +87,9 @@ application root, a profiled workflow root, and feature additions; authoring
 and guided-use skills; a reference CLI; a generic artifact model; an official
 ProductSpec adapter; versioned capability contracts; author-controlled
 implementation-resource resolution; candidate implementation profiles;
-deterministic handoff output; agent guidance; persistent implementation notes;
-and acceptance information. Complete packages and realized solutions remain
+applied-intent resolution; explicit evidence subjects; deterministic handoff
+output; agent guidance; persistent implementation notes; and acceptance
+information. Complete packages and realized solutions remain
 independently versioned in the reference-solutions repository.
 
 The platform does not enforce what an agent builds or changes. The resolved

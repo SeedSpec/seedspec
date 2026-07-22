@@ -62,6 +62,20 @@ export function validateManifestSemantics(manifest) {
     if (artifactIds.has(artifact.id)) details.push(`artifacts repeats ${artifact.id}`);
     artifactIds.add(artifact.id);
   }
+  if (manifest.definition.artifact) {
+    const primaryArtifact = (manifest.artifacts ?? [])
+      .find((artifact) => artifact.id === manifest.definition.artifact);
+    if (!primaryArtifact) {
+      details.push(`definition.artifact references unknown artifact ${manifest.definition.artifact}`);
+    } else {
+      if (!primaryArtifact.path || primaryArtifact.path !== manifest.definition.entrypoint) {
+        details.push("definition.artifact must reference the same package-local path as definition.entrypoint");
+      }
+      if (!(primaryArtifact.concerns ?? []).includes("org.seedspec.concern.intent")) {
+        details.push("definition.artifact must declare org.seedspec.concern.intent");
+      }
+    }
+  }
   for (const relationship of manifest.relationships ?? []) {
     if (!artifactIds.has(relationship.from)) {
       details.push(`relationships references unknown source artifact ${relationship.from}`);

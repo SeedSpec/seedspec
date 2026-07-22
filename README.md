@@ -58,7 +58,21 @@ npx seedspec discover-features conformance/fixtures/comprehensive-application \
   --catalog conformance/fixtures/
 ```
 
-Use `--configuration-selections <yaml>` to choose each selected package's exact example or a complete custom configuration. Omitting it preserves the examples as unreviewed placeholders and produces `status: needs-input`, never a ready project. Use `-i <profile>` or `--implementation <profile>` to record a strong preference among author-declared implementation profiles. When multiple profiles exist and none is preferred, the generated handoff requires the agent to explain them and ask the user which direction to take. Use `--completion-scope <yaml>` to select author acceptance material or record project-local observable criteria. `ready` describes implementation input, while `seedspec completion` independently reports verification progress. Use `--technical-preferences <yaml>` to record other non-product implementation preferences separately and `--artifact-selections <yaml>` to durably mark artifacts selected, declined, or deferred. A selected execution artifact still requires specific user direction before activation.
+Use `--applied-intent <yaml>` to affirm whether every selected package applies
+as authored, requires adaptation, or is only partially useful and to record
+project-local intent. Omitting it preserves the package-author sources but
+produces `intent_status: review`, never a ready project. Use
+`--configuration-selections <yaml>` to choose each selected package's exact
+example or a complete custom configuration. Use `-i <profile>` or
+`--implementation <profile>` only after comparing applied intent with candidate
+implementation profiles. Use `--completion-scope <yaml>` to select author
+acceptance material or record project-local criteria; every included item must
+declare what realization or outcome evidence will prove it. `ready` describes
+implementation input, while `seedspec completion` independently reports actual
+verification progress. Use `--technical-preferences <yaml>` for non-product
+implementation preferences and `--artifact-selections <yaml>` for optional
+artifact dispositions. A primary intent artifact is core intent and cannot be
+declined, but its native workflow still requires separate direction.
 
 ## What exists in v0.1 alpha
 
@@ -75,13 +89,19 @@ Use `--configuration-selections <yaml>` to choose each selected package's exact 
   separate from protocol validity.
 - Authoring skills for application and feature packages, plus a guided
   `use-seedspec` lifecycle skill.
-- A generic artifact model and explicit ProductSpec adapter backed by the official ProductSpec parser.
+- A generic artifact model and explicit ProductSpec adapter backed by the
+  official ProductSpec parser. ProductSpec may be the package's primary intent
+  format without becoming a protocol dependency.
 - Versioned capability contracts, provider candidates, compatibility statements,
   and conflicts that create implementation review context rather than dependency
   gates or compatibility verdicts.
 - Kind hints for solutions, applications, features, workflows, automations,
   configurations, and integrations without kind-specific composition gates.
-- Explicit configuration choices, implementation profiles, completion scopes and structured verification state, structured decisions, artifact dispositions, validated implementation-target guidance, content-addressed locks, agent handoff guidance, and durable deviation records.
+- Explicit package-author and applied intent with provenance, configuration
+  choices, implementation profiles, completion verification plans, typed
+  realization and outcome evidence, structured decisions, artifact
+  dispositions, validated implementation-target guidance, content-addressed
+  locks, agent handoff guidance, and durable deviation records.
 - Author-controlled, independently versioned implementation resources with
   explicitly consulted package-scoped skills, target and capability context, verified canonical
   resolution, visible bundled fallbacks, and local use records.
@@ -129,12 +149,12 @@ maintained as independent consumers.
 ## Concept flows
 
 ```text
-idea + optional native artifacts
+idea + optional native or external-format primary intent
   -> SeedSpec root package
-  -> addition discovery + package configuration
+  -> end-user applied intent + addition discovery + package configuration
   -> resolved project specification
   -> user-directed agent handoff
-  -> agent-realized solution + verification evidence
+  -> agent-realized solution + scoped realization or outcome evidence
 ```
 
 ```text

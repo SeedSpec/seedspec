@@ -22,6 +22,31 @@ a precise outcome while leaving the agent free to choose how to realize it. An
 author may also impose genuine constraints, but conformance proves that those
 constraints were packaged, not that a later agent followed them.
 
+## Define the target, not the route
+
+Agent-ready intent should establish the desired end state, obligations,
+invariants, constraints, forbidden states, non-goals, success criteria, and
+decision latitude. Skills and tools provide capabilities; the model and harness
+choose actions and correct course against observed reality.
+
+A task sequence may be useful implementation material, but it is not a
+substitute for a target an agent can recognize. Authoring should ask whether an
+otherwise capable agent could detect success, boundary violations, and a poor
+package-to-user fit—not whether every implementation step was anticipated.
+
+## Keep evidence attached to the claim it proves
+
+SeedSpec distinguishes package evidence, verification plans, baseline
+observations, realization evidence, and outcome evidence. These have different
+subjects and moments in the lifecycle. Evidence for one must not be presented
+as proof of another merely because the claims are related.
+
+An author may ship evidence that a package or reference realization was tested.
+That evidence cannot prove the end user's future realization. Conversely, a
+successful realization cannot retroactively establish that the package is
+generally complete, safe, portable, or trustworthy. A verification plan defines
+what evidence should later be collected; it is not itself evidence.
+
 ## One protocol, varied realizations
 
 A realization may be new software, a feature adapted into an existing product,
@@ -55,7 +80,10 @@ solution. Product definitions, ProductSpecs, designs, API contracts,
 implementation plans, reference realizations, runbooks, evaluations, and
 infrastructure material may coexist as separate artifacts.
 
-SeedSpec standardizes the package and relationships between those artifacts. Each artifact format retains its own semantics and validation rules.
+The primary package definition may itself use a recognized external intent
+format. SeedSpec standardizes its role and provenance while an adapter preserves
+the external format's semantics and validation rules. Other artifacts remain
+supporting material unless explicitly referenced as the primary definition.
 
 ## Keep concerns separate
 
@@ -77,6 +105,11 @@ Declaring an artifact makes it discoverable. It does not:
 - activate an artifact-specific workflow;
 - make the artifact authoritative to an implementing agent;
 - authorize changes to the artifact, codebase, or external system.
+
+When an artifact is also named by `definition.artifact`, its content is the
+package's primary intent and is read as core intent. This does not activate the
+artifact format's parser, skills, MCP server, synchronization loop, or other
+native workflow.
 
 Runtimes may inspect descriptive metadata needed to explain an artifact and locate compatible tooling. Behavior-changing tooling requires an explicit user action.
 
@@ -103,6 +136,14 @@ and material conflicts to its end user. The agent may compare alternatives and
 recommend reconsidering a choice, but the end user decides how the agent uses
 them. SeedSpec supplies context for that decision and does not silently choose
 on the user's behalf.
+
+The package author supplies reusable intent. Before consequential
+implementation, the end user affirms whether each selected package applies as
+authored, requires adaptation, or is only partially useful. The agent may draft
+local objectives, obligations, boundaries, observations, and evidence plans to
+reduce user effort, but must label unconfirmed inference and surface material
+conflict. Partial reuse is valid; silently claiming that a cherry-picked result
+satisfies the complete package is not.
 
 ## Preserve alternative realizations as decision context
 
@@ -184,7 +225,7 @@ New artifact types, adapters, publishers, catalogs, and implementation environme
 
 ## Influences, not dependencies
 
-[ProductSpec](https://github.com/gokulrajaram/ProductSpec/blob/d286a8e9a7a83e0be15a0d9c360c549590134440/docs/vision.md) sharpens the distinction between durable product intent and downstream engineering specs, tasks, code, and evidence. Its drift model also shows why divergence should lead to an explicit decision instead of silently treating either document or code as automatically correct. SeedSpec adopts the separation and the value of traceability; it leaves continuous reconciliation to an optional user-chosen workflow.
+[ProductSpec](https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/docs/vision.md) sharpens the distinction between durable product intent and downstream engineering specs, tasks, code, and evidence. Its drift model also shows why divergence should lead to an explicit decision instead of silently treating either document or code as automatically correct. SeedSpec adopts the separation and the value of traceability; it leaves continuous reconciliation to an optional user-chosen workflow.
 
 [Kiro Specs](https://kiro.dev/docs/specs/) demonstrate the practical value of distinct requirements, design, and task artifacts; cross-requirement analysis; traceability into implementation; and workflows that can start requirements-first, design-first, or with a faster one-pass plan. SeedSpec applies these lessons to progressive authoring, artifact relationships, linters, and implementation skills. It does not require the Kiro file set, phase order, approval gates, or execution engine.
 

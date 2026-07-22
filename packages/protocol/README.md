@@ -2,9 +2,11 @@
 
 Canonical schemas and version metadata for the SeedSpec Protocol.
 
-SeedSpec packages describe intended outcomes, context, configuration,
-capabilities, optional implementation resources, and observable success while
-leaving execution to an implementing agent under the end user's direction.
+SeedSpec packages describe package-author intent, context, configuration,
+capabilities, optional implementation resources, and observable success. The
+protocol separately records end-user applied intent, pre-implementation
+verification plans, and actual realization or outcome evidence while leaving
+execution to an implementing agent under the end user's direction.
 
 ## Install
 

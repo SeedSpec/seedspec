@@ -14,6 +14,7 @@ Accept starting material ranging from a one-sentence feature idea to an existing
 For an existing project, read these files when present:
 
 - `.seedspec/project.yaml`;
+- `.seedspec/resolved-intent.yaml`;
 - `.seedspec/resolved-spec.md`;
 - `.seedspec/resolved-config.yaml`;
 - `.seedspec/dependencies.lock.yaml`;
@@ -35,7 +36,10 @@ Define:
 - configurable variations;
 - integration points and atomicity expectations;
 - failure, retry, concurrency, deletion, and historical behavior;
-- observable acceptance criteria.
+- observable acceptance criteria and credible verification plans;
+- non-goals, forbidden states, and genuine constraints; and
+- choices fixed by the author, reserved for the end user, or delegated to the
+  implementing agent.
 
 Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as an end-user-selected default.
 
@@ -64,12 +68,23 @@ Run `seedspec init feature --output <package-path>` when available, then write:
 
 - `seedspec.yaml` with feature kind, tested-against requirements, versioned provisions, compatibility, known conflicts, durable decisions, and components;
 - a capability contract for every provided capability;
-- `definition/feature.md` with portable product behavior;
+- one primary intent source with clear **Purpose**, **Obligations and
+  boundaries**, **Success and evidence**, and **Decision latitude** semantics;
 - configuration schema and example;
 - `integration/requirements.md` with host mappings, authorization, atomicity, and unresolved-decision rules;
 - `acceptance/criteria.md` with observable host-independent behavior.
 
-Preserve useful source specifications, designs, execution plans, infrastructure descriptions, and evidence as separately declared artifacts. Label their concerns and relationships without claiming they govern the implementing agent. Do not require ProductSpec or any other native format simply to make a SeedSpec feature package appear rigorous.
+Use native SeedSpec Markdown for the primary intent unless the author already
+uses a recognized external intent format. To make an external document such as
+ProductSpec the primary source, declare it as an intent artifact and reference
+its ID from `definition.artifact`; its path must equal `definition.entrypoint`.
+This does not activate the format's workflow.
+
+Preserve other useful specifications, designs, execution plans, infrastructure
+descriptions, and package evidence as supporting artifacts. Label their
+concerns and relationships without claiming they govern the implementing agent.
+Use `evidence_for` only for package claims, never as proof of the future host
+realization.
 
 At packaging time, optionally select independently versioned skills,
 instructions, verification material, tools, or target profiles that materially
@@ -110,7 +125,9 @@ When asked to generalize an existing feature:
 4. Minimize and document required capabilities.
 5. Replace host screen and storage assumptions with integration outcomes.
 6. Add acceptance criteria that can run against a clean host context.
-7. Reassess compatibility scope honestly.
-8. Validate and resolve again without relying on undocumented origin context.
+7. Separate non-goals from forbidden states and name the agent's decision
+   latitude.
+8. Reassess compatibility scope honestly.
+9. Validate and resolve again without relying on undocumented origin context.
 
 Finish only when the package validates, its requirements are sufficient but minimal, and an independent integrator can identify every host-specific decision that remains.

@@ -8,6 +8,7 @@
     "protocol_version",
     "status",
     "configuration_status",
+    "intent_status",
     "completion_scope_status",
     "declaration_status",
     "artifact_status",
@@ -15,6 +16,7 @@
     "root",
     "additions",
     "configuration",
+    "resolved_intent",
     "component_index",
     "artifact_index",
     "implementation_resource_index",
@@ -34,6 +36,7 @@
     "protocol_version": { "const": "0.1" },
     "status": { "enum": ["ready", "needs-input"] },
     "configuration_status": { "enum": ["selected", "review"] },
+    "intent_status": { "enum": ["affirmed", "review"] },
     "completion_scope_status": { "enum": ["recorded", "review"] },
     "declaration_status": { "enum": ["no-declared-concerns", "review"] },
     "artifact_status": { "enum": ["recorded", "review"] },
@@ -44,6 +47,7 @@
       "items": { "$ref": "#/$defs/packageRef" }
     },
     "configuration": { "const": "resolved-config.yaml" },
+    "resolved_intent": { "const": "resolved-intent.yaml" },
     "component_index": { "const": "components.yaml" },
     "artifact_index": { "const": "artifacts.yaml" },
     "implementation_resource_index": { "const": "implementation-resources.yaml" },
@@ -74,6 +78,7 @@
       "then": {
         "properties": {
           "configuration_status": { "const": "selected" },
+          "intent_status": { "const": "affirmed" },
           "implementation_profile_status": { "enum": ["not-declared", "recorded"] },
           "unresolved_decisions": {
             "items": {
@@ -99,6 +104,11 @@
           {
             "properties": {
               "configuration_status": { "const": "review" }
+            }
+          },
+          {
+            "properties": {
+              "intent_status": { "const": "review" }
             }
           },
           {

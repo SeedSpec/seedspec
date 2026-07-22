@@ -59,7 +59,11 @@
       "additionalProperties": false,
       "required": ["entrypoint"],
       "properties": {
-        "entrypoint": { "$ref": "#/$defs/relativePath" }
+        "entrypoint": { "$ref": "#/$defs/relativePath" },
+        "artifact": {
+          "description": "Optional artifact ID identifying the native format of the primary intent entrypoint. The referenced artifact must use the same local path and declare the intent concern.",
+          "$ref": "#/$defs/localId"
+        }
       }
     },
     "configuration": {
@@ -342,6 +346,21 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/namespacedId" }
+        },
+        "evidence_for": {
+          "description": "Package-scoped claims for which this artifact is offered as evidence. Package evidence does not prove a later realization.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["subject", "claim"],
+            "properties": {
+              "subject": { "const": "package" },
+              "claim": { "type": "string", "minLength": 1, "maxLength": 500 }
+            }
+          }
         }
       },
       "oneOf": [

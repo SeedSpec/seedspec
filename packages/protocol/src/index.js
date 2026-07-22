@@ -5,7 +5,7 @@ export const protocolVersion = "0.1";
 export const protocolPackageVersion = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8")
 ).version;
-export const conformanceSuiteVersion = "1.9.0";
+export const conformanceSuiteVersion = "2.0.0";
 
 export const protocolSchemaNames = Object.freeze([
   "seedspec.schema.json",
@@ -16,6 +16,8 @@ export const protocolSchemaNames = Object.freeze([
   "artifact-index.schema.json",
   "artifact-selections.schema.json",
   "configuration-selections.schema.json",
+  "applied-intent-input.schema.json",
+  "resolved-intent.schema.json",
   "completion-scope-input.schema.json",
   "completion-scope.schema.json",
   "verification-state.schema.json",

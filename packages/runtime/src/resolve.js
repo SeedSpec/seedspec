@@ -7,6 +7,7 @@ import { SeedSpecError } from "./errors.js";
 import { pathExists, readMarkdownComponent, readYamlFile, resolvePackagePath } from "./files.js";
 import { compileConfigurationSchema, compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { artifactReview, componentReview } from "./guidance.js";
+import { resolveAppliedIntent } from "./intent.js";
 import {
   materializeImplementationResources,
   reconcileImplementationResourceState
@@ -157,6 +158,17 @@ async function readArtifactSelections(selectionsPath, records) {
         code: "INVALID_ARTIFACT_SELECTIONS"
       });
     }
+    if (
+      record.manifest.definition.artifact === selection.id
+      && selection.disposition !== "selected"
+    ) {
+      throw new SeedSpecError(`Primary intent artifact cannot be ${selection.disposition}: ${key}`, {
+        code: "INVALID_ARTIFACT_SELECTIONS",
+        details: [
+          "The artifact is the package's primary intent definition. Its content participates in resolution even though activating its native workflow remains optional."
+        ]
+      });
+    }
     selections.set(key, selection);
   }
   return selections;
@@ -196,7 +208,8 @@ async function validateTechnicalPreferences(technicalPreferences, records, artif
             code: "INVALID_IMPLEMENTATION_TARGET"
           });
         }
-        if (artifactSelections.get(key)?.disposition !== "selected") {
+        const isPrimaryIntent = record.manifest.definition.artifact === reference.artifact;
+        if (!isPrimaryIntent && artifactSelections.get(key)?.disposition !== "selected") {
           throw new SeedSpecError(`Implementation target ${target.id} requires selected artifact guidance: ${key}`, {
             code: "INVALID_IMPLEMENTATION_TARGET",
             details: ["Record the artifact with disposition selected in --artifact-selections."]
@@ -236,13 +249,15 @@ async function materializeArtifacts(records, workspace, selections) {
     const packageDirectory = featureDirectoryName(record.manifest.id);
     for (const artifact of record.manifest.artifacts ?? []) {
       const selection = selections.get(artifactKey(record.manifest.id, artifact.id));
-      const review = artifactReview(artifact);
+      const primaryIntent = record.manifest.definition.artifact === artifact.id;
+      const review = primaryIntent ? "before-planning" : artifactReview(artifact);
       const resolved = {
         package: record.manifest.id,
         id: artifact.id,
         type: artifact.type,
         review,
-        disposition: selection?.disposition ?? "unreviewed",
+        disposition: primaryIntent ? "selected" : selection?.disposition ?? "unreviewed",
+        ...(primaryIntent ? { intent_role: "primary" } : {}),
         ...(selection?.note ? { selection_note: selection.note } : {}),
         ...(review === "before-activation"
           ? { activation: "requires-specific-user-direction" }
@@ -252,7 +267,8 @@ async function materializeArtifacts(records, workspace, selections) {
         ...(artifact.media_type ? { media_type: artifact.media_type } : {}),
         ...(artifact.format_version ? { format_version: artifact.format_version } : {}),
         ...(artifact.conforms_to ? { conforms_to: artifact.conforms_to } : {}),
-        ...(artifact.concerns ? { concerns: artifact.concerns } : {})
+        ...(artifact.concerns ? { concerns: artifact.concerns } : {}),
+        ...(artifact.evidence_for ? { evidence_for: artifact.evidence_for } : {})
       };
 
       if (artifact.url) {
@@ -463,9 +479,31 @@ async function writeFileIfMissing(filePath, contents) {
   }
 }
 
+function intentContributionLines(contribution) {
+  const lines = [
+    `- **${contribution.category}** \`${contribution.id}\` [${contribution.status}; ${contribution.source}]: ${contribution.statement}`
+  ];
+  if (contribution.verification) {
+    lines.push(
+      `  - Verification plan: establish **${contribution.verification.subject}** by ${contribution.verification.method} at ${contribution.verification.timing}; evidence ${contribution.verification.evidence}.`
+    );
+    if (contribution.verification.guidance) {
+      lines.push(`  - Verification guidance: ${contribution.verification.guidance}`);
+    }
+  }
+  for (const evidence of contribution.evidence ?? []) {
+    lines.push(
+      `  - Baseline evidence [${evidence.source}]: ${evidence.reference}${evidence.observed_at ? ` (observed ${evidence.observed_at})` : ""}`
+    );
+    if (evidence.description) lines.push(`    - ${evidence.description}`);
+  }
+  return lines;
+}
+
 function buildAgentGuide({
   application,
   features,
+  resolvedIntent,
   implementationProfileState,
   configurationStatus,
   completionScope,
@@ -534,18 +572,21 @@ function buildAgentGuide({
     "",
     "## Read first",
     "",
-    "1. Read `resolved-spec.md` and `resolved-config.yaml` for recorded solution intent, configuration, decisions, and technical preferences.",
-    "2. Read `implementation-profile-state.yaml` for candidate implementation profiles, the recorded preference, and conditions that must be checked.",
-    "3. Read `components.yaml` and `artifacts.yaml` for preserved optional material and its required review timing.",
-    "4. Read `implementation-resources.yaml`, then run `seedspec resolve-resources <project-path>` before consulting any declared implementation skill or instruction.",
-    "5. Read `implementation-resource-state.yaml`; every bundled fallback must include the reason canonical resolution failed.",
-    "6. Read `implementation-notes.md` for local terminology, behavior, architecture, external resource identifiers, configured state, and earlier deviations.",
-    "7. Read each addition's `additions/*/integration-decisions.md` before integrating it.",
-    "8. Inspect the actual environment before planning. Current code, configuration, external system state, user data, tests, and audit records are authoritative evidence of what exists.",
+    "1. Read `resolved-intent.yaml` first. It distinguishes package-authored intent, the end user's disposition for each package, local intent contributions, and unconfirmed agent proposals.",
+    "2. Read `resolved-spec.md` and `resolved-config.yaml` for the complete package definitions, configuration, decisions, and technical preferences.",
+    "3. Read `implementation-profile-state.yaml` for candidate implementation profiles, the recorded preference, and conditions that must be checked.",
+    "4. Read `components.yaml` and `artifacts.yaml` for preserved material and its required review timing. A primary intent artifact is already part of core intent; its native workflow is not automatically activated.",
+    "5. Read `implementation-resources.yaml`, then run `seedspec resolve-resources <project-path>` before consulting any declared implementation skill or instruction.",
+    "6. Read `implementation-resource-state.yaml`; every bundled fallback must include the reason canonical resolution failed.",
+    "7. Read `implementation-notes.md` for local terminology, behavior, architecture, external resource identifiers, configured state, and earlier deviations.",
+    "8. Read each addition's `additions/*/integration-decisions.md` before integrating it.",
+    "9. Inspect the actual environment before planning. Current code, configuration, external system state, user data, tests, and audit records are authoritative evidence of what exists.",
     "",
     "## Working principles",
     "",
     "- Preserve the requested outcome, not the SeedSpec's original implementation assumptions.",
+    "- Treat package-authored intent as the reusable baseline and affirmed end-user contributions as intent for this realization. Agent proposals remain non-authoritative until affirmed.",
+    "- If package intent and applied intent are too far apart, explain whether the package is adaptable, only partially reusable, or a poor fit. Do not claim full package satisfaction after silently cherry-picking it.",
     "- Use each package's kind as a hint for planning depth and likely concerns, not as a validity, composition, architecture, or execution constraint.",
     "- Capabilities, compatibility, and conflicts are package-author declarations, not observations of the actual implementation.",
     "- Missing, multiple, cyclic, conflicting, or revision-different declarations are prompts to inspect and plan, never reasons by themselves to reject the work.",
@@ -567,14 +608,35 @@ function buildAgentGuide({
     `- Root package: ${application.manifest.id}@${application.manifest.version} (kind hint: ${application.manifest.kind})`,
     `- Additions: ${features.length ? features.map(({ record }) => `${record.manifest.id}@${record.manifest.version} (kind hint: ${record.manifest.kind})`).join(", ") : "none"}`,
     `- Implementation profiles: ${implementationProfileState.status}`,
+    `- Applied intent: ${resolvedIntent.status}`,
     `- Configuration: ${configurationStatus === "selected" ? "explicitly selected" : "review required; author examples are present only as unreviewed placeholders"}`,
     `- Optional components: ${components.length ? components.map((component) => `${component.package}/${component.name}`).join(", ") : "none"}`,
     `- Optional artifacts: ${artifacts.length ? artifacts.map((artifact) => `${artifact.package}/${artifact.id} (${artifact.type}; ${artifact.disposition})`).join(", ") : "none"}`,
-    `- Implementation resources: ${declaredResources.length ? declaredResources.map((resource) => `${resource.package}/${resource.id} (${resource.kind}; ${resource.usage})`).join(", ") : "none"}`,
-    "",
-    "## Artifact dispositions",
-    ""
+    `- Implementation resources: ${declaredResources.length ? declaredResources.map((resource) => `${resource.package}/${resource.id} (${resource.kind}; ${resource.usage})`).join(", ") : "none"}`
   ];
+
+  lines.push("", "## Applied intent", "");
+  for (const source of resolvedIntent.packages) {
+    lines.push(
+      `- ${source.package}: **${source.use}**; package-author source \`${source.format.type}\` at \`${source.entrypoint}\`${source.note ? ` — ${source.note}` : ""}`
+    );
+  }
+  if (resolvedIntent.contributions.length > 0) {
+    lines.push("", "Project-local contributions:", "");
+    for (const contribution of resolvedIntent.contributions) {
+      lines.push(...intentContributionLines(contribution));
+    }
+  }
+  if (resolvedIntent.unresolved.length > 0) {
+    lines.push(
+      "",
+      "**Do not begin consequential implementation while these applied-intent questions remain unresolved:**",
+      "",
+      ...resolvedIntent.unresolved.map((item) => `- ${item}`)
+    );
+  }
+
+  lines.push("", "## Artifact dispositions", "");
 
   if (artifacts.length === 0) {
     lines.push("No selected package declares artifacts.");
@@ -810,6 +872,12 @@ function buildAgentGuide({
           lines.push(`  - Explicitly outside this scope: ${item.excluded_references.join(", ")}`);
         }
       }
+      if (item.verification) {
+        lines.push(
+          `  - Verification plan: prove **${item.verification.subject}** by ${item.verification.method} at ${item.verification.timing}; evidence ${item.verification.evidence}.`
+        );
+        if (item.verification.guidance) lines.push(`  - Evidence guidance: ${item.verification.guidance}`);
+      }
     }
     lines.push("");
   }
@@ -897,11 +965,11 @@ Status: not started
 
 - None recorded yet.
 
-## Acceptance evidence
+## Realization and outcome evidence
 
-| SeedSpec criterion | Result | Evidence | Notes |
-| --- | --- | --- | --- |
-| Add criteria as they are implemented | not run | — | — |
+| SeedSpec criterion | Subject | Result | Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| Add criteria as they are implemented | realization or outcome | not run | — | — |
 
 ## Manual checks
 
@@ -909,6 +977,9 @@ Status: not started
 
 Evidence may include tests, known-data queries, external resource identifiers,
 permission checks, delivered messages, screenshots, or platform audit records.
+Label each item by the realization or outcome claim it supports. Package and
+baseline evidence belong to their own protocol locations and do not prove
+completion.
 
 ## Remaining gaps
 
@@ -917,7 +988,7 @@ permission checks, delivered messages, screenshots, or platform audit records.
 
 const rootAgentInstructions = `# SeedSpec project guidance
 
-Read \`.seedspec/agent-guide.md\` before planning or realizing SeedSpec work. Resolve declared implementation resources through the SeedSpec CLI, report every bundled fallback, and explicitly consult only relevant resolved skills or instructions. Packaged skills are not installed or automatically invoked. Preserve local behavior and terminology, record material deviations and external resource identifiers in \`.seedspec/implementation-notes.md\`, record detailed acceptance evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope.
+Read \`.seedspec/agent-guide.md\` before planning or realizing SeedSpec work. Resolve declared implementation resources through the SeedSpec CLI, report every bundled fallback, and explicitly consult only relevant resolved skills or instructions. Packaged skills are not installed or automatically invoked. Preserve local behavior and terminology, record material deviations and external resource identifiers in \`.seedspec/implementation-notes.md\`, record detailed realization and outcome evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope and evidence subjects.
 `;
 
 function normalizeDecisionAnswers(records, suppliedAnswers) {
@@ -992,6 +1063,7 @@ async function buildResolvedSpecification({
   application,
   applicationConfiguration,
   applicationConfigurationSelection,
+  resolvedIntent,
   completionScope,
   features,
   implementationProfileState,
@@ -1017,6 +1089,25 @@ async function buildResolvedSpecification({
     `- Root kind hint: ${application.manifest.kind}`,
     `- Additions: ${features.length ? features.map(({ record }) => `${record.manifest.id}@${record.manifest.version}`).join(", ") : "none"}`,
     `- Protocol: ${application.manifest.protocol_version}`,
+    `- Applied intent: ${resolvedIntent.status}`,
+    "",
+    "## Applied intent and provenance",
+    "",
+    "Package definitions below are package-author intent. Project-local contributions are end-user intent or explicitly labeled agent proposals; format alone does not determine authority.",
+    "",
+    ...resolvedIntent.packages.map((source) => (
+      `- ${source.package}: ${source.use}; \`${source.format.type}\` at \`${source.entrypoint}\`${source.note ? ` — ${source.note}` : ""}`
+    )),
+    ...(resolvedIntent.contributions.length ? [
+      "",
+      ...resolvedIntent.contributions.flatMap(intentContributionLines)
+    ] : []),
+    ...(resolvedIntent.unresolved.length ? [
+      "",
+      "Unresolved applied intent:",
+      "",
+      ...resolvedIntent.unresolved.map((item) => `- ${item}`)
+    ] : []),
     "",
     "## Solution configuration",
     "",
@@ -1090,9 +1181,12 @@ async function buildResolvedSpecification({
     );
   } else {
     lines.push(...completionScope.items.map((item) => {
-      if (item.kind === "criterion") return `- ${item.id} (${item.disposition}): ${item.statement}`;
-      if (item.selection === "all") return `- ${item.id}: all of ${item.package}/${item.component}`;
-      return `- ${item.id}: ${item.package}/${item.component} references ${(item.included_references ?? []).join(", ")}`;
+      const verification = item.verification
+        ? `; prove ${item.verification.subject} by ${item.verification.method} at ${item.verification.timing}`
+        : "";
+      if (item.kind === "criterion") return `- ${item.id} (${item.disposition}): ${item.statement}${verification}`;
+      if (item.selection === "all") return `- ${item.id}: all of ${item.package}/${item.component}${verification}`;
+      return `- ${item.id}: ${item.package}/${item.component} references ${(item.included_references ?? []).join(", ")}${verification}`;
     }));
   }
 
@@ -1199,6 +1293,7 @@ export async function resolveProject(rootPath, {
   implementationProfiles = [],
   outputDirectory = process.cwd(),
   configurationSelectionsPath,
+  appliedIntentPath,
   completionScopePath,
   technicalPreferencesPath,
   artifactSelectionsPath,
@@ -1229,6 +1324,7 @@ export async function resolveProject(rootPath, {
   );
   const applicationSelection = configurationState.selections.get(application.manifest.id);
   const applicationConfiguration = applicationSelection.values;
+  const resolvedIntent = await resolveAppliedIntent(appliedIntentPath, selectedRecords);
   const completionScope = await resolveCompletionScope(completionScopePath, selectedRecords);
 
   const selectedFeatures = [];
@@ -1277,6 +1373,7 @@ export async function resolveProject(rootPath, {
     workspace
   );
   const status = configurationState.status === "review"
+    || resolvedIntent.status === "review"
     || decisionState.unresolved.some((decision) => decision.required)
     || implementationProfileState.status === "review"
     ? "needs-input"
@@ -1299,6 +1396,7 @@ export async function resolveProject(rootPath, {
     protocol_version: "0.1",
     status,
     configuration_status: configurationState.status,
+    intent_status: resolvedIntent.status,
     completion_scope_status: completionScope.status,
     declaration_status: reviews.length > 0 ? "review" : "no-declared-concerns",
     artifact_status: artifactIndex.artifacts.some(
@@ -1308,6 +1406,7 @@ export async function resolveProject(rootPath, {
     root: packageReference(application),
     additions: selectedFeatures.map(({ record }) => packageReference(record)),
     configuration: "resolved-config.yaml",
+    resolved_intent: "resolved-intent.yaml",
     component_index: "components.yaml",
     artifact_index: "artifacts.yaml",
     implementation_resource_index: "implementation-resources.yaml",
@@ -1362,6 +1461,7 @@ export async function resolveProject(rootPath, {
     writeFile(path.join(workspace, "project.yaml"), stringifyYaml(project), "utf8"),
     writeFile(path.join(workspace, "dependencies.lock.yaml"), stringifyYaml(lock), "utf8"),
     writeFile(path.join(workspace, "resolved-config.yaml"), stringifyYaml(resolvedConfiguration), "utf8"),
+    writeFile(path.join(workspace, "resolved-intent.yaml"), stringifyYaml(resolvedIntent), "utf8"),
     writeFile(path.join(workspace, "completion-scope.yaml"), stringifyYaml(completionScope), "utf8"),
     writeFile(path.join(workspace, "components.yaml"), stringifyYaml(componentIndex), "utf8"),
     writeFile(path.join(workspace, "artifacts.yaml"), stringifyYaml(artifactIndex), "utf8"),
@@ -1380,6 +1480,7 @@ export async function resolveProject(rootPath, {
       buildAgentGuide({
         application,
         features: selectedFeatures,
+        resolvedIntent,
         implementationProfileState,
         configurationStatus: configurationState.status,
         completionScope,
@@ -1399,6 +1500,7 @@ export async function resolveProject(rootPath, {
         application,
         applicationConfiguration,
         applicationConfigurationSelection: applicationSelection.selection,
+        resolvedIntent,
         completionScope,
         features: selectedFeatures,
         implementationProfileState,
@@ -1509,6 +1611,7 @@ export async function resolveProject(rootPath, {
     project,
     lock,
     resolvedConfiguration,
+    resolvedIntent,
     artifactIndex,
     componentIndex,
     implementationResourceIndex,

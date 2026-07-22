@@ -76,6 +76,7 @@ Resolve options:
   -i, --implementation <profile>   Prefer an implementation profile; repeatable, package/profile for additions
   --output <path>                  Project directory; defaults to the current directory
   --configuration-selections <yaml>  Select example or complete custom configuration per package
+  --applied-intent <yaml>            Affirm package fit and record project-local intent
   --completion-scope <yaml>         Record the implementation completion scope
   --technical-preferences <yaml>   Record implementation preferences separately
   --artifact-selections <yaml>     Record selected, declined, or deferred artifacts
@@ -320,6 +321,7 @@ async function run() {
         "implementation",
         "output",
         "configuration-selections",
+        "applied-intent",
         "completion-scope",
         "technical-preferences",
         "artifact-selections",
@@ -332,6 +334,7 @@ async function run() {
         implementationProfiles: options.get("implementation") ?? [],
         outputDirectory: oneOption(options, "output"),
         configurationSelectionsPath: oneOption(options, "configuration-selections"),
+        appliedIntentPath: oneOption(options, "applied-intent"),
         completionScopePath: oneOption(options, "completion-scope"),
         technicalPreferencesPath: oneOption(options, "technical-preferences"),
         artifactSelectionsPath: oneOption(options, "artifact-selections"),

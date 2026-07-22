@@ -1,0 +1,31 @@
+protocol_version: "0.1"
+packages:
+  - package: org.seedspec.fixtures.comprehensive-application
+    use: adapted
+    note: Preserve the allowance behavior while using the household's existing identity model.
+contributions:
+  - id: reduce-reminders
+    category: outcome
+    statement: Caregivers should spend less time sending manual allowance reminders.
+    source: end-user
+    status: affirmed
+    verification:
+      subject: outcome
+      method: user-confirmation
+      timing: post-realization
+      evidence: required
+  - id: existing-identities
+    category: baseline-observation
+    statement: The target environment already has a household identity model.
+    source: agent
+    status: observed
+    verification:
+      subject: baseline
+      method: environment-inspection
+      timing: before-implementation
+      evidence: required
+    evidence:
+      - subject: baseline
+        reference: repository://app/models/household-members
+        source: tool
+        description: Read-only repository inspection located the established identity model.
