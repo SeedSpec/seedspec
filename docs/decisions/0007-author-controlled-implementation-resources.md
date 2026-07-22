@@ -29,7 +29,7 @@ a transparent package-local failsafe.
 
 Protocol 0.1 adds optional `implementation_resources` declarations.
 
-Authors explicitly choose resources, usage as `required`, `recommended`, or
+Authors explicitly choose resources, usage as `expected`, `recommended`, or
 `available`, and whether additional catalog discovery is `none` or
 `agent-delegated`. Omission remains `unspecified` rather than an inferred
 choice.
@@ -72,7 +72,7 @@ telemetry. Core does not transmit that state.
 
 ## Revisit when
 
-- capability-guidance evals show whether `required`, `recommended`, and
+- capability-guidance evals show whether `expected`, `recommended`, and
   `available` produce materially different agent behavior;
 - a public SeedSpec guidance catalog exists;
 - signed publisher identity becomes necessary;

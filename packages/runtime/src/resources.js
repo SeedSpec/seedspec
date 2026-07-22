@@ -778,7 +778,7 @@ export async function resolveImplementationResources(projectPath, {
   }
 
   const requiredUnavailable = resources.filter(
-    (resource) => resource.usage === "required" && resource.resolution_status === "unavailable"
+    (resource) => resource.usage === "expected" && resource.resolution_status === "unavailable"
   );
   const anyUnavailable = resources.some((resource) => resource.resolution_status === "unavailable");
   const anyFallback = resources.some((resource) => resource.resolution_status === "bundled-fallback");
@@ -803,7 +803,7 @@ export async function resolveImplementationResources(projectPath, {
 
   if (requiredUnavailable.length > 0) {
     throw new SeedSpecError("Required implementation resources are unavailable", {
-      code: "REQUIRED_IMPLEMENTATION_RESOURCE_UNAVAILABLE",
+      code: "EXPECTED_IMPLEMENTATION_RESOURCE_UNAVAILABLE",
       details: requiredUnavailable.map((resource) => (
         `${resource.package}/${resource.id}: ${resource.reason_code} — ${resource.reason}`
       ))

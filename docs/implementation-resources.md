@@ -98,7 +98,7 @@ following stronger end-user and project direction.
 
 An author-selected resource has one usage level:
 
-- `required` means the author expects the resource to be consulted for relevant
+- `expected` means the author explicitly expects the resource to be consulted for relevant
   implementation work;
 - `recommended` means the agent should normally consult it when relevant, unless
   stronger project or user direction conflicts; and
@@ -107,7 +107,7 @@ An author-selected resource has one usage level:
 
 These levels describe author intent. They do not authorize execution, network
 changes, deployment, credential use, or other external effects. An agent that
-skips even a required resource may do so when stronger direction or the actual
+skips even an expected resource may do so when stronger direction or the actual
 project requires it, but should record the reason.
 
 ## Declaration example

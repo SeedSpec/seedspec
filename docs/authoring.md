@@ -389,7 +389,7 @@ references relative to the skill root, and use the resource's `usage` and
 The skill explains how to work; the package's core intent and acceptance
 material remain the authority for what outcome is requested.
 
-Choose `required`, `recommended`, or `available` deliberately. Decide separately
+Choose `expected`, `recommended`, or `available` deliberately. Decide separately
 whether additional catalog discovery is `agent-delegated` or `none`. Use
 `applies_to` as matching context without claiming an actual implementation has
 the named capability.

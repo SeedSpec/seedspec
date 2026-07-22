@@ -1,6 +1,6 @@
 {
   "name": "@seedspec/runtime",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "description": "Reference JavaScript runtime for the SeedSpec Protocol",
   "keywords": [
     "seedspec",
@@ -24,7 +24,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@seedspec/protocol": "0.1.0-alpha.3",
+    "@seedspec/protocol": "0.1.0-alpha.4",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "yaml": "^2.8.0"

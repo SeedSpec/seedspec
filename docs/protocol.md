@@ -5,7 +5,7 @@
 | Release identifier | Value |
 | --- | --- |
 | Protocol family | `0.1` |
-| Schema package | `@seedspec/protocol@0.1.0-alpha.3` |
+| Schema package | `@seedspec/protocol@0.1.0-alpha.4` |
 | Conformance suite | `2.0.0` |
 
 This document defines the normative SeedSpec package and handoff format for
@@ -347,7 +347,7 @@ not define catalog search or ranking in protocol 0.1.
 Every resource declares a namespaced ID, kind, description, usage, entrypoint,
 requested version, update policy, and at least one canonical or bundled source.
 Kinds are `skill`, `instructions`, `verification`, `tool`, and
-`target-profile`. Usage is `required`, `recommended`, or `available` and
+`target-profile`. Usage is `expected`, `recommended`, or `available` and
 expresses author intent only.
 
 An optional `applies_to` mapping may name capability and target IDs. Matching is

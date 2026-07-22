@@ -10,10 +10,10 @@ compatibility.
 | Version | Identifies | Current value |
 | --- | --- | --- |
 | Protocol family | The package and handoff vocabulary declared in protocol documents | `0.1` |
-| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.1.0-alpha.3` |
+| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.1.0-alpha.4` |
 | Conformance suite | The exact indexed cases, fixtures, and expected results | `2.0.0` |
-| Runtime | One release of the reference JavaScript implementation | `0.1.0-alpha.4` |
-| CLI | One release of the public command-line interface | `0.1.0-alpha.5` |
+| Runtime | One release of the reference JavaScript implementation | `0.1.0-alpha.5` |
+| CLI | One release of the public command-line interface | `0.1.0-alpha.6` |
 | SeedSpec package | One author-controlled version of a portable solution package | Declared in `seedspec.yaml` |
 
 `protocol_version: "0.1"` states that a package uses the Protocol 0.1 family.

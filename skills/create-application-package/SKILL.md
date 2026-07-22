@@ -87,7 +87,7 @@ manufacture artifacts merely to fill a category.
 
 At packaging time, inspect the available versioned implementation-resource
 catalogs. Offer tested SeedSpec resources as defaults, but let the author remove
-them, change `required`, `recommended`, or `available` usage, and choose
+them, change `expected`, `recommended`, or `available` usage, and choose
 `additional_guidance: none` or `agent-delegated`. Prefer compact skills whose
 frontmatter lets the implementing agent decide relevance. Do not include generic
 advice merely to make the package appear more complete.

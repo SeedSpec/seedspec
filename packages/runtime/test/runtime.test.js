@@ -756,10 +756,10 @@ test("latest resource policies reject SemVer prereleases below a stable baseline
   assert.match(state.resources[0].reason, /older version/);
 });
 
-test("required unavailable resources fail after recording resolution state", async (t) => {
+test("expected unavailable resources fail after recording resolution state", async (t) => {
   const fixture = await createImplementationResourcePackage(t, {
     includeBundled: false,
-    usage: "required"
+    usage: "expected"
   });
   const projectPath = path.join(fixture.output, "project");
   const result = await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
@@ -768,7 +768,7 @@ test("required unavailable resources fail after recording resolution state", asy
     resolveImplementationResources(projectPath, {
       fetchImpl: async () => new Response("unavailable", { status: 503 })
     }),
-    (error) => error.code === "REQUIRED_IMPLEMENTATION_RESOURCE_UNAVAILABLE"
+    (error) => error.code === "EXPECTED_IMPLEMENTATION_RESOURCE_UNAVAILABLE"
   );
   const state = parseYaml(await readFile(
     path.join(result.workspace, "implementation-resource-state.yaml"),
@@ -1800,7 +1800,7 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.1");
   assert.equal(versionInfo.conformance_suite_version, "2.0.0");
-  assert.equal(versionInfo.cli_version, "0.1.0-alpha.5");
+  assert.equal(versionInfo.cli_version, "0.1.0-alpha.6");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
@@ -1848,12 +1848,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.5`/);
+  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.6`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.5/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.6/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
