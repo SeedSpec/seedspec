@@ -12,7 +12,7 @@ versioned independently; see [versioning](docs/versioning.md).
 | `@seedspec/protocol` | `0.1.0-alpha.5` |
 | Conformance suite | `2.1.0` |
 | `@seedspec/runtime` | `0.1.0-alpha.6` |
-| `@seedspec/cli` | `0.1.0-alpha.7` |
+| `@seedspec/cli` | `0.1.0-alpha.8` |
 
 ### Protocol and conformance
 
@@ -41,6 +41,9 @@ versioned independently; see [versioning](docs/versioning.md).
 
 ### Reference tooling
 
+- Allow `seedspec begin` and the root package input to `seedspec resolve` to
+  acquire a public GitHub repository or `/tree/<ref>/<package-path>` URL without
+  running package scripts, submodules, or package-provided tooling.
 - Add `--applied-intent` resolution input and `resolved-intent.yaml` handoff
   state with provenance, fit, contributions, and unresolved proposals.
 - Make primary intent artifacts selected core input while keeping adapter and

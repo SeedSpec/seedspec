@@ -1,6 +1,6 @@
 {
   "name": "@seedspec/cli",
-  "version": "0.1.0-alpha.7",
+  "version": "0.1.0-alpha.8",
   "description": "Author and use portable, agent-ready SeedSpec packages",
   "keywords": [
     "seedspec",
@@ -17,8 +17,12 @@
   },
   "files": [
     "bin",
+    "src",
     "README.md"
   ],
+  "scripts": {
+    "test": "node --test ./test/*.test.js"
+  },
   "engines": {
     "node": ">=20"
   },

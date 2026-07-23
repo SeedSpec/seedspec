@@ -32,7 +32,7 @@ seedspec audit <package-path> --area material-ambiguity
 seedspec audit <package-path> --status
 seedspec docs authoring
 seedspec inspect <package-path> --json
-seedspec begin <package-path>
+seedspec begin <package-path-or-github-url>
 seedspec digest <package-path>
 seedspec capability-conformance <package-path> <capability-id> [--result <yaml>]
 ```
@@ -41,6 +41,20 @@ seedspec capability-conformance <package-path> <capability-id> [--result <yaml>]
 surfaces package-author intent, applied-intent, configuration,
 implementation-profile, ordered-task, supporting-material, trust, and verification-plan choices
 before implementation begins.
+
+`begin` and the root package input to `resolve` also accept public GitHub
+repository URLs and GitHub `/tree/<ref>/<package-path>` URLs:
+
+```bash
+seedspec begin \
+  https://github.com/SeedSpec/reference-solutions/tree/main/solutions/family-hub/seedspec
+```
+
+The CLI acquires the selected repository revision into an isolated temporary
+directory, validates the requested package, and removes the acquisition after
+the command. It does not run package scripts, initialize submodules, load
+package-provided skills, or activate package content. Remote acquisition
+currently supports public `https://github.com` URLs only.
 
 `seedspec audit` creates or continues an authoring review outside the
 distributable package and prints versioned Markdown instructions for a capable

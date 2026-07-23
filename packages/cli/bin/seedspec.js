@@ -2,6 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import process from "node:process";
+import { withPackageSource } from "../src/package-source.js";
 import {
   auditPackage,
   beginPackage,
@@ -53,7 +54,7 @@ Usage:
   seedspec docs authoring [area]
   seedspec version [--json]
   seedspec prompt
-  seedspec begin <root-package-path> [--json]
+  seedspec begin <root-package-path-or-github-url> [--json]
   seedspec validate <path>
   seedspec digest <path>
   seedspec inspect <path> [--json]
@@ -208,8 +209,20 @@ async function run() {
       break;
     }
     case "begin": {
-      const packagePath = requirePositional(positional, 0, "root package path");
-      const beginning = await beginPackage(packagePath);
+      rejectUnknownOptions(options, ["json"]);
+      const packageInput = requirePositional(positional, 0, "root package path or GitHub URL");
+      const beginning = await withPackageSource(packageInput, async ({ packagePath, source }) => {
+        const result = await beginPackage(packagePath);
+        if (!source) return result;
+        return {
+          ...result,
+          package: {
+            ...result.package,
+            root: source.original
+          },
+          resolve_command: result.resolve_command.replace(JSON.stringify(packagePath), JSON.stringify(source.original))
+        };
+      });
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(beginning, null, 2)}\n`
         : `${formatPackageBeginning(beginning)}\n`);
@@ -330,19 +343,22 @@ async function run() {
         "artifact-selections",
         "decisions"
       ]);
-      const rootPath = requirePositional(positional, 0, "root package path");
-      const result = await resolveProject(rootPath, {
-        additionPaths: options.get("add") ?? [],
-        featurePaths: options.get("feature") ?? [],
-        implementationProfiles: options.get("implementation") ?? [],
-        outputDirectory: oneOption(options, "output"),
-        configurationSelectionsPath: oneOption(options, "configuration-selections"),
-        appliedIntentPath: oneOption(options, "applied-intent"),
-        completionScopePath: oneOption(options, "completion-scope"),
-        technicalPreferencesPath: oneOption(options, "technical-preferences"),
-        artifactSelectionsPath: oneOption(options, "artifact-selections"),
-        decisionsPath: oneOption(options, "decisions")
-      });
+      const rootInput = requirePositional(positional, 0, "root package path or GitHub URL");
+      const result = await withPackageSource(
+        rootInput,
+        ({ packagePath }) => resolveProject(packagePath, {
+          additionPaths: options.get("add") ?? [],
+          featurePaths: options.get("feature") ?? [],
+          implementationProfiles: options.get("implementation") ?? [],
+          outputDirectory: oneOption(options, "output"),
+          configurationSelectionsPath: oneOption(options, "configuration-selections"),
+          appliedIntentPath: oneOption(options, "applied-intent"),
+          completionScopePath: oneOption(options, "completion-scope"),
+          technicalPreferencesPath: oneOption(options, "technical-preferences"),
+          artifactSelectionsPath: oneOption(options, "artifact-selections"),
+          decisionsPath: oneOption(options, "decisions")
+        })
+      );
       process.stdout.write(`Resolved ${result.project.root.id} with ${result.additions.length} addition(s)\nProject status: ${result.project.status}\nWorkspace: ${result.workspace}\n`);
       break;
     }
