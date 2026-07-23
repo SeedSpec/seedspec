@@ -1,0 +1,17 @@
+protocol_version: "0.1"
+id: org.seedspec.fixtures.invalid-task-runbook
+name: Invalid Task Runbook Fixture
+version: "0.1.0"
+kind: feature
+
+definition:
+  entrypoint: definition/feature.md
+
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+
+provides:
+  capabilities: []
+
+tasks: tasks.yaml

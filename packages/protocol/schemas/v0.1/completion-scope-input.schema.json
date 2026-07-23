@@ -28,10 +28,36 @@
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1, "maxLength": 80 }
     },
+    "verificationPlan": {
+      "description": "The agreed plan for proving this completion-scope item. It is a target for later evidence, not evidence that the item already passes.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "method", "timing", "evidence"],
+      "properties": {
+        "subject": { "enum": ["realization", "outcome"] },
+        "method": {
+          "oneOf": [
+            {
+              "enum": [
+                "user-confirmation",
+                "environment-inspection",
+                "tool-check",
+                "document-review",
+                "manual-observation"
+              ]
+            },
+            { "$ref": "#/$defs/namespacedId" }
+          ]
+        },
+        "timing": { "enum": ["completion", "post-realization"] },
+        "evidence": { "const": "required" },
+        "guidance": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    },
     "componentItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "id", "package", "component", "selection"],
+      "required": ["kind", "id", "package", "component", "selection", "verification"],
       "properties": {
         "kind": { "const": "component" },
         "id": { "$ref": "#/$defs/localId" },
@@ -41,7 +67,8 @@
         "included_references": { "$ref": "#/$defs/references" },
         "deferred_references": { "$ref": "#/$defs/references" },
         "excluded_references": { "$ref": "#/$defs/references" },
-        "note": { "type": "string", "minLength": 1, "maxLength": 500 }
+        "note": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "verification": { "$ref": "#/$defs/verificationPlan" }
       },
       "allOf": [
         {
@@ -71,8 +98,18 @@
         "id": { "$ref": "#/$defs/localId" },
         "package": { "$ref": "#/$defs/namespacedId" },
         "disposition": { "enum": ["included", "deferred", "excluded"] },
-        "statement": { "type": "string", "minLength": 1, "maxLength": 1000 }
-      }
+        "statement": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "verification": { "$ref": "#/$defs/verificationPlan" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "disposition": { "const": "included" } },
+            "required": ["disposition"]
+          },
+          "then": { "required": ["verification"] }
+        }
+      ]
     },
     "scopeItem": {
       "oneOf": [

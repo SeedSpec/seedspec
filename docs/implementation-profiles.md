@@ -5,8 +5,11 @@
 
 SeedSpec separates durable intent from authored ways to realize it.
 
-- **Core intent** is the package definition, behavioral configuration,
-  capabilities, decisions, and success criteria.
+- **Primary intent** is the package-author source identified by
+  `definition.entrypoint`, in native SeedSpec Markdown or a declared external
+  intent format.
+- **Resolved intent** combines that source's provenance with the end user's
+  affirmed application, adaptations, and project-local contributions.
 - An **implementation profile** is a candidate direction shipped by the author.
 - **Implementation profile state** is the single project-level resolution
   record for profiles declared by all selected packages.
@@ -14,6 +17,12 @@ SeedSpec separates durable intent from authored ways to realize it.
 The protocol does not market profile state as a separate product concept. Its
 name is deliberately mechanical: it records state specifically about authored
 implementation profiles.
+
+Profile evaluation follows intent resolution. An agent first determines
+whether each package applies as authored, needs adaptation, is only partially
+useful, or is a poor fit. It then compares applicable profiles against that
+resolved intent and the observed environment. A profile cannot silently narrow
+or replace the outcome merely because it is convenient to implement.
 
 ## One state per resolved project
 
@@ -68,9 +77,9 @@ from the author, a distributor, an internal platform team, a consultancy, or
 the end user.
 
 A preference is intentionally weaker than a locked selection. The implementing
-agent verifies applicability against the actual environment. When the preferred
-profile is blocked or contradicts core intent, the agent presents evidence and
-asks for direction rather than silently choosing another candidate.
+agent verifies applicability against resolved intent and the actual environment.
+When the preferred profile is blocked or contradicts intent, the agent presents
+evidence and asks for direction rather than silently choosing another candidate.
 
 ## Declarative conditions
 

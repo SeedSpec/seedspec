@@ -206,6 +206,29 @@ export async function inspectProjectCompletion(projectPath) {
     });
   }
 
+  const scopedById = new Map(
+    scope.items
+      .filter((item) => item.kind === "component" || item.disposition === "included")
+      .map((item) => [item.id, item])
+  );
+  for (const result of state.items) {
+    const expectedSubject = scopedById.get(result.id)?.verification?.subject;
+    const mismatched = result.evidence.filter(
+      (evidence) => evidence.subject !== expectedSubject
+    );
+    if (mismatched.length > 0) {
+      throw new SeedSpecError(`Verification evidence has the wrong subject: ${result.id}`, {
+        code: "EVIDENCE_SUBJECT_MISMATCH",
+        details: [
+          `expected ${expectedSubject}`,
+          ...mismatched.map((evidence) => (
+            `received ${evidence.subject}: ${evidence.reference}`
+          ))
+        ]
+      });
+    }
+  }
+
   const derivedStatus = deriveVerificationStatus(scope, state);
   if (state.status !== derivedStatus) {
     throw new SeedSpecError("Recorded verification status does not match item results", {

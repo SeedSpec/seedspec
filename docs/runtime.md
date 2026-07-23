@@ -4,8 +4,11 @@
 > first-party CLI and JavaScript runtime, not requirements for every conforming
 > implementation.
 
-The runtime is a neutral CLI and JavaScript library. It does not depend on
-marketplace product policy or any particular agent prompt format.
+The runtime is the first-party CLI and JavaScript library behind SeedSpec
+authoring, validation, inspection, resolution, and verification. It combines
+strict protocol-aware operations with informative authoring workflows while
+keeping their results distinct. It does not depend on marketplace product
+policy or any particular agent prompt format.
 
 ## Commands
 
@@ -24,11 +27,12 @@ seedspec record-resource-use <project-path> <package-id> <resource-id> <consulte
 seedspec adapters [--json]
 seedspec validate-artifact <path> <artifact-id> [--json]
 seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
-seedspec resolve <root-package-path> [--add <package-path>] [-i <profile>] [--configuration-selections <yaml>] [--completion-scope <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
+seedspec resolve <root-package-path> [--add <package-path>] [--applied-intent <yaml>] [-i <profile>] [--configuration-selections <yaml>] [--completion-scope <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
 seedspec init <solution|application|feature|workflow|automation|configuration|integration> [--output <path>]
 seedspec conformance [cases.yaml]
 seedspec verify-lock <project-path> --package <path> [--package <path>]
 seedspec completion <project-path> [--json]
+seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
 ```
 
 `prompt` prints a short, agent-agnostic instruction that a distributor or end
@@ -49,7 +53,7 @@ instructions are not an author-selectable implementation resource. The 0.1
 reference CLI currently uses its bundled instructions; a separate online core
 instruction channel and resolver are outside the current reference runtime.
 
-`begin` is the read-only entry point for an agent that has received a root package. It validates the package, inventories configuration, decisions, implementation profiles, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, select configuration or an implementation profile, execute package content, fetch remote artifacts, or activate an artifact workflow.
+`begin` is the read-only entry point for an agent that has received a root package. It validates the package, identifies its primary intent source and format, inventories configuration, decisions, implementation profiles, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, affirm applied intent, select configuration or an implementation profile, execute package content, fetch remote artifacts, or activate an artifact workflow.
 
 `begin` marks `configuration.example` as review-required. The example is author material, not a selected default.
 
@@ -66,7 +70,66 @@ and additional-guidance policy without fetching or consulting content.
 `resource-digest` computes the content digest authors place on a bundled
 resource directory.
 
-`resolve` accepts repeated `--add` options, with `--feature` retained as an alpha compatibility alias; one `--configuration-selections` document covering every selected package; an optional `--completion-scope`; product-decision answers through `--decisions`; separate `--technical-preferences`; and `--artifact-selections` for selected, declined, or deferred artifacts. Package kind is a hint and does not constrain root or addition position. A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Completion scope is independent: uncovered selected packages produce `completion_scope_status: review` but do not change input readiness. Artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
+`resolve` accepts repeated `--add` options, with `--feature` retained as an alpha compatibility alias; one `--applied-intent` document covering every selected package; one `--configuration-selections` document covering every selected package; an optional `--completion-scope`; product-decision answers through `--decisions`; separate `--technical-preferences`; and `--artifact-selections` for selected, declined, or deferred supporting artifacts. Package kind is a hint and does not constrain root or addition position.
+
+Applied intent is resolved before implementation-profile choice. It records
+whether the end user wants each package as authored, adapted, or partially
+reused and preserves any project-local objective, outcome, invariant,
+constraint, forbidden state, non-goal, preference, decision right, or baseline
+observation. Agent proposals remain review-required until the user affirms
+them. If the input is omitted, `intent_status` is `review` and project status is
+`needs-input`; the resolved handoff still preserves the package-author intent so
+that an agent can help produce the missing input.
+
+Example applied-intent input:
+
+```yaml
+protocol_version: "0.1"
+packages:
+  - package: com.example.sales-dashboard
+    use: adapted
+    note: Use the existing identity and analytics systems.
+contributions:
+  - id: reduce-review-time
+    category: outcome
+    statement: Sales leaders should spend less time assembling the daily review.
+    source: end-user
+    status: affirmed
+    verification:
+      subject: outcome
+      method: user-confirmation
+      timing: post-realization
+      evidence: required
+  - id: existing-analytics
+    category: baseline-observation
+    statement: The target environment already provides the required web analytics events.
+    source: agent
+    status: observed
+    evidence:
+      - subject: baseline
+        reference: analytics-catalog://production/sales-events
+        source: tool
+```
+
+A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Completion scope is independent: uncovered selected packages produce `completion_scope_status: review` but do not change input readiness. A primary intent artifact is selected automatically as core intent; supporting artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
+
+An included project-local completion criterion names its proof before work:
+
+```yaml
+protocol_version: "0.1"
+items:
+  - kind: criterion
+    id: daily-summary-delivered
+    package: com.example.sales-dashboard
+    disposition: included
+    statement: An authorized recipient receives one accurate daily summary.
+    verification:
+      subject: realization
+      method: manual-observation
+      timing: completion
+      evidence: required
+      guidance: Preserve a delivered-message reference without copying sensitive content.
+```
 
 `-i <profile-id>` and `--implementation <profile-id>` record a preferred
 implementation profile for the root package. Use
@@ -86,7 +149,7 @@ compares mutually exclusive project realizations should use separate resolution
 runs or workspaces rather than write competing states into one handoff.
 
 `completion` validates the resolved scope and structured verification state,
-checks their digest and exact item coverage, and derives `scope-review`,
+checks their digest, exact item coverage, and evidence subjects, and derives `scope-review`,
 `not-started`, `in-progress`, `failed`, `verified-with-gaps`, or `verified`. It
 does not run application tests or inspect external systems; the implementing
 agent records truthful results and evidence first.
@@ -101,15 +164,17 @@ declared canonical version first, validates remote manifest identity, version
 policy, file digests, aggregate digest, file count, and size, and then writes
 verified bytes to the resolved resource directory. If canonical resolution
 fails, it re-verifies and uses an eligible bundled copy and prints and records
-the reason. A
-required unavailable resource makes the command fail after state is written;
-recommended and available failures produce degraded state.
+the reason. An `expected` unavailable resource makes the command fail after
+state is written; `recommended` and `available` failures produce degraded
+state. This enforces availability of the author's expected guidance, not agent
+obedience to it. Use is still recorded separately as `consulted` or `skipped`.
 
 For every resolved resource, the command reports the verified project-local
 root and exact entrypoint. A `skill` entrypoint is a package-scoped `SKILL.md`:
-the agent explicitly consults it from that location. Resolution does not copy it
-into a native skill registry, install it globally, or cause frontmatter-based
-automatic invocation.
+the agent may explicitly consult it from that location according to the
+author's usage level and the actual task, then record `consulted` or `skipped`.
+Resolution does not copy it into a native skill registry, install it globally,
+or cause frontmatter-based automatic invocation.
 
 `record-resource-use` records `consulted` or `skipped` plus an optional reason in
 local digest-bound state. `consulted` means the verified guidance was considered,
@@ -117,9 +182,22 @@ not necessarily followed. Core does not export this telemetry.
 
 Addition argument order is not semantic. `declaration-review-v1` records additions in deterministic package-ID order and preserves all capability candidates, revision comparisons, conflicts, and cycles as author-supplied review context. Missing or multiple declarations do not reject an addition because the runtime cannot observe the real implementation. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, deterministic order, declaration candidates, and review records from explicitly supplied package directories.
 
+Revision comparisons preserve provider-newer/provider-older direction, the
+major/minor/patch difference, low/medium/high review severity, and applicable
+structured provider change history. These fields prioritize integration review
+without becoming compatibility verdicts.
+
 `artifacts` lists declarations and registered adapters without invoking them. `adapters` lists the runtime's known artifact integrations. `validate-artifact` is an explicit request to run the registered format-specific validator. The official `org.seedspec.adapter.product-spec` adapter recognizes `org.seedspec.artifact.product-spec` and invokes `@productspec/parser`; ProductSpec is an optional dependency rather than a core package requirement.
 
 `discover-features` recursively inspects local catalog directories and reports each valid feature as `candidate` or `review`. It may show capability, revision, compatibility-scope, and conflict declarations, but it never makes a compatibility verdict or selects a feature. Remote registry search and package acquisition remain separate catalog responsibilities.
+
+`capability-conformance <package> <capability-id>` validates and reports the
+exact contract and suite binding for a provided capability. Adding
+`--result <yaml>` checks a separately produced realization result for exact
+contract/suite digests, complete check coverage, required evidence, and a
+consistent derived status. The command validates results; it does not execute
+untrusted package runners. Capability conformance results remain distinct from
+the project's `.seedspec/verification-state.yaml`.
 
 The resulting workspace is:
 
@@ -127,6 +205,9 @@ The resulting workspace is:
 .seedspec/
 ├── project.yaml
 ├── agent-guide.md
+├── resolved-intent.yaml
+├── tasks.yaml
+├── task-references/
 ├── components.yaml
 ├── components/
 ├── artifacts.yaml
@@ -151,6 +232,21 @@ The runtime supplies implementation guidance and project-memory scaffolding,
 but the end user directs how the agent uses optional artifact workflows and
 whether it may make consequential changes. SeedSpec does not choose or change
 application code, external systems, or user data.
+
+When a package declares `tasks`, `tasks.yaml` preserves its ordered reminders
+and maps every package-relative reference to a copied file under
+`task-references/`. The agent consumes each package's list from top to bottom.
+There is no dependency graph, branching language, cross-package order, or
+package-owned progress state. Task completion is implementation progress, not
+acceptance or conformance evidence.
+
+The resolved handoff distinguishes evidence by what it can establish. Package
+evidence supports package claims; baseline evidence describes pre-work state;
+realization evidence supports claims about what was produced; and outcome
+evidence supports later effects. A verification plan defines how evidence will
+be gathered but is not evidence itself. The runtime preserves these subjects and
+rejects completion evidence attached to the wrong one; it cannot determine
+whether a truthful-looking reference is authentic or sufficient.
 
 The CLI uses the first package as the composition root and `--add` packages as
 additions. Manifest `kind` values steer authoring, discovery, and agent

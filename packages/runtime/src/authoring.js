@@ -13,6 +13,7 @@ export const AUTHORING_AREAS = Object.freeze([
   "concern-separation",
   "kind-aware-discovery",
   "material-ambiguity",
+  "decision-provenance",
   "internal-consistency",
   "progressive-hardening",
   "agent-ready-handoff"
@@ -33,6 +34,7 @@ const areaTitles = Object.freeze({
   "concern-separation": "Concern separation",
   "kind-aware-discovery": "Kind-aware discovery",
   "material-ambiguity": "Material ambiguity",
+  "decision-provenance": "Decision provenance",
   "internal-consistency": "Internal consistency",
   "progressive-hardening": "Progressive hardening",
   "agent-ready-handoff": "Agent-ready handoff"
@@ -332,15 +334,26 @@ function commonInstructions({ pass }) {
 function concernSeparationInstructions() {
   return [
     "Classify each consequential statement by the concern it actually serves:",
-    "- core intent: behavior or outcomes that should survive legitimate implementation choices;",
+    "- primary intent: the package-author source named by `definition.entrypoint`; if `definition.artifact` is present, preserve that external format rather than duplicating it into native Markdown;",
+    "- purpose: the problem, objective, desired change, affected actors, and outcomes that should survive legitimate implementation choices;",
+    "- obligations and boundaries: required behavior, invariants, constraints, forbidden states, and explicit non-goals;",
+    "- success and evidence: observable success claims and future verification plans, with realization outcomes distinguished from later operational outcomes;",
+    "- decision latitude: choices fixed by the package author, reserved for the end user, or delegated to the implementing agent;",
     "- configuration: meaningful product behavior that installations may choose differently;",
     "- addition: independently composable behavior that extends or changes the solution;",
     "- implementation profile: a materially different platform, architecture, provider, or realization direction for the same core intent;",
+    "- task runbook: optional ordered implementation reminders with package-file references, separate from product intent and acceptance;",
     "- artifact: useful source material preserved in its native format;",
     "- implementation resource: versioned help for an implementing agent;",
-    "- acceptance: observable evidence used to judge success.",
-    "Identify misplaced or conflated content with its file and heading. Do not move content when the correct concern depends on author intent; explain the alternatives and ask for direction.",
-    "Check especially for technology in core intent, implementation choices disguised as configuration, acceptance criteria that prescribe architecture, and optional features folded into the root outcome."
+    "- package evidence: material supporting a claim about the package, its testing, or known compatibility;",
+    "- applied intent: project-local end-user adaptation, which does not belong in a reusable source package.",
+    "Identify misplaced, conflated, duplicated, or conflicting content with its file and heading. For each finding, name one proposed canonical owner and classify every other occurrence as a useful reference, summary, or duplication that should be removed.",
+    "Treat agent-facing instructions as a routing and authority map, not a shadow copy of core intent. Prefer links to authoritative concerns over repeated obligations, boundaries, configuration, or acceptance criteria.",
+    "Propose the smallest coherent restructuring plan before editing: content to move, its destination and semantic reason, references to repair, and claims whose correct owner still requires author judgment.",
+    "When restructuring is authorized, preserve meaning and provenance, repair package references, and report any wording change separately from a mechanical move. Do not describe a semantic rewrite as file organization.",
+    "Do not move content when the correct concern depends on author intent; explain the alternatives and ask for direction.",
+    "Check especially for technology in primary intent, implementation choices disguised as configuration, acceptance criteria that prescribe architecture, optional features folded into the root outcome, forbidden states mislabeled as non-goals, and evidence offered for a different subject than the claim it supposedly proves.",
+    "Prefer the fewest physical files that still give each material concern an unambiguous canonical owner. Report both monolithic overload and unnecessary fragmentation; do not split intent merely because the vocabulary distinguishes its concerns."
   ];
 }
 
@@ -364,13 +377,26 @@ function ambiguityInstructions() {
   ];
 }
 
+function decisionProvenanceInstructions() {
+  return [
+    "Build a descriptive inventory of consequential decisions exposed by the package. Do not score the package by how many decisions the author controls.",
+    "For each decision, record a stable ID, domain, description, plausible alternatives, and evidence locations. Classify materiality as `critical`, `material`, or `minor`, state whether that classification came from author declaration, a protocol default, evaluator judgment, or a mixture, and explain why.",
+    "Separate decision roles instead of forcing one owner: who proposed the choice, who is expected to select it, what constrains it, and who will implement it. Sources may include package-author intent, end-user applied intent, an implementation profile, a reference artifact, an existing system, the environment, or the implementing agent.",
+    "Classify expected latitude as `fixed`, `preferred`, `delegated`, `open`, or `unresolved`. A greater author share is not inherently better; the goal is an explicit distribution that matches the author's intent.",
+    "For included reference code or other realization artifacts, determine whether identified consequential decisions are normative, preferred, or illustrative. Do not label an entire artifact normative by default, and do not confuse decision influence with artifact activation. If influence is not clear, record a material ambiguity rather than guessing.",
+    "Identify decisions an implementing agent would otherwise make without an attributable source. Distinguish deliberately delegated choices from ambient choices caused by missing or conflicting authority.",
+    "Record attribution confidence and limitations. Preserve `mixed` and `unknown` classifications when the package does not support a stronger conclusion.",
+    "Store the inventory as structured findings in the pass result. This is an authored-package decision surface, not evidence of decisions an implementation agent actually made."
+  ];
+}
+
 function consistencyInstructions(lint) {
   const diagnostics = lint.diagnostics.length
     ? lint.diagnostics.map((item) => `- ${item.code} (${item.scope}): ${item.message}`)
     : ["- The deterministic kind-aware lint produced no diagnostics; this is not a semantic consistency certification."];
   return [
     "Use deterministic validation for schema, path, ID, configuration, relationship, and reference checks. Then perform semantic consistency review across the package.",
-    "Look for contradictory permissions or state behavior, configuration with no defined effect, acceptance without corresponding intent, profile guidance that changes the product outcome, inconsistent terminology, and capability contracts that disagree with the definition.",
+    "Look for contradictory permissions or state behavior, configuration with no defined effect, acceptance without corresponding intent, task instructions that restate features or imply completion, profile guidance that changes the product outcome, inconsistent terminology, and capability contracts that disagree with the definition.",
     "Distinguish deterministic errors from agent judgments. Cite both sides of every claimed contradiction and avoid rewriting merely stylistic differences.",
     "Current deterministic diagnostics:",
     ...diagnostics
@@ -388,6 +414,9 @@ function hardeningInstructions(target) {
   return [
     `Review toward the requested \`${target}\` depth: ${targetFocus}.`,
     "Do not expand product scope, manufacture enterprise requirements, or convert authoring depth into a quality score.",
+    "For every material success claim, distinguish the verification plan from actual evidence and label its subject as package, baseline, realization, or outcome. Never use evidence for one subject as proof of another.",
+    "Distinguish a non-goal, which declines to require an outcome, from a forbidden state, which the realization must prevent.",
+    "Make the agent's decision latitude explicit: what is fixed, what requires end-user choice, and what may be decided during implementation.",
     "Report material gaps, intentional omissions, and blockers separately. A package may be valid and useful without exhausting every possible detail.",
     "Recommend the smallest refinement that meaningfully reduces implementation risk at the requested depth."
   ];
@@ -396,8 +425,11 @@ function hardeningInstructions(target) {
 function handoffInstructions() {
   return [
     "Simulate receiving this package as a capable implementing agent with no access to the authoring conversation.",
-    "Explain the intended outcome, genuine constraints, configuration choices, unresolved product decisions, implementation profiles, optional artifacts and resources, and observable success conditions.",
+    "Explain the package-author primary intent and its native format, intended outcome, obligations, boundaries, decision latitude, configuration choices, unresolved product decisions, implementation profiles, ordered task reminders, optional artifacts and resources, and observable success conditions.",
+    "Before choosing an implementation profile, draft the minimum applied-intent questions needed to determine whether the end user wants each package as authored, adapted, partially reused, or rejected. Separate safe environmental observation from agent inference and required user affirmation.",
     "Identify facts the implementing agent would otherwise guess, instructions that could be misread as authority, important material buried in excessive context, and acceptance criteria that cannot be observed.",
+    "Identify every evidence claim by subject. Package evidence, baseline evidence, realization evidence, and outcome evidence are not interchangeable; a verification plan is not evidence.",
+    "When a task runbook exists, confirm that array order is sufficient, references are useful context, and the tasks do not introduce dependency, checkpoint, progress, or conformance semantics.",
     "Run `seedspec begin <package-path>` and inspect the actual versioned handoff instructions. Review the emitted workflow rather than an idealized reading of source files.",
     "Recommend only changes to the package that improve an independent handoff; do not prescribe architecture or implementation workflow."
   ];
@@ -408,6 +440,7 @@ function areaInstructions(area, context) {
     case "concern-separation": return concernSeparationInstructions();
     case "kind-aware-discovery": return kindAwareInstructions(context.kind);
     case "material-ambiguity": return ambiguityInstructions();
+    case "decision-provenance": return decisionProvenanceInstructions();
     case "internal-consistency": return consistencyInstructions(context.lint);
     case "progressive-hardening": return hardeningInstructions(context.target);
     case "agent-ready-handoff": return handoffInstructions();
@@ -770,7 +803,7 @@ export function formatAuthoringAudit(result, { statusOnly = false } = {}) {
   if (result.complete) {
     lines.push(
       "",
-      "All six authoring audit areas have completed results.",
+      `All ${result.areas.length} authoring audit areas have completed results.`,
       "Completed audit areas mean review records exist; they are not a completeness or quality certification."
     );
     if (result.questions.open > 0) {
@@ -788,7 +821,7 @@ export function formatAuthoringAudit(result, { statusOnly = false } = {}) {
     if (result.after_current) {
       lines.push(`After this pass is completed: ${result.after_current.index} of ${result.areas.length} — ${result.after_current.name}`);
     } else {
-      lines.push("After this pass is completed: all six audit areas will have completed results.");
+      lines.push(`After this pass is completed: all ${result.areas.length} audit areas will have completed results.`);
     }
     if (!statusOnly && result.current.instructions) {
       lines.push("", result.current.instructions.trimEnd());

@@ -1,13 +1,15 @@
 {
   "name": "@seedspec/cli",
-  "version": "0.1.0-alpha.4",
-  "description": "Command-line interface for the SeedSpec Protocol",
+  "version": "0.1.0-alpha.7",
+  "description": "Author and use portable, agent-ready SeedSpec packages",
   "keywords": [
     "seedspec",
     "cli",
     "agents",
     "intent",
-    "specifications"
+    "authoring",
+    "specifications",
+    "portable"
   ],
   "type": "module",
   "bin": {
@@ -21,7 +23,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@seedspec/runtime": "0.1.0-alpha.3"
+    "@seedspec/runtime": "0.1.0-alpha.6"
   },
   "repository": {
     "type": "git",

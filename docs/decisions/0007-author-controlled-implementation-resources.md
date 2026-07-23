@@ -29,7 +29,7 @@ a transparent package-local failsafe.
 
 Protocol 0.1 adds optional `implementation_resources` declarations.
 
-Authors explicitly choose resources, usage as `required`, `recommended`, or
+Authors explicitly choose resources, usage as `expected`, `recommended`, or
 `available`, and whether additional catalog discovery is `none` or
 `agent-delegated`. Omission remains `unspecified` rather than an inferred
 choice.
@@ -41,8 +41,9 @@ implementation state. Implementation targets may reference declared resources.
 Canonical resources use an HTTPS resource manifest with exact file and
 aggregate digests. The reference resolver attempts the requested online policy
 first. A package may contain a digest-verified bundled fallback. Fallback use is
-always recorded with the canonical failure reason; required unavailable
-resources fail after state is preserved.
+always recorded with the canonical failure reason; unavailable `expected`
+resources fail after state is preserved. This protects the author's declared
+guidance baseline without claiming that an agent can be forced to follow it.
 
 Resolving instruction bytes is not tool activation. Resource usage never
 authorizes execution or external effects and does not override end-user or
@@ -52,8 +53,9 @@ Package-scoped skills remain distinct from environment-installed skills.
 SeedSpec validates their `SKILL.md`, resolves verified bytes, and presents the
 exact project-local entrypoint, but does not register them with a native skill
 loader or infer automatic invocation from frontmatter. The implementing agent
-explicitly consults the skill as subordinate guidance; consultation does not
-promote its instructions into solution intent.
+can explicitly consult the skill as subordinate guidance and records whether it
+was `consulted` or `skipped`; consultation does not promote its instructions
+into solution intent.
 
 Resolved handoffs preserve an index and digest-bound state. Agents may record
 `consulted` or `skipped` with a reason as local project memory and potential eval
@@ -72,7 +74,7 @@ telemetry. Core does not transmit that state.
 
 ## Revisit when
 
-- capability-guidance evals show whether `required`, `recommended`, and
+- capability-guidance evals show whether `expected`, `recommended`, and
   `available` produce materially different agent behavior;
 - a public SeedSpec guidance catalog exists;
 - signed publisher identity becomes necessary;

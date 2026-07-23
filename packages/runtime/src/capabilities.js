@@ -8,6 +8,80 @@ export function capabilityMatches(provision, requirement) {
   return provision.id === requirement.id;
 }
 
+function parseCapabilityVersion(version) {
+  return version.split(".").map((part) => BigInt(part));
+}
+
+function compareCapabilityVersions(left, right) {
+  const leftParts = parseCapabilityVersion(left);
+  const rightParts = parseCapabilityVersion(right);
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] > rightParts[index] ? 1 : -1;
+  }
+  return 0;
+}
+
+function revisionDifference(left, right) {
+  const leftParts = parseCapabilityVersion(left);
+  const rightParts = parseCapabilityVersion(right);
+  if (leftParts[0] !== rightParts[0]) return "major";
+  if (leftParts[1] !== rightParts[1]) return "minor";
+  if (leftParts[2] !== rightParts[2]) return "patch";
+  return "none";
+}
+
+export function classifyCapabilityRevision(testedAgainst, providedVersion) {
+  const comparison = compareCapabilityVersions(providedVersion, testedAgainst);
+  if (comparison === 0) {
+    return {
+      revision_status: "tested-revision",
+      revision_direction: "exact",
+      revision_difference: "none",
+      review_severity: "none"
+    };
+  }
+
+  const direction = comparison > 0 ? "provider-newer" : "provider-older";
+  const difference = revisionDifference(testedAgainst, providedVersion);
+  let severity = "high";
+  if (direction === "provider-newer" && difference === "patch") severity = "low";
+  if (direction === "provider-newer" && difference === "minor") severity = "medium";
+  if (direction === "provider-older" && difference === "patch") severity = "medium";
+
+  return {
+    revision_status: "different-revision",
+    revision_direction: direction,
+    revision_difference: difference,
+    review_severity: severity
+  };
+}
+
+function declaredChangesBetween(capability, testedAgainst, revision) {
+  if (revision.revision_direction === "exact") {
+    return { change_evidence: "not-needed", declared_changes: [] };
+  }
+  if (revision.revision_direction === "provider-older") {
+    return { change_evidence: "unavailable", declared_changes: [] };
+  }
+
+  const history = capability.change_history ?? [];
+  const declaredChanges = [];
+  let cursor = testedAgainst;
+  while (cursor !== capability.version) {
+    const transition = history.find((item) => item.from === cursor);
+    if (!transition || compareCapabilityVersions(transition.to, capability.version) > 0) break;
+    declaredChanges.push(transition);
+    cursor = transition.to;
+  }
+  if (cursor === capability.version) {
+    return { change_evidence: "complete", declared_changes: declaredChanges };
+  }
+  return {
+    change_evidence: declaredChanges.length > 0 ? "partial" : "unavailable",
+    declared_changes: declaredChanges
+  };
+}
+
 function duplicateIds(items) {
   const seen = new Set();
   return items
@@ -25,6 +99,35 @@ export function validateManifestSemantics(manifest) {
   }
   for (const id of new Set(duplicateIds(provided))) {
     details.push(`provides.capabilities repeats ${id}`);
+  }
+  for (const capability of provided) {
+    const history = capability.change_history ?? [];
+    for (let index = 0; index < history.length; index += 1) {
+      const transition = history[index];
+      if (compareCapabilityVersions(transition.from, transition.to) >= 0) {
+        details.push(`provides.capabilities.${capability.id}.change_history must move from an older revision to a newer revision`);
+      }
+      if (index > 0 && history[index - 1].to !== transition.from) {
+        details.push(`provides.capabilities.${capability.id}.change_history must form a contiguous revision chain`);
+      }
+      const changeIds = transition.changes.map((change) => change.id);
+      if (new Set(changeIds).size !== changeIds.length) {
+        details.push(`provides.capabilities.${capability.id}.change_history repeats a change ID between ${transition.from} and ${transition.to}`);
+      }
+      const difference = revisionDifference(transition.from, transition.to);
+      const types = new Set(transition.changes.map((change) => change.type));
+      const validClassification = difference === "major"
+        ? types.has("breaking")
+        : difference === "minor"
+          ? !types.has("breaking") && types.has("additive")
+          : !types.has("breaking") && !types.has("additive");
+      if (!validClassification) {
+        details.push(`provides.capabilities.${capability.id}.change_history ${transition.from} to ${transition.to} does not match its breaking/additive/clarifying declarations`);
+      }
+    }
+    if (history.length > 0 && history.at(-1).to !== capability.version) {
+      details.push(`provides.capabilities.${capability.id}.change_history must end at the provided revision ${capability.version}`);
+    }
   }
   const decisionIds = new Set();
   for (const decision of manifest.decisions ?? []) {
@@ -61,6 +164,20 @@ export function validateManifestSemantics(manifest) {
   for (const artifact of manifest.artifacts ?? []) {
     if (artifactIds.has(artifact.id)) details.push(`artifacts repeats ${artifact.id}`);
     artifactIds.add(artifact.id);
+  }
+  if (manifest.definition.artifact) {
+    const primaryArtifact = (manifest.artifacts ?? [])
+      .find((artifact) => artifact.id === manifest.definition.artifact);
+    if (!primaryArtifact) {
+      details.push(`definition.artifact references unknown artifact ${manifest.definition.artifact}`);
+    } else {
+      if (!primaryArtifact.path || primaryArtifact.path !== manifest.definition.entrypoint) {
+        details.push("definition.artifact must reference the same package-local path as definition.entrypoint");
+      }
+      if (!(primaryArtifact.concerns ?? []).includes("org.seedspec.concern.intent")) {
+        details.push("definition.artifact must declare org.seedspec.concern.intent");
+      }
+    }
   }
   for (const relationship of manifest.relationships ?? []) {
     if (!artifactIds.has(relationship.from)) {
@@ -123,6 +240,7 @@ function declaredConflictReviews(records, providers) {
       if (packageIds.has(conflict.id)) {
         reviews.push({
           code: "declared-package-conflict",
+          severity: "high",
           packages: uniqueSorted([record.manifest.id, conflict.id]),
           reason: conflict.reason
         });
@@ -134,6 +252,7 @@ function declaredConflictReviews(records, providers) {
       if (matchingProviders.length > 0) {
         reviews.push({
           code: "declared-capability-conflict",
+          severity: "high",
           packages: uniqueSorted([
             record.manifest.id,
             ...matchingProviders.map((provider) => provider.record.manifest.id)
@@ -154,6 +273,7 @@ function duplicateProviderReviews(providers) {
     if (declarations.length > 1) {
       reviews.push({
         code: "multiple-declared-providers",
+        severity: "medium",
         packages: uniqueSorted(
           declarations.map((declaration) => declaration.record.manifest.id)
         ),
@@ -241,20 +361,27 @@ export function analyzeCapabilityDeclarations(root, additions) {
     .flatMap((declarations) => declarations.map(({ record, capability }) => ({
       id: capability.id,
       version: capability.version,
-      provider: lockedPackage(record)
+      provider: lockedPackage(record),
+      ...(capability.change_history ? { change_history: capability.change_history } : {}),
+      ...(capability.conformance ? { conformance_suite: capability.conformance.suite } : {})
     })))
     .sort(compareCapabilityDeclarations);
 
   const requirements = records.flatMap((record) => (
     (record.manifest.requires?.capabilities ?? []).map((requirement) => {
       const candidates = (providers.get(requirement.id) ?? [])
-        .map((provider) => ({
-          provider: lockedPackage(provider.record),
-          provided_version: provider.capability.version,
-          revision_status: provider.capability.version === requirement.tested_against
-            ? "tested-revision"
-            : "different-revision"
-        }))
+        .map((provider) => {
+          const revision = classifyCapabilityRevision(
+            requirement.tested_against,
+            provider.capability.version
+          );
+          return {
+            provider: lockedPackage(provider.record),
+            provided_version: provider.capability.version,
+            ...revision,
+            ...declaredChangesBetween(provider.capability, requirement.tested_against, revision)
+          };
+        })
         .sort((left, right) => compareIdsByUtf8(left.provider.id, right.provider.id));
       const issues = [];
       if (candidates.length === 0) issues.push("no-declared-provider");
@@ -277,17 +404,36 @@ export function analyzeCapabilityDeclarations(root, additions) {
   ));
 
   const requirementReviews = requirements.flatMap((requirement) => (
-    requirement.issues.map((issue) => ({
-      code: issue,
-      packages: uniqueSorted([
-        requirement.consumer,
-        ...requirement.providers.map((provider) => provider.provider.id)
-      ]),
-      capability: requirement.capability
-    }))
+    requirement.issues.map((issue) => {
+      const revisionCandidate = issue === "revision-difference"
+        ? requirement.providers.find((provider) => provider.revision_status === "different-revision")
+        : undefined;
+      const severity = revisionCandidate?.review_severity
+        ?? (issue === "no-declared-provider" ? "high" : "medium");
+      return {
+        code: issue,
+        severity,
+        packages: uniqueSorted([
+          requirement.consumer,
+          ...requirement.providers.map((provider) => provider.provider.id)
+        ]),
+        capability: requirement.capability,
+        ...(revisionCandidate ? {
+          revision: {
+            tested_against: requirement.tested_against,
+            provided_version: revisionCandidate.provided_version,
+            direction: revisionCandidate.revision_direction,
+            difference: revisionCandidate.revision_difference,
+            change_evidence: revisionCandidate.change_evidence,
+            declared_changes: revisionCandidate.declared_changes
+          }
+        } : {})
+      };
+    })
   ));
   const cycleReviews = requirementCycles(root, orderedAdditions, requirements).map((packages) => ({
     code: "declared-requirement-cycle",
+    severity: "medium",
     packages
   }));
   const reviewCandidates = [

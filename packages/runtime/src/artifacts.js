@@ -14,7 +14,7 @@ const productSpecAdapter = Object.freeze({
   implementation: "@productspec/parser",
   implementationVersion: "0.26.0",
   supportedFormatVersions: ["0.1"],
-  documentation: "https://github.com/gokulrajaram/ProductSpec/blob/d286a8e9a7a83e0be15a0d9c360c549590134440/SPEC.md"
+  documentation: "https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/SPEC.md"
 });
 
 const adapters = Object.freeze([productSpecAdapter]);
@@ -23,10 +23,11 @@ function adapterForType(type) {
   return adapters.find((adapter) => adapter.artifactType === type) ?? null;
 }
 
-function publicArtifact(artifact) {
+function publicArtifact(artifact, { primary = false } = {}) {
   const adapter = adapterForType(artifact.type);
   return {
     ...artifact,
+    ...(primary ? { intent_role: "primary" } : {}),
     location: artifact.path ?? artifact.url,
     adapter: adapter ? {
       id: adapter.id,
@@ -50,7 +51,9 @@ export async function listPackageArtifacts(inputPath) {
       version: record.manifest.version,
       digest: record.digest
     },
-    artifacts: (record.manifest.artifacts ?? []).map(publicArtifact),
+    artifacts: (record.manifest.artifacts ?? []).map((artifact) => publicArtifact(artifact, {
+      primary: record.manifest.definition.artifact === artifact.id
+    })),
     relationships: record.manifest.relationships ?? []
   };
 }
@@ -111,7 +114,9 @@ async function validateProductSpec(record, artifact, adapter) {
 
   return {
     package: record.manifest.id,
-    artifact: publicArtifact(artifact),
+    artifact: publicArtifact(artifact, {
+      primary: record.manifest.definition.artifact === artifact.id
+    }),
     adapter: { ...adapter },
     valid: true,
     summary: {
@@ -158,6 +163,7 @@ export function formatArtifactListing(listing) {
   for (const artifact of listing.artifacts) {
     lines.push(
       `- ${artifact.id}: ${artifact.type}`,
+      `  Intent role: ${artifact.intent_role ?? "supporting"}`,
       `  Location: ${artifact.location}`,
       `  Concerns: ${artifact.concerns?.length ? artifact.concerns.join(", ") : "unspecified"}`,
       `  Adapter: ${artifact.adapter ? `${artifact.adapter.name} (${artifact.adapter.id})` : "none registered"}`

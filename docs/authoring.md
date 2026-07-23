@@ -3,10 +3,23 @@
 > **Informative guidance.** This document describes authoring practices and
 > reference tooling; it does not define package conformance.
 
-Authoring is a guided intent-discovery and refinement workflow, not a
-requirement to hand-edit manifests. The reference interfaces below all produce
-the same portable protocol package and leave room for additional authoring
-experiences.
+Authoring is a first-class part of SeedSpec: a guided intent-discovery and
+refinement workflow, not a requirement to hand-edit manifests. The reference
+interfaces below help authors find material gaps, assign stable semantic roles,
+and review the handoff another agent will receive. They all produce the same
+portable protocol package and leave room for additional authoring experiences.
+
+Protocol validation and authoring quality are different results. Validation
+establishes that a package can be interpreted. It cannot establish that the
+author supplied the important product rules, resolved the right decisions, or
+provided enough context for a strong realization.
+
+One clear Markdown specification may already contain excellent intent. SeedSpec
+authoring adds value by making product intent, adopter configuration, decision
+provenance, acceptance, implementation guidance, and evidence separately
+inspectable and reusable without requiring the author to fragment prose for its
+own sake. See [why semantic structure matters](semantic-structure.md) and the
+[current evaluation findings](evaluations.md).
 
 ## Authoring interfaces and frontends
 
@@ -39,6 +52,10 @@ must not execute it implicitly. Reproducible authoring tools should produce the
 same package bytes from the same source and inputs and should surface generated
 changes for author review.
 
+An authoring frontend may provide stronger review, collaboration, and
+organization-specific policy than the neutral protocol. It should report those
+claims in its own terms rather than presenting them as package conformance.
+
 ## Agent-guided audit lifecycle
 
 The reference authoring workflow assumes that a capable agent runs the CLI
@@ -59,7 +76,7 @@ The command emits a Markdown work order for the agent and initializes a
 standardized YAML result. After the agent records a completed result, running
 the same command advances to the next incomplete area. There is deliberately no
 `next` command: progression is derived from durable pass state rather than a
-transient cursor. The output lists all six areas and tells the agent which area
+transient cursor. The output lists all seven areas and tells the agent which area
 would follow an accepted pass.
 
 Target one area for an initial or repeated review with `--area`:
@@ -76,18 +93,24 @@ web documentation.
 
 The ordered review areas are:
 
-1. **Concern separation** checks core intent, configuration, additions,
-   implementation profiles, artifacts, resources, and acceptance boundaries.
+1. **Concern separation** checks the primary intent source, purpose,
+   obligations and boundaries, success and evidence, decision latitude,
+   configuration, additions, implementation profiles, supporting artifacts,
+   resources, and package-evidence boundaries.
 2. **Kind-aware discovery** applies the selected `kind` as an authoring lens,
    never as a fixed template or validity gate.
 3. **Material ambiguity** identifies competing interpretations that could
    materially alter behavior, authority, data treatment, portability, or
    success.
-4. **Internal consistency** combines deterministic diagnostics with semantic
+4. **Decision provenance** describes consequential decisions, their
+   materiality, expected latitude, proposed and selecting parties, constraining
+   sources, and attribution confidence without treating author control as a
+   quality score.
+5. **Internal consistency** combines deterministic diagnostics with semantic
    review across package concerns.
-5. **Progressive hardening** evaluates the requested capture, shape, harden,
+6. **Progressive hardening** evaluates the requested capture, shape, harden,
    compose, or package depth without treating depth as a quality score.
-6. **Agent-ready handoff** tests the package as an independent implementation handoff,
+7. **Agent-ready handoff** tests the package as an independent implementation handoff,
    including the actual output of `seedspec begin`.
 
 One nonterminal pass is active at a time. `needs-author` keeps the pass active
@@ -130,9 +153,136 @@ and `candidates/` holds speculative material. Each pass records the exact
 instruction, tool, and protocol versions plus before-and-after package digests,
 findings, questions, changes, and validation evidence.
 
+The concern-separation pass records a proposed canonical owner for misplaced or
+duplicated material before an agent restructures the package. The
+decision-provenance pass records the authored decision surface as structured
+findings: materiality, expected latitude, proposing and selecting parties,
+constraints, evidence, and confidence. These records remain authoring state;
+they do not become package authority merely because an evaluator produced them.
+
 Authoring state is local and is never bundled, uploaded, synchronized, or
 exported implicitly. The stable layout is intended to support manual sharing
 now and an explicit export or hosted scratch-space flow later.
+
+## One primary intent source
+
+Every package has one package-author primary intent source at
+`definition.entrypoint`. Native SeedSpec authoring should keep this source
+physically compact and make four semantic areas easy to find:
+
+1. **Purpose** explains the problem, objective, desired change, and affected
+   actors.
+2. **Obligations and boundaries** distinguish required outcomes, invariants,
+   constraints, forbidden states, and non-goals.
+3. **Success and evidence** separates realization acceptance from later outcome
+   evidence and explains credible observation methods.
+4. **Decision latitude** identifies fixed intent, choices reserved for the end
+   user, and choices delegated to the implementing agent.
+
+These are semantic areas, not a requirement to create four files. A single
+clear Markdown document is preferable to scattering small fragments, but a
+large document should not absorb acceptance, implementation-profile guidance,
+configuration, resources, or agent routing merely to minimize file count.
+Agent-facing instructions should identify authoritative locations and conflict
+rules instead of repeating their content. Kind-aware questions add relevant
+depth inside these areas.
+
+## Describe the decision surface
+
+Decision provenance is descriptive. A package that deliberately delegates
+architecture to an agent is not weaker than one that ships normative reference
+code merely because the author made fewer choices. The useful question is
+whether the package makes the intended distribution of decision authority
+clear enough to compare with a later realization.
+
+For each consequential decision, distinguish who proposed an option, who is
+expected to select it, what constrains it, and who will implement it. Use
+`fixed`, `preferred`, `delegated`, `open`, and `unresolved` to describe expected
+latitude. Classify materiality as critical, material, or minor and record the
+basis for the classification. Preserve mixed or unknown attribution rather
+than manufacturing precision.
+
+Reference implementations and other realization artifacts should make their
+influence on identified consequential decisions clear when it matters:
+normative decisions are expected to be preserved, preferred decisions are
+strong defaults, and illustrative decisions teach without silently
+constraining the realization. Do not label an entire reference artifact
+normative by default. Decision influence also does not activate an artifact or
+its native workflow. A later evaluation can compare this authored decision
+surface with observed agent choices, including whether material inferences
+were disclosed or made ambiently.
+
+The primary source may instead use a recognized external intent format. Declare
+the same package-local file as an artifact with the intent concern and reference
+its artifact ID from `definition.artifact`. The file is then core intent in its
+native format. Adapter validation remains separate from SeedSpec package
+validation, and the format's own workflow is not activated automatically.
+
+## Author an ordered task runbook only when sequence adds value
+
+Packages may declare a `tasks` file when the author has useful reminders about
+the order in which an implementing agent should inspect, adapt, realize, and
+verify the package. The tasks should not restate features or divide product
+intent into a backlog. Keep each item focused on what the agent should attend
+to at that point in the realization.
+
+Declare the runbook from `seedspec.yaml`:
+
+```yaml
+tasks: tasks.yaml
+```
+
+Then author the referenced file:
+
+```yaml
+protocol_version: "0.1"
+tasks:
+  - id: inspect-current-state
+    instruction: Inspect the existing solution before making changes.
+
+  - id: adapt-reference-design
+    instruction: Adapt the reference design to the existing architecture.
+    references:
+      - reference/integration-notes.md
+
+  - id: verify-realization
+    instruction: Run the supplied verification and investigate failures.
+    references:
+      - acceptance/criteria.md
+```
+
+Array order is the task order. Do not encode dependencies, jumps, conditions,
+or checkpoints; put essential nuance in the instruction. References should be
+package-local files that give the agent useful context without duplicating
+their contents in the task. IDs exist for stable reporting and resumption, not
+sequencing. Progress and evidence belong to the particular project or agent
+run, never the published task file. Completing every task does not establish
+acceptance or conformance.
+
+## Author intent and end-user applied intent
+
+Package authoring defines a reusable baseline. Resolution asks the end user the
+same classes of questions for one realization: what the package should solve
+here, which obligations and boundaries apply, what the agent may decide, and
+what observations would establish success.
+
+The agent should infer a concise draft from the user's request, package, and
+read-only environment evidence before asking questions. It should ask only
+about material uncertainty, label its additions `proposed`, and let the user
+affirm or correct a compact summary. The resulting applied-intent input records
+each package as `as-authored`, `adapted`, or `partial` and may add local intent
+contributions. It is project state, not a mutation of the published package.
+
+Authoring and adoption tools should use the same semantic vocabulary while
+changing the lens:
+
+- package author: what should generally be true for a faithful realization;
+- end user: what must be true in this environment for this use; and
+- agent: what can be observed, safely inferred, or must be confirmed.
+
+If the two intent layers conflict materially, the agent should recommend
+adaptation, partial reuse, or rejection before selecting an implementation
+profile. It must not silently convert partial reuse into a full-package claim.
 
 ## Starting altitude
 
@@ -146,7 +296,9 @@ Authoring can proceed progressively:
 
 1. **Capture** preserves the source idea in a minimal conforming package.
 2. **Shape** identifies actors, outcomes, workflows, domain concepts, and meaningful variations.
-3. **Harden** adds permissions, invariants, failure behavior, edge cases, and observable acceptance criteria.
+3. **Harden** adds permissions, invariants, constraints, forbidden states,
+   non-goals, failure behavior, edge cases, observable acceptance criteria, and
+   explicit evidence subjects.
 4. **Compose** identifies capability context, SeedSpec feature candidates, and related artifacts.
 5. **Package** optionally selects versioned implementation resources and
    decides whether additional guidance discovery is delegated to the agent.
@@ -232,13 +384,42 @@ from actual state, `tool-check` for an authorized non-mutating probe,
 when a person must observe the result. Set evidence to `none`, `optional`, or
 `required` independently from the method.
 
+## Distinguish evidence before collecting it
+
+Authors should state what an observation is meant to prove:
+
+- package evidence supports a claim about the package, its testing, or known
+  compatibility;
+- a verification plan states how a future scoped realization or outcome should
+  be judged;
+- baseline evidence references observations about the end user's current
+  environment before work and belongs with an `observed` applied-intent
+  contribution;
+- realization evidence demonstrates the produced solution or configured state;
+  and
+- outcome evidence demonstrates later effects such as changed behavior or an
+  operational metric.
+
+These categories do not substitute for one another. A tested reference
+realization does not prove the user's realization. A successful user
+realization does not prove that the package is generally portable or safe.
+Authoring audits should flag evidence language whose subject or lifecycle stage
+is ambiguous.
+
+Every included completion-scope item receives an explicit verification plan
+before implementation. The plan states the realization or outcome subject,
+method, timing, and evidence requirement. Actual results belong only in
+verification state after work begins.
+
 ## Related artifacts
 
 Authors may include existing product documents, structured specifications, designs, execution plans, infrastructure descriptions, or evidence as optional `artifacts`. Preserve each artifact's native format and label the concern it addresses; do not merge separate concerns merely to make the SeedSpec look more complete.
 
-Declaring an artifact does not select its workflow for an end user or
-implementing agent. An author may explain why the artifact is useful, but should
-not encode `governing`, `advisory`, or automatic activation policy.
+Declaring an artifact alone does not select its workflow for an end user or
+implementing agent. `definition.artifact` may identify the artifact content as
+the package's primary intent, but even that does not activate its native
+workflow. An author may explain why supporting material is useful, but should
+not encode generic `governing`, `advisory`, or automatic activation policy.
 Artifact-specific validation and transformation belong to adapters that a user
 invokes explicitly.
 
@@ -266,7 +447,7 @@ references relative to the skill root, and use the resource's `usage` and
 The skill explains how to work; the package's core intent and acceptance
 material remain the authority for what outcome is requested.
 
-Choose `required`, `recommended`, or `available` deliberately. Decide separately
+Choose `expected`, `recommended`, or `available` deliberately. Decide separately
 whether additional catalog discovery is `agent-delegated` or `none`. Use
 `applies_to` as matching context without claiming an actual implementation has
 the named capability.
@@ -282,7 +463,7 @@ Start at the level of detail the user supplies. For shaping or hardening, identi
 
 For capture-only work, preserve the original idea, use an empty configuration object when no behavioral choices are known, allow an empty capability list, and record important unknowns without forcing the user through full product discovery.
 
-Give each provided capability a namespaced ID, exact revision, and product-behavior contract. For each required capability, record the exact revision the consumer was designed or tested against. Create the package, then run:
+Give each provided capability a namespaced ID, exact revision, and Markdown product-behavior contract. For each required capability, record the exact revision the consumer was designed or tested against. When a provision revises an older contract, add contiguous structured change history tagged `breaking`, `additive`, or `clarifying` consistently with the version bump. Add an optional version-bound conformance suite when schemas, structured scenarios, or eval bundles detect meaningful defects; state `partial` coverage unless the suite credibly exercises the full contract. Create the package, then run:
 
 ```bash
 seedspec validate <package-path>
@@ -291,7 +472,12 @@ seedspec inspect <package-path>
 
 ## Feature workflow
 
-When a resolved project exists, inspect `.seedspec/project.yaml`, `resolved-spec.md`, `agent-guide.md`, `implementation-notes.md`, and `dependencies.lock.yaml` before asking questions. Reuse known actors, terminology, configuration decisions, and capabilities. Declare only the capabilities the feature truly uses and the capabilities it adds.
+When a resolved project exists, inspect `.seedspec/project.yaml`,
+`resolved-intent.yaml`, `resolved-spec.md`, `agent-guide.md`,
+`implementation-notes.md`, and `dependencies.lock.yaml` before asking
+questions. Reuse known actors, terminology, configuration decisions, and
+capabilities. Declare only the capabilities the feature truly uses and the
+capabilities it adds.
 
 Keep origin context, the portable feature, and project integration decisions distinct. Before sharing a feature broadly, remove application-private assumptions, replace narrow terminology, convert variable behavior into configuration, declare known conflicts and unresolved decisions, and select an explicit compatibility scope.
 

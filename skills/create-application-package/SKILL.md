@@ -30,7 +30,10 @@ Extract only what the supplied material supports:
 - fundamental workflows and state transitions;
 - permissions, invariants, failures, and edge cases;
 - behaviors likely to vary between installations;
-- observable evidence of conformance.
+- observable success claims and credible verification plans;
+- non-goals, forbidden states, and genuine constraints; and
+- choices fixed by the author, reserved for the end user, or delegated to the
+  implementing agent.
 
 Separate required core behavior from optional features. Do not fold optional ideas into the application merely because they were mentioned. For capture-only work, an empty capability list and empty-object configuration are valid.
 
@@ -60,19 +63,41 @@ Write:
 
 - `seedspec.yaml` with a reverse-DNS identity, application kind, entrypoints, versioned provided capabilities, and discoverable components;
 - one contract file for every provided capability;
-- `definition/app.md` with purpose, actors, permissions, concepts, workflows, state models, business rules, configuration behavior, failures, edge cases, out-of-scope features, and conformance intent;
+- one primary intent source with clear **Purpose**, **Obligations and
+  boundaries**, **Success and evidence**, and **Decision latitude** semantics;
 - `configuration/schema.json`, `configuration/example.yaml`, and a guide when options need explanation;
 - `acceptance/criteria.md` with numbered, observable behaviors covering success, authorization, state, configuration, idempotency, and failure paths.
 
-Use Markdown as the expressive center. Keep structured files limited to metadata, discovery, validation, configuration, and composition.
+When sequence itself adds implementation value, optionally declare a `tasks`
+runbook. Keep it to ordered agent reminders with only stable `id`,
+`instruction`, and optional package-file `references`. Do not restate features,
+add checkpoints or dependency fields, or put mutable progress in the package.
+Array order is the task order, and completing it never proves acceptance.
+
+Use Markdown as the expressive center. Structured capability change history and optional conformance material may add machine-operable severity, data-shape, scenario, and eval evidence without replacing the behavioral contract.
 
 Declare capabilities as namespaced, versioned product contracts such as `org.seedspec.core.actors`, not screens, classes, endpoints, or infrastructure.
+For every revised capability, declare a contiguous change-history transition
+tagged breaking, additive, or clarifying consistently with its version bump.
+When useful, attach a version-bound conformance suite and label its coverage
+`partial` unless its checks credibly exercise the entire contract.
 
-When the source material includes a useful native specification, design, plan, infrastructure description, or evidence document, preserve it under `artifacts` with a namespaced type and concern. Do not manufacture an artifact merely to fill a category, merge distinct concerns, or mark it governing/advisory. ProductSpec is one optional rigorous intent artifact, not a required replacement for the SeedSpec definition.
+Use native SeedSpec Markdown for the primary intent unless the author already
+uses a recognized external intent format. To make an external document such as
+ProductSpec the primary source, declare it as an intent artifact, set
+`definition.entrypoint` to its path, and set `definition.artifact` to its ID.
+Do not duplicate a weaker native definition merely to satisfy the package. This
+selects the document's intent role, not its parser, skills, or workflow.
+
+Preserve other useful specifications, designs, plans, infrastructure material,
+or package evidence as supporting artifacts with namespaced types and concerns.
+For package evidence, use `evidence_for` to name the package claim it supports.
+Do not imply that package evidence proves a future user realization, and do not
+manufacture artifacts merely to fill a category.
 
 At packaging time, inspect the available versioned implementation-resource
 catalogs. Offer tested SeedSpec resources as defaults, but let the author remove
-them, change `required`, `recommended`, or `available` usage, and choose
+them, change `expected`, `recommended`, or `available` usage, and choose
 `additional_guidance: none` or `agent-delegated`. Prefer compact skills whose
 frontmatter lets the implementing agent decide relevance. Do not include generic
 advice merely to make the package appear more complete.
@@ -114,6 +139,11 @@ Repair every schema, path, configuration, and capability error. Then review the 
 - Are accounting or history rules auditable where relevant?
 - Does each configuration choice have defined behavior?
 - Are acceptance criteria observable rather than architectural?
+- Are non-goals distinguishable from states the realization must forbid?
+- Does each success claim distinguish a future verification plan from actual
+  package, baseline, realization, or outcome evidence?
+- Is decision latitude explicit enough that an end user and agent know which
+  choices require affirmation?
 - Did marketplace policy or publisher commercial language leak into the protocol artifact?
 
 Finish only when the package validates and the inspection matches the intended identity and capabilities.

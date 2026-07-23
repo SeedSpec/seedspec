@@ -777,15 +777,15 @@ export async function resolveImplementationResources(projectPath, {
     resources.push(resolved);
   }
 
-  const requiredUnavailable = resources.filter(
-    (resource) => resource.usage === "required" && resource.resolution_status === "unavailable"
+  const expectedUnavailable = resources.filter(
+    (resource) => resource.usage === "expected" && resource.resolution_status === "unavailable"
   );
   const anyUnavailable = resources.some((resource) => resource.resolution_status === "unavailable");
   const anyFallback = resources.some((resource) => resource.resolution_status === "bundled-fallback");
   const state = {
     protocol_version: "0.1",
     index_digest: implementationResourceIndexDigest(index),
-    status: requiredUnavailable.length > 0
+    status: expectedUnavailable.length > 0
       ? "failed"
       : anyUnavailable || anyFallback
         ? "degraded"
@@ -801,10 +801,10 @@ export async function resolveImplementationResources(projectPath, {
   }
   await writeFile(statePath, stringifyYaml(state), "utf8");
 
-  if (requiredUnavailable.length > 0) {
-    throw new SeedSpecError("Required implementation resources are unavailable", {
-      code: "REQUIRED_IMPLEMENTATION_RESOURCE_UNAVAILABLE",
-      details: requiredUnavailable.map((resource) => (
+  if (expectedUnavailable.length > 0) {
+    throw new SeedSpecError("Expected implementation resources are unavailable", {
+      code: "EXPECTED_IMPLEMENTATION_RESOURCE_UNAVAILABLE",
+      details: expectedUnavailable.map((resource) => (
         `${resource.package}/${resource.id}: ${resource.reason_code} — ${resource.reason}`
       ))
     });

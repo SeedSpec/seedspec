@@ -7,6 +7,7 @@ import { readYamlFile } from "./files.js";
 import { resolveProject } from "./resolve.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { validatePackage } from "./validate.js";
+import { inspectCapabilityConformance } from "./capability-conformance.js";
 
 function resolveFixture(indexDirectory, relativePath) {
   const resolved = path.resolve(indexDirectory, relativePath);
@@ -25,6 +26,8 @@ function validateFixturePaths(suite, indexDirectory) {
       testCase.package,
       testCase.root,
       testCase.decisions,
+      testCase.applied_intent,
+      testCase.result_file,
       ...(testCase.additions ?? [])
     ].filter(Boolean);
     for (const fixturePath of paths) resolveFixture(indexDirectory, fixturePath);
@@ -48,15 +51,23 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       }
       return { digest: first.digest };
     }
+    case "capability-conformance": {
+      const result = await inspectCapabilityConformance(
+        resolveFixture(indexDirectory, testCase.package),
+        testCase.capability,
+        resolveFixture(indexDirectory, testCase.result_file)
+      );
+      return { capabilityStatus: result.status };
+    }
     case "resolve": {
       const rootPath = resolveFixture(indexDirectory, testCase.root);
       const additionPaths = testCase.additions.map((addition) => resolveFixture(indexDirectory, addition));
+      const records = await Promise.all([
+        validatePackage(rootPath),
+        ...additionPaths.map(validatePackage)
+      ]);
       let configurationSelectionsPath;
       if (testCase.configuration_selection === "examples") {
-        const records = await Promise.all([
-          validatePackage(rootPath),
-          ...additionPaths.map(validatePackage)
-        ]);
         configurationSelectionsPath = path.join(outputDirectory, "configuration-selections.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(configurationSelectionsPath, stringifyYaml({
@@ -67,12 +78,28 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
           }))
         }), "utf8");
       }
+      let appliedIntentPath = testCase.applied_intent
+        ? resolveFixture(indexDirectory, testCase.applied_intent)
+        : undefined;
+      if (!appliedIntentPath && testCase.intent_selection === "affirmed") {
+        appliedIntentPath = path.join(outputDirectory, "applied-intent.yaml");
+        await mkdir(outputDirectory, { recursive: true });
+        await writeFile(appliedIntentPath, stringifyYaml({
+          protocol_version: "0.1",
+          packages: records.map((record) => ({
+            package: record.manifest.id,
+            use: "as-authored"
+          })),
+          contributions: []
+        }), "utf8");
+      }
       const result = await resolveProject(
         rootPath,
         {
           additionPaths,
           implementationProfiles: testCase.implementations ?? [],
           configurationSelectionsPath,
+          appliedIntentPath,
           decisionsPath: testCase.decisions
             ? resolveFixture(indexDirectory, testCase.decisions)
             : undefined,
@@ -90,6 +117,10 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       const resolvedConfiguration = await readYamlFile(
         path.join(result.workspace, "resolved-config.yaml"),
         "Resolved configuration"
+      );
+      const resolvedIntent = await readYamlFile(
+        path.join(result.workspace, "resolved-intent.yaml"),
+        "Resolved intent"
       );
       const artifactIndex = await readYamlFile(
         path.join(result.workspace, "artifacts.yaml"),
@@ -118,6 +149,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       const validateProject = await compileProtocolSchema("project.schema.json");
       const validateLock = await compileProtocolSchema("lock.schema.json");
       const validateResolvedConfiguration = await compileProtocolSchema("resolved-config.schema.json");
+      const validateResolvedIntent = await compileProtocolSchema("resolved-intent.schema.json");
       const validateArtifactIndex = await compileProtocolSchema("artifact-index.schema.json");
       const validateImplementationResourceIndex = await compileProtocolSchema(
         "implementation-resource-index.schema.json"
@@ -133,6 +165,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       if (!validateProject(project)
         || !validateLock(lock)
         || !validateResolvedConfiguration(resolvedConfiguration)
+        || !validateResolvedIntent(resolvedIntent)
         || !validateArtifactIndex(artifactIndex)
         || !validateImplementationResourceIndex(implementationResourceIndex)
         || !validateImplementationResourceState(implementationResourceState)
@@ -145,6 +178,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
             ...formatSchemaErrors(validateProject.errors),
             ...formatSchemaErrors(validateLock.errors),
             ...formatSchemaErrors(validateResolvedConfiguration.errors),
+            ...formatSchemaErrors(validateResolvedIntent.errors),
             ...formatSchemaErrors(validateArtifactIndex.errors),
             ...formatSchemaErrors(validateImplementationResourceIndex.errors),
             ...formatSchemaErrors(validateImplementationResourceState.errors),
@@ -166,6 +200,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         additionOrder: result.additions,
         projectStatus: result.project.status,
         configurationStatus: result.project.configuration_status,
+        intentStatus: result.project.intent_status,
         implementationProfileStatus: result.project.implementation_profile_status,
         completionScopeStatus: result.project.completion_scope_status,
         reviewCount: result.lock.reviews.length,
@@ -183,6 +218,13 @@ function assertExpectedOutput(testCase, output) {
   if (testCase.expect.digest && output.digest !== testCase.expect.digest) {
     throw new SeedSpecError(
       `Package digest mismatch; expected ${testCase.expect.digest}, received ${output.digest}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (testCase.expect.capability_status
+    && output.capabilityStatus !== testCase.expect.capability_status) {
+    throw new SeedSpecError(
+      `Capability conformance status mismatch; expected ${testCase.expect.capability_status}, received ${output.capabilityStatus}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }
@@ -205,6 +247,12 @@ function assertExpectedOutput(testCase, output) {
     && output.configurationStatus !== testCase.expect.configuration_status) {
     throw new SeedSpecError(
       `Configuration status mismatch; expected ${testCase.expect.configuration_status}, received ${output.configurationStatus}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (testCase.expect.intent_status && output.intentStatus !== testCase.expect.intent_status) {
+    throw new SeedSpecError(
+      `Intent status mismatch; expected ${testCase.expect.intent_status}, received ${output.intentStatus}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }

@@ -1,13 +1,14 @@
 # Contributing to SeedSpec
 
-SeedSpec welcomes protocol, tooling, documentation, and conformance
+SeedSpec welcomes authoring, protocol, runtime, CLI, documentation, and conformance
 contributions. Changes should remain understandable to an independent
 implementer without access to project history.
 
 ## Repository scope
 
-This repository contains the SeedSpec Protocol, normative schemas and
-conformance cases, first-party reference tooling, and operational skills.
+This repository contains the SeedSpec authoring system, SeedSpec Protocol,
+normative schemas and conformance cases, first-party runtime and CLI tooling,
+and operational skills.
 Demonstration packages and realized solutions belong in the separate
 `SeedSpec/reference-solutions` repository unless they are minimal fixtures
 needed to test a protocol rule.
@@ -18,7 +19,8 @@ Before editing, identify the affected document class:
 
 - `docs/protocol.md`, versioned schemas, and the conformance contract are
   normative;
-- architecture, authoring, runtime, security, and topic guides are informative;
+- architecture, semantic-structure, evaluation, authoring, runtime, security,
+  and topic guides are informative;
 - architecture decision records are non-normative rationale; and
 - marketplace policy and product strategy are outside the protocol contract.
 

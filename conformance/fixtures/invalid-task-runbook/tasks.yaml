@@ -1,0 +1,6 @@
+protocol_version: "0.1"
+tasks:
+  - id: inspect-context
+    instruction: Inspect the package reference before adapting the realization.
+    references:
+      - reference/missing.md

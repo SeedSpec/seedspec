@@ -61,6 +61,116 @@ should read available contract history and inspect the current code,
 configuration, and external state; plan around semantic differences; preserve
 local terminology; and verify the composed use case.
 
+Revision review is direction- and severity-aware:
+
+| Relationship | Review severity |
+| --- | --- |
+| Exact revision | none |
+| Provider newer by patch | low |
+| Provider newer by minor | medium |
+| Provider newer by major | high |
+| Provider older by patch | medium |
+| Provider older by minor or major | high |
+
+An older provider deserves more scrutiny because a newer consumer may rely on
+behavior added after the provider revision. Severity prioritizes review; it
+does not establish compatibility or turn a revision difference into an
+installation gate.
+
+## Structured revision history
+
+When a published capability revision replaces an earlier revision, declare a
+contiguous `change_history` ending at the provided version. Each transition has
+one or more stable change IDs tagged as:
+
+- `breaking` for a major revision;
+- `additive` for a minor revision; or
+- `clarifying` for a patch revision.
+
+The runtime validates that the tags agree with the version transition. During
+composition it attaches any complete, relevant provider history to the
+revision-difference record. These remain steward declarations: tooling can
+prioritize and explain a change without pretending that it derived semantics
+from Markdown.
+
+```yaml
+provides:
+  capabilities:
+    - id: org.example.product.transactions
+      version: "1.2.0"
+      contract: capabilities/transactions.md
+      change_history:
+        - from: "1.1.0"
+          to: "1.2.0"
+          changes:
+            - id: idempotent-reversal
+              type: additive
+              summary: Consumers may request an idempotent transaction reversal.
+```
+
+## Checkable contract material
+
+Markdown remains the primary contract because authorization, invariants,
+failure behavior, and product semantics rarely reduce to one technical API.
+A capability may additionally ship a version-bound conformance suite:
+
+```yaml
+      conformance:
+        suite: capabilities/conformance/transactions.suite.yaml
+```
+
+A suite declares whether its checks provide `partial` or `full` coverage and
+may include:
+
+- `json-schema` checks for observable data shapes;
+- `acceptance-scenarios` containing structured given/input/expected examples
+  interpreted by a named runner; and
+- `eval-suite` bundles interpreted by a named runner.
+
+```yaml
+protocol_version: "0.1"
+capability:
+  id: org.example.product.transactions
+  version: "1.2.0"
+coverage: partial
+checks:
+  - id: transaction-shape
+    kind: json-schema
+    subject: data-shape
+    description: Transactions expose stable identity, amount, and state.
+    path: capabilities/conformance/transaction.schema.json
+  - id: idempotent-reversal
+    kind: acceptance-scenarios
+    subject: behavior
+    description: Retrying one reversal does not reverse twice.
+    path: capabilities/conformance/reversal.scenarios.yaml
+    runner: org.example.runner.transaction-scenarios
+```
+
+SeedSpec validates suite identity, check references, JSON Schemas, and standard
+scenario documents. It does not automatically execute package content. A
+runner records a separate capability-conformance result containing the exact
+capability revision, contract digest, suite digest, realization identity,
+evaluator, per-check results, and evidence.
+
+Run:
+
+```bash
+seedspec capability-conformance package/ org.example.product.transactions
+seedspec capability-conformance package/ org.example.product.transactions \
+  --result transaction-conformance.yaml
+```
+
+`passed` means every declared suite check passed against that realization. For
+a partial suite it proves only that checkable subset. Even a full-coverage label
+is an author coverage claim, not mathematical proof that the prose contains no
+unexercised meaning.
+
+Capability conformance and project completion are deliberately separate. A
+capability result can become evidence for a project's completion scope, but it
+does not replace `verification-state.yaml`, and project completion does not
+certify a reusable provider against every consumer.
+
 ## Provider candidates
 
 `declaration-review-v1` records every selected package that declares a
@@ -81,7 +191,10 @@ runtime compatibility.
 - Does the contract name its ID and version?
 - Are authorization, retries, concurrency, and failure behavior clear where consequential?
 - Does the version change match the semantic change?
+- Does structured change history form a complete chain to the current revision?
 - Does each `tested_against` revision represent real design or testing evidence?
+- Does every conformance suite identify the exact capability revision and state
+  honest partial or full coverage?
 - Would an agent understand how to find contract history and record a local semantic mapping?
 - Does the package avoid claiming that a declaration proves the actual host has
   or lacks the capability?

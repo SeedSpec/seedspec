@@ -8,8 +8,10 @@ import {
 } from "./files.js";
 import { SeedSpecError } from "./errors.js";
 import { validateManifestSemantics } from "./capabilities.js";
+import { validateCapabilityConformanceDeclarations } from "./capability-conformance.js";
 import { computePackageDigest } from "./integrity.js";
 import { validateImplementationResourceDeclarations } from "./resources.js";
+import { validateTaskRunbook } from "./tasks.js";
 import {
   compileConfigurationSchema,
   compileProtocolSchema,
@@ -44,6 +46,9 @@ export async function validatePackage(inputPath, { configurationPath } = {}) {
 
   if (manifest.configuration.guide) {
     expectedFiles.push(["configuration.guide", manifest.configuration.guide, "file"]);
+  }
+  if (manifest.tasks) {
+    expectedFiles.push(["tasks", manifest.tasks, "file"]);
   }
   for (const profile of manifest.implementation_profiles ?? []) {
     if (profile.guidance) {
@@ -90,7 +95,11 @@ export async function validatePackage(inputPath, { configurationPath } = {}) {
     });
   }
 
+  await validateCapabilityConformanceDeclarations(root, manifest);
+
   await validateImplementationResourceDeclarations(root, manifest);
+
+  const taskRunbook = await validateTaskRunbook(root, manifest);
 
   const configurationSchemaPath = resolvePackagePath(root, manifest.configuration.schema);
   const configurationSchema = await readJsonFile(configurationSchemaPath, "Configuration schema");
@@ -137,6 +146,7 @@ export async function validatePackage(inputPath, { configurationPath } = {}) {
     definitionPath,
     definition,
     digest,
+    taskRunbook,
     configurationSchema,
     exampleConfiguration: configurationPath
       ? await readYamlFile(resolvePackagePath(root, manifest.configuration.example), "Example configuration")

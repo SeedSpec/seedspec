@@ -13,6 +13,7 @@ import {
   formatArtifactValidation,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatCapabilityConformance,
   formatConformanceResult,
   formatFeatureDiscovery,
   formatPackageAgentPrompt,
@@ -24,6 +25,7 @@ import {
   formatProjectCompletion,
   initPackage,
   inspectPackage,
+  inspectCapabilityConformance,
   lintPackage,
   inspectProjectCompletion,
   listArtifactAdapters,
@@ -67,6 +69,7 @@ Usage:
   seedspec conformance [cases.yaml]
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
   seedspec completion <project-path> [--json]
+  seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
   seedspec resolve <root-package-path> [options]
   seedspec init <solution|application|feature|workflow|automation|configuration|integration> [--output <path>]
 
@@ -76,6 +79,7 @@ Resolve options:
   -i, --implementation <profile>   Prefer an implementation profile; repeatable, package/profile for additions
   --output <path>                  Project directory; defaults to the current directory
   --configuration-selections <yaml>  Select example or complete custom configuration per package
+  --applied-intent <yaml>            Affirm package fit and record project-local intent
   --completion-scope <yaml>         Record the implementation completion scope
   --technical-preferences <yaml>   Record implementation preferences separately
   --artifact-selections <yaml>     Record selected, declined, or deferred artifacts
@@ -320,6 +324,7 @@ async function run() {
         "implementation",
         "output",
         "configuration-selections",
+        "applied-intent",
         "completion-scope",
         "technical-preferences",
         "artifact-selections",
@@ -332,6 +337,7 @@ async function run() {
         implementationProfiles: options.get("implementation") ?? [],
         outputDirectory: oneOption(options, "output"),
         configurationSelectionsPath: oneOption(options, "configuration-selections"),
+        appliedIntentPath: oneOption(options, "applied-intent"),
         completionScopePath: oneOption(options, "completion-scope"),
         technicalPreferencesPath: oneOption(options, "technical-preferences"),
         artifactSelectionsPath: oneOption(options, "artifact-selections"),
@@ -347,6 +353,20 @@ async function run() {
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(result, null, 2)}\n`
         : `${formatProjectCompletion(result)}\n`);
+      break;
+    }
+    case "capability-conformance": {
+      rejectUnknownOptions(options, ["result", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const capabilityId = requirePositional(positional, 1, "capability ID");
+      const result = await inspectCapabilityConformance(
+        packagePath,
+        capabilityId,
+        oneOption(options, "result")
+      );
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatCapabilityConformance(result)}\n`);
       break;
     }
     case "init": {

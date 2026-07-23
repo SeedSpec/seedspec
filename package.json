@@ -1,8 +1,8 @@
 {
   "name": "seedspec",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.7",
   "private": true,
-  "description": "Protocol, reference runtime, CLI, conformance suite, and authoring tools for SeedSpec",
+  "description": "Authoring tools, package protocol, runtime, and CLI for portable agent-ready seeds",
   "type": "module",
   "workspaces": [
     "packages/*"

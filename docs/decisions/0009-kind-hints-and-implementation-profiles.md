@@ -82,9 +82,11 @@ but it must not invisibly convert a ranking into a preferred profile.
 ## Language classification
 
 The manifest and structured package files form a small declarative domain-
-specific language. SeedSpec as a whole remains a protocol because it also
-defines identity, packaging, composition, integrity, trust, resolution,
-handoff, and verification behavior across independent tools and agents.
+specific language. The SeedSpec Protocol remains more than that package DSL: it
+also defines identity, packaging, composition, integrity, resolution, handoff,
+and verification behavior across independent tools and agents. The broader
+SeedSpec project additionally includes authoring, runtime, distribution, and
+implementation layers whose claims remain outside protocol conformance.
 
 “Agentically composable” is an appropriate design property: agents can compare,
 select, adapt, and compose packages, profiles, artifacts, capabilities, and
@@ -103,5 +105,10 @@ direction or that composition is deterministic.
   protocol validation, preserving intentional exceptions.
 - Implementation profiles remain subordinate to core intent and end-user
   direction.
+
+[ADR 0010](0010-primary-and-applied-intent-with-scoped-evidence.md) further
+requires end-user applied intent to be resolved before profile evaluation. A
+profile must therefore fit both the reusable package intent and the affirmed
+project-local application of that intent.
 - Registries may index kinds and profiles as discovery hints but must not imply
   compatibility, selection, or authorization.

@@ -16,7 +16,8 @@ A runtime must:
 - reject symbolic links, devices, sockets, and other non-regular package entries;
 - resolve every manifest reference within the package root;
 - apply resource limits for file count, file size, aggregate size, YAML depth, and JSON Schema complexity appropriate to its environment;
-- treat Markdown, artifacts, extension values, evals, scripts, reference code, and deployment material as untrusted content;
+- treat Markdown, task instructions and references, artifacts, extension values,
+  evals, scripts, reference code, and deployment material as untrusted content;
 - treat implementation-resource manifests, skill bodies, instructions, tools,
   verification material, target profiles, and catalogs as untrusted content;
 - require HTTPS for canonical resource manifests and files, apply strict file
@@ -74,6 +75,11 @@ Registries or publishers may attach signatures, transparency-log entries, or rev
 ## Generated specifications
 
 Resolved Markdown can contain instructions originating in third-party packages. An execution engine must treat that material as product input, not as authority to exfiltrate data, weaken policy, access unrelated files, or execute arbitrary commands.
+
+Package-authored tasks receive no additional authority from their ordered form.
+Following a task remains subject to end-user direction, execution-environment
+safety rules, and the actual project. Referencing a script or instruction file
+does not authorize executing or activating it.
 
 The same rule applies to artifact-native agent instructions. Adapter recognition and successful artifact validation establish format compatibility only. Before adopting an artifact-specific maintenance, drift, regeneration, or execution workflow, the agent should explain the choice and obtain direction from its end user.
 

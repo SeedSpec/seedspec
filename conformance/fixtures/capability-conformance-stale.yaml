@@ -1,0 +1,24 @@
+protocol_version: "0.1"
+capability:
+  id: org.seedspec.core.chores
+  version: "1.1.0"
+contract_digest: sha256:860900621d4a0f2073527f450e84336d0d12c5dfbb4b68e7726279c70b796d7b
+suite_digest: sha256:2222222222222222222222222222222222222222222222222222222222222222
+realization:
+  reference: conformance-fixture://chores-provider
+evaluator:
+  id: org.seedspec.runner.fixture
+  version: "1.0.0"
+evaluated_at: "2026-07-22T15:00:00Z"
+status: passed
+checks:
+  - id: chore-shape
+    result: pass
+    evidence:
+      - source: tool
+        reference: fixture-results/chore-shape.json
+  - id: archive-behavior
+    result: pass
+    evidence:
+      - source: tool
+        reference: fixture-results/archive-behavior.json

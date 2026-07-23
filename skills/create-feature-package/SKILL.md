@@ -14,6 +14,7 @@ Accept starting material ranging from a one-sentence feature idea to an existing
 For an existing project, read these files when present:
 
 - `.seedspec/project.yaml`;
+- `.seedspec/resolved-intent.yaml`;
 - `.seedspec/resolved-spec.md`;
 - `.seedspec/resolved-config.yaml`;
 - `.seedspec/dependencies.lock.yaml`;
@@ -35,7 +36,10 @@ Define:
 - configurable variations;
 - integration points and atomicity expectations;
 - failure, retry, concurrency, deletion, and historical behavior;
-- observable acceptance criteria.
+- observable acceptance criteria and credible verification plans;
+- non-goals, forbidden states, and genuine constraints; and
+- choices fixed by the author, reserved for the end user, or delegated to the
+  implementing agent.
 
 Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as an end-user-selected default.
 
@@ -54,7 +58,7 @@ does not prove compatibility or incompatibility with a realization.
 
 ## 4. Declare capabilities and configuration
 
-Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one contract file per provided capability. Missing, multiple, cyclic, self-provided, or revision-different declarations are integration-review signals, not installation gates or observations of the actual host.
+Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one Markdown contract per provided capability. When revising a provided capability, add a contiguous structured change-history transition whose breaking, additive, or clarifying entries agree with the version bump. When behavior has a stable checkable surface, optionally ship a version-bound conformance suite with honest partial or full coverage; keep schemas, scenarios, and eval bundles subordinate to the expressive contract. Missing, multiple, cyclic, self-provided, or revision-different declarations are severity-ranked integration-review signals, not installation gates or observations of the actual host.
 
 Turn variable product behavior into JSON Schema-backed configuration. Keep implementation preferences outside feature configuration. When a configured behavior needs a host operation not guaranteed by declared capabilities, document it as an explicit integration requirement or unresolved decision; never silently approximate it.
 
@@ -64,12 +68,31 @@ Run `seedspec init feature --output <package-path>` when available, then write:
 
 - `seedspec.yaml` with feature kind, tested-against requirements, versioned provisions, compatibility, known conflicts, durable decisions, and components;
 - a capability contract for every provided capability;
-- `definition/feature.md` with portable product behavior;
+- structured change history for revised capabilities and optional checkable
+  conformance material where it detects meaningful defects;
+- one primary intent source with clear **Purpose**, **Obligations and
+  boundaries**, **Success and evidence**, and **Decision latitude** semantics;
 - configuration schema and example;
 - `integration/requirements.md` with host mappings, authorization, atomicity, and unresolved-decision rules;
 - `acceptance/criteria.md` with observable host-independent behavior.
 
-Preserve useful source specifications, designs, execution plans, infrastructure descriptions, and evidence as separately declared artifacts. Label their concerns and relationships without claiming they govern the implementing agent. Do not require ProductSpec or any other native format simply to make a SeedSpec feature package appear rigorous.
+If the author knows a useful realization sequence, optionally add a `tasks`
+runbook containing ordered agent reminders. Each task has only a stable `id`,
+an `instruction`, and optional package-file `references`. Do not turn feature
+requirements into a backlog or add task dependencies, checkpoints, progress,
+or completion claims; array order is sufficient.
+
+Use native SeedSpec Markdown for the primary intent unless the author already
+uses a recognized external intent format. To make an external document such as
+ProductSpec the primary source, declare it as an intent artifact and reference
+its ID from `definition.artifact`; its path must equal `definition.entrypoint`.
+This does not activate the format's workflow.
+
+Preserve other useful specifications, designs, execution plans, infrastructure
+descriptions, and package evidence as supporting artifacts. Label their
+concerns and relationships without claiming they govern the implementing agent.
+Use `evidence_for` only for package claims, never as proof of the future host
+realization.
 
 At packaging time, optionally select independently versioned skills,
 instructions, verification material, tools, or target profiles that materially
@@ -110,7 +133,9 @@ When asked to generalize an existing feature:
 4. Minimize and document required capabilities.
 5. Replace host screen and storage assumptions with integration outcomes.
 6. Add acceptance criteria that can run against a clean host context.
-7. Reassess compatibility scope honestly.
-8. Validate and resolve again without relying on undocumented origin context.
+7. Separate non-goals from forbidden states and name the agent's decision
+   latitude.
+8. Reassess compatibility scope honestly.
+9. Validate and resolve again without relying on undocumented origin context.
 
 Finish only when the package validates, its requirements are sufficient but minimal, and an independent integrator can identify every host-specific decision that remains.
