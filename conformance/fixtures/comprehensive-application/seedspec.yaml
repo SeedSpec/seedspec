@@ -28,6 +28,18 @@ provides:
     - id: org.seedspec.core.chores
       version: "1.1.0"
       contract: capabilities/chores.md
+      change_history:
+        - from: "1.0.0"
+          to: "1.1.0"
+          changes:
+            - id: local-terminology
+              type: additive
+              summary: Consumers may map the lineage term chore to equivalent local product language.
+            - id: suggested-reward
+              type: additive
+              summary: Work descriptions may expose an optional non-negative suggested reward.
+      conformance:
+        suite: capabilities/conformance/chores.suite.yaml
     - id: org.seedspec.core.assignments
       version: "1.0.0"
       contract: capabilities/assignments.md
@@ -44,6 +56,8 @@ provides:
 components:
   acceptance: acceptance/
   reference: reference/
+
+tasks: tasks.yaml
 
 artifacts:
   - id: product-spec

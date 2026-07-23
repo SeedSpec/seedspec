@@ -7,6 +7,7 @@ import { readYamlFile } from "./files.js";
 import { resolveProject } from "./resolve.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { validatePackage } from "./validate.js";
+import { inspectCapabilityConformance } from "./capability-conformance.js";
 
 function resolveFixture(indexDirectory, relativePath) {
   const resolved = path.resolve(indexDirectory, relativePath);
@@ -26,6 +27,7 @@ function validateFixturePaths(suite, indexDirectory) {
       testCase.root,
       testCase.decisions,
       testCase.applied_intent,
+      testCase.result_file,
       ...(testCase.additions ?? [])
     ].filter(Boolean);
     for (const fixturePath of paths) resolveFixture(indexDirectory, fixturePath);
@@ -48,6 +50,14 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         });
       }
       return { digest: first.digest };
+    }
+    case "capability-conformance": {
+      const result = await inspectCapabilityConformance(
+        resolveFixture(indexDirectory, testCase.package),
+        testCase.capability,
+        resolveFixture(indexDirectory, testCase.result_file)
+      );
+      return { capabilityStatus: result.status };
     }
     case "resolve": {
       const rootPath = resolveFixture(indexDirectory, testCase.root);
@@ -208,6 +218,13 @@ function assertExpectedOutput(testCase, output) {
   if (testCase.expect.digest && output.digest !== testCase.expect.digest) {
     throw new SeedSpecError(
       `Package digest mismatch; expected ${testCase.expect.digest}, received ${output.digest}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (testCase.expect.capability_status
+    && output.capabilityStatus !== testCase.expect.capability_status) {
+    throw new SeedSpecError(
+      `Capability conformance status mismatch; expected ${testCase.expect.capability_status}, received ${output.capabilityStatus}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }

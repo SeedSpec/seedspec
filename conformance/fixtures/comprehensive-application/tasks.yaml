@@ -1,0 +1,23 @@
+protocol_version: "0.1"
+
+tasks:
+  - id: inspect-current-state
+    instruction: Inspect the existing solution and identify the local concepts, behavior, and constraints that overlap this package before making changes.
+    references:
+      - intent/allowance-tracker.product-spec.md
+
+  - id: review-author-context
+    instruction: Review the supplied reference context and note where the existing solution requires an adaptation rather than a direct translation.
+    references:
+      - reference/capabilities/chores-1.0.0.md
+
+  - id: realize-package
+    instruction: Realize the affirmed package intent using the existing architecture and record material deviations or terminology mappings.
+
+  - id: verify-realization
+    instruction: Run the applicable package verification and investigate every failure before claiming completion.
+    references:
+      - acceptance/criteria.md
+      - capabilities/conformance/chores.suite.yaml
+      - capabilities/conformance/chores.schema.json
+      - capabilities/conformance/chores.scenarios.yaml

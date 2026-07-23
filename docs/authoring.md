@@ -3,10 +3,23 @@
 > **Informative guidance.** This document describes authoring practices and
 > reference tooling; it does not define package conformance.
 
-Authoring is a guided intent-discovery and refinement workflow, not a
-requirement to hand-edit manifests. The reference interfaces below all produce
-the same portable protocol package and leave room for additional authoring
-experiences.
+Authoring is a first-class part of SeedSpec: a guided intent-discovery and
+refinement workflow, not a requirement to hand-edit manifests. The reference
+interfaces below help authors find material gaps, assign stable semantic roles,
+and review the handoff another agent will receive. They all produce the same
+portable protocol package and leave room for additional authoring experiences.
+
+Protocol validation and authoring quality are different results. Validation
+establishes that a package can be interpreted. It cannot establish that the
+author supplied the important product rules, resolved the right decisions, or
+provided enough context for a strong realization.
+
+One clear Markdown specification may already contain excellent intent. SeedSpec
+authoring adds value by making product intent, adopter configuration, decision
+provenance, acceptance, implementation guidance, and evidence separately
+inspectable and reusable without requiring the author to fragment prose for its
+own sake. See [why semantic structure matters](semantic-structure.md) and the
+[current evaluation findings](evaluations.md).
 
 ## Authoring interfaces and frontends
 
@@ -38,6 +51,10 @@ source may travel as an optional artifact, but validation or implementation
 must not execute it implicitly. Reproducible authoring tools should produce the
 same package bytes from the same source and inputs and should surface generated
 changes for author review.
+
+An authoring frontend may provide stronger review, collaboration, and
+organization-specific policy than the neutral protocol. It should report those
+claims in its own terms rather than presenting them as package conformance.
 
 ## Agent-guided audit lifecycle
 
@@ -200,6 +217,47 @@ the same package-local file as an artifact with the intent concern and reference
 its artifact ID from `definition.artifact`. The file is then core intent in its
 native format. Adapter validation remains separate from SeedSpec package
 validation, and the format's own workflow is not activated automatically.
+
+## Author an ordered task runbook only when sequence adds value
+
+Packages may declare a `tasks` file when the author has useful reminders about
+the order in which an implementing agent should inspect, adapt, realize, and
+verify the package. The tasks should not restate features or divide product
+intent into a backlog. Keep each item focused on what the agent should attend
+to at that point in the realization.
+
+Declare the runbook from `seedspec.yaml`:
+
+```yaml
+tasks: tasks.yaml
+```
+
+Then author the referenced file:
+
+```yaml
+protocol_version: "0.1"
+tasks:
+  - id: inspect-current-state
+    instruction: Inspect the existing solution before making changes.
+
+  - id: adapt-reference-design
+    instruction: Adapt the reference design to the existing architecture.
+    references:
+      - reference/integration-notes.md
+
+  - id: verify-realization
+    instruction: Run the supplied verification and investigate failures.
+    references:
+      - acceptance/criteria.md
+```
+
+Array order is the task order. Do not encode dependencies, jumps, conditions,
+or checkpoints; put essential nuance in the instruction. References should be
+package-local files that give the agent useful context without duplicating
+their contents in the task. IDs exist for stable reporting and resumption, not
+sequencing. Progress and evidence belong to the particular project or agent
+run, never the published task file. Completing every task does not establish
+acceptance or conformance.
 
 ## Author intent and end-user applied intent
 
@@ -405,7 +463,7 @@ Start at the level of detail the user supplies. For shaping or hardening, identi
 
 For capture-only work, preserve the original idea, use an empty configuration object when no behavioral choices are known, allow an empty capability list, and record important unknowns without forcing the user through full product discovery.
 
-Give each provided capability a namespaced ID, exact revision, and product-behavior contract. For each required capability, record the exact revision the consumer was designed or tested against. Create the package, then run:
+Give each provided capability a namespaced ID, exact revision, and Markdown product-behavior contract. For each required capability, record the exact revision the consumer was designed or tested against. When a provision revises an older contract, add contiguous structured change history tagged `breaking`, `additive`, or `clarifying` consistently with the version bump. Add an optional version-bound conformance suite when schemas, structured scenarios, or eval bundles detect meaningful defects; state `partial` coverage unless the suite credibly exercises the full contract. Create the package, then run:
 
 ```bash
 seedspec validate <package-path>

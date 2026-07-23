@@ -1,0 +1,32 @@
+protocol_version: "0.1"
+capability:
+  id: org.seedspec.core.chores
+  version: "1.1.0"
+scenarios:
+  - id: archived-not-assignable
+    description: An archived work description cannot be selected for a new assignment.
+    operation: create-assignment
+    given:
+      work_description:
+        id: work-123
+        state: archived
+    input:
+      work_description_id: work-123
+    expect:
+      accepted: false
+      error: archived-work-description
+  - id: archival-preserves-history
+    description: Archiving a work description does not erase its historical assignment references.
+    operation: archive-work-description
+    given:
+      work_description:
+        id: work-123
+        state: active
+      historical_assignment_ids:
+        - assignment-456
+    input:
+      work_description_id: work-123
+    expect:
+      state: archived
+      historical_assignment_ids:
+        - assignment-456

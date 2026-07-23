@@ -5,8 +5,8 @@
 | Release identifier | Value |
 | --- | --- |
 | Protocol family | `0.1` |
-| Schema package | `@seedspec/protocol@0.1.0-alpha.4` |
-| Conformance suite | `2.0.0` |
+| Schema package | `@seedspec/protocol@0.1.0-alpha.5` |
+| Conformance suite | `2.1.0` |
 
 This document defines the normative SeedSpec package and handoff format for
 Protocol 0.1. The normative release bundle consists of this specification, the
@@ -20,6 +20,12 @@ examples. Architecture decision records preserve non-normative rationale. The
 informative `docs/glossary.md` defines the terminology used across those public
 surfaces.
 
+SeedSpec also includes guided authoring, reference runtime and CLI tooling, and
+independent distribution systems. Those layers can help improve or curate a
+package, but this document governs only interoperable package and handoff
+behavior. Informative explanations of the distinction are available in
+`ARCHITECTURE.md`, `docs/semantic-structure.md`, and `docs/evaluations.md`.
+
 Informative release guidance for the independent version domains is available
 in `docs/versioning.md`.
 
@@ -30,9 +36,9 @@ version; tooling and integrations that require reproducibility SHOULD pin those
 revisions explicitly.
 
 Format validation constrains SeedSpec artifacts and deterministic runtime
-output. It does not make agent execution deterministic or constrain the
-architecture, vocabulary, tools, or implementation decisions used to realize
-the packaged intent.
+output. It does not establish semantic completeness or authoring quality, make
+agent execution deterministic, or constrain the architecture, vocabulary,
+tools, or implementation decisions used to realize the packaged intent.
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**, and **MAY** describe interoperability requirements as defined by BCP 14 when shown in uppercase.
 
@@ -46,14 +52,20 @@ The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**, 
 
 ## 1. Scope
 
-The SeedSpec Protocol defines portable, agent-ready packages containing intent,
-configuration, context, resources, success criteria, and related artifacts. A
-package can help an agent produce software, adapt a feature, configure an
-external system, establish an automation, generate an operational artifact, or
-realize a composite solution. The protocol standardizes package identity,
+The SeedSpec Protocol defines portable, agent-ready packages containing
+semantically distinct intent, configuration, decisions, context, resources,
+success criteria, and related artifacts. A package can help an agent produce
+software, adapt a feature, configure an external system, establish an
+automation, generate an operational artifact, or realize a composite solution.
+The protocol standardizes package identity,
 discovery, configuration, capabilities, artifact relationships, composition,
 decisions, applied intent, evidence subjects, integrity, and resolved project
 state.
+
+The protocol standardizes how those concerns are identified, related,
+preserved, and handed off. It does not assess whether an author supplied enough
+substantive content for a strong seed. Authoring tools and publishers may make
+separate, evidence-scoped quality claims without changing package conformance.
 
 It does not standardize programming languages, frameworks, data stores, clouds,
 repository layouts, user interfaces, deployment, external-service operation,
@@ -147,8 +159,8 @@ Each segment begins with an alphanumeric character and may then contain lowercas
 
 Publishers SHOULD use a DNS namespace they control. Namespace syntax prevents accidental global collisions; it does not prove ownership or trust.
 
-Local decision, artifact, implementation-profile, and profile-condition IDs use
-lowercase hyphenated form within one package.
+Local decision, artifact, task, implementation-profile, and profile-condition
+IDs use lowercase hyphenated form within one package.
 
 ## 5. Versions
 
@@ -273,7 +285,38 @@ Root and addition configurations remain namespaced by package ID. A runtime MUST
 
 Presence makes a component discoverable but does not imply a standardized execution contract unless another protocol document defines one.
 
-### 6.4 Related artifacts
+### 6.4 Ordered implementation tasks
+
+`tasks`, when present, references one package-relative regular YAML file
+conforming to `task-runbook.schema.json`. The runbook contains a non-empty
+`tasks` array. Every task has a unique package-local `id`, a non-empty
+`instruction`, and MAY have a non-empty, duplicate-free `references` array.
+Each reference is a package-relative path to an existing regular file. Remote
+URLs, directories, and paths outside the package are forbidden.
+
+Tasks are package-author implementation reminders. Within one runbook, a
+consumer MUST preserve and present array order. The list order is the only core
+sequencing mechanism: protocol 0.1 defines no dependencies, branches,
+conditions, checkpoints, jumps, or parallel-execution semantics. A selected
+project containing multiple runbooks preserves each package's authored order
+but derives no cross-package task order.
+
+A task instruction and its references are implementation context, not product
+intent, an additional acceptance requirement, executable content, authority to
+change an external system, or evidence that a realization conforms. Finishing
+the list MUST NOT be represented as proof of package or capability completion.
+Merely referencing a script, prompt, tool, or instruction file MUST NOT execute
+or activate it.
+Mutable progress, skip reasons, blocking conditions, decisions, and evidence
+belong to project or agent-run state outside the published package.
+
+Resolution MUST preserve each selected package's runbook in `tasks.yaml`, copy
+referenced files into the resolved workspace, and record source and resolved
+paths. An implementing agent SHOULD address tasks in authored order, consult
+their references as relevant context, and record rather than silently conceal
+an inapplicable or blocked reminder.
+
+### 6.5 Related artifacts
 
 `artifacts` declares material preserved in its native format. Supporting
 artifacts are optional; an artifact referenced by `definition.artifact` is the
@@ -315,11 +358,11 @@ MUST preserve it with `intent_role: primary` and `disposition: selected`. An
 artifact-selection input MUST NOT decline or defer it. These rules select the
 content's intent role, not its native tooling or lifecycle.
 
-### 6.5 Metadata
+### 6.6 Metadata
 
 `metadata` MAY declare license and URI links. These values are self-asserted. They do not establish package authenticity or publisher authority.
 
-### 6.6 Extensions
+### 6.7 Extensions
 
 `extensions` is a mapping keyed by reverse-DNS identifiers. Values may contain any YAML/JSON-compatible data.
 
@@ -332,7 +375,7 @@ Core runtimes:
 
 An extension cannot relax core validation or override a core field.
 
-### 6.7 Implementation resources
+### 6.8 Implementation resources
 
 `implementation_resources` is an optional author declaration. When omitted,
 the author's position on additional SeedSpec guidance is `unspecified`; a
@@ -397,7 +440,7 @@ not imply that the guidance was followed, that a tool was executed, or that the
 resulting solution satisfies the SeedSpec. Resource-use state records
 `consulted` or `skipped`, not native skill activation.
 
-### 6.8 Implementation profiles
+### 6.9 Implementation profiles
 
 The definition, configuration, capabilities, and acceptance material express
 the package's **core intent**. An optional `implementation_profiles` array may
@@ -478,6 +521,62 @@ revision. It records what the package author designed or tested against. The
 implementing agent maps that behavioral lineage to the actual realization's
 code, configuration, external state, and concepts; absence of a provider
 declaration is not proof that the behavior is absent.
+
+A provision MAY declare `change_history`. Each entry names an older `from`
+revision, a newer `to` revision, and one or more changes with a stable local ID,
+`breaking`, `additive`, or `clarifying` type, summary, and optional contract
+references. Declared history MUST be a contiguous ascending chain ending at the
+provided revision. A major transition MUST contain a breaking change; a minor
+transition MUST contain no breaking change and at least one additive change; a
+patch transition MUST contain only clarifying changes. When a capability
+steward publishes a revision that replaces a prior revision, it MUST include
+the applicable structured history. A publisher or registry with access to the
+prior revision MUST reject a replacement that omits it; standalone package
+validation cannot infer whether an earlier revision exists. History is an author declaration, not a
+machine-derived semantic diff.
+
+A provision MAY declare a `conformance.suite` path. The file MUST conform to
+`capability-conformance-suite.schema.json`, identify the same capability ID and
+revision, declare `partial` or `full` coverage, and contain unique checks. Core
+check kinds are:
+
+- `json-schema`, referencing a compilable JSON Schema file;
+- `acceptance-scenarios`, referencing a document conforming to
+  `capability-scenarios.schema.json` and naming a runner; and
+- `eval-suite`, referencing a file or directory and naming a runner.
+
+Check subjects are `data-shape`, `behavior`, `interaction`, or `outcome`.
+Referenced paths MUST remain within the package and MUST exist. JSON Schema and
+acceptance-scenario checks MUST reference files. Acceptance-scenario documents
+MUST identify the same capability revision and contain unique scenario IDs.
+Runners are namespaced identifiers. Declaring a runner does not install or
+authorize it, and package validation MUST NOT execute conformance material.
+
+`capability-conformance-result.schema.json` records the evaluation of one
+realization against one exact suite. It binds the capability ID and revision,
+contract digest, suite digest, realization reference and optional digest,
+evaluator identity, evaluation time, derived status, per-check results, and
+evidence. Result check IDs MUST exactly cover the suite without duplicates.
+`pass` and `fail` checks require evidence; `not-run` checks forbid it. Status is
+`not-run` when no check ran, `failed` when any check failed, `incomplete` when
+some but not all checks ran, and `passed` only when every check passed.
+
+The contract digest is SHA-256 over the exact Markdown contract bytes. The suite
+digest is SHA-256 over the UTF-8 JSON encoding of an object whose ordered keys
+are `suite` then `checks`. `suite` has ordered keys `path` then `digest` and
+contains the declared suite path and its content digest. `checks` contains one
+object per check, sorted by check ID in ascending UTF-8 byte order, with ordered keys `id`, `path`, then
+`digest`. A file content digest is SHA-256 over exact bytes. A directory content
+digest uses the canonical directory-digest algorithm in section 11. Digest
+strings include the `sha256:` prefix inside the encoded object. Any changed
+contract, suite, or check bytes make a preserved result stale.
+
+A passed partial suite establishes only that declared subset. `full` is the
+capability steward's coverage claim; it does not convert finite tests into a
+proof that prose has no unexercised meaning. Capability conformance state is
+separate from project completion state. A project MAY cite a capability result
+as realization evidence, but neither evidence subject substitutes for the
+other.
 
 Within one package, required capability IDs, provided capability IDs, decision IDs, and artifact IDs MUST be unique.
 
@@ -684,7 +783,9 @@ these steps in order:
 4. Record every provided capability declaration with its declaring package.
    Multiple declarations for one ID remain visible.
 5. For every root or addition requirement, record zero or more declared
-   provider candidates and compare each exact revision with `tested_against`.
+   provider candidates and compare each exact revision with `tested_against`,
+   retaining revision direction, semver difference, review severity, and any
+   relevant structured provider change history.
 6. Record `no-declared-provider`, `multiple-declared-providers`,
    `self-declared-provider`, and `revision-difference` issues as applicable.
 7. Record matched package conflicts, capability conflicts, and deterministic
@@ -703,6 +804,16 @@ content and duplicate package selection remain errors.
 Capability, compatibility, conflict, and cycle declarations are author-supplied
 evidence. SeedSpec does not inspect the implementation and therefore cannot use
 them to prove that a feature is compatible, incompatible, present, or absent.
+
+Revision comparison uses `exact`, `provider-newer`, or `provider-older`
+direction and `none`, `patch`, `minor`, or `major` difference. Exact matches
+have no review severity. A newer patch provider is low, a newer minor provider
+is medium, and a newer major provider is high. An older patch provider is
+medium; an older minor or major provider is high. Other composition review
+severities are high for no declared provider and declared package or capability
+conflicts, and medium for multiple providers, self-provision, and declared
+requirement cycles. Severity prioritizes
+investigation and MUST NOT by itself permit or reject composition.
 
 ## 11. Package integrity
 
@@ -735,6 +846,8 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 ├── project.yaml
 ├── agent-guide.md
 ├── resolved-intent.yaml
+├── tasks.yaml
+├── task-references/
 ├── components.yaml
 ├── components/
 ├── artifacts.yaml
@@ -772,6 +885,12 @@ contributions and unconfirmed agent proposals. It is the first provenance index
 an implementing agent reads; the full content remains in `resolved-spec.md` and
 preserved artifact paths.
 
+`tasks.yaml` conforms to `task-index.schema.json`. It groups task sequences by
+selected package, preserves every package's authored array order, and maps each
+package-relative reference to its copied path beneath
+`.seedspec/task-references/<package-id>/`. It contains no progress state and
+defines no task ordering between packages.
+
 `components.yaml` conforms to `packages/protocol/schemas/v0.1/component-index.schema.json`. It records every protocol-recognized optional component and its source and resolved paths. Resolution copies component files beneath `.seedspec/components/<package-id>/<component-name>/` and assigns deterministic review timing such as `before-planning` or `before-completion-claim`. Preservation and review timing do not activate component content or make author guidance authoritative.
 
 `artifacts.yaml` conforms to
@@ -808,6 +927,15 @@ copied profile guidance so the handoff remains durable without the source
 package.
 
 `dependencies.lock.yaml` conforms to `packages/protocol/schemas/v0.1/lock.schema.json`. It records exact package digests, deterministic addition order, every capability declaration, every requirement's declared provider candidates and revision comparisons, and all composition review records. It does not claim a provider is installed or that a capability exists in the actual realization.
+
+Capability records in the lock preserve declared structured history and the
+conformance-suite path when supplied. Provider candidates preserve revision
+direction, semver difference, review severity, available change evidence, and
+whether that evidence is complete, partial, unavailable, or unnecessary.
+Revision-difference review records repeat the exact compared versions,
+direction, semver difference, change-evidence status, and relevant declared
+changes so a review queue need not reconstruct severity from prose or join an
+opaque flag before prioritizing it.
 
 `resolved-config.yaml` conforms to `packages/protocol/schemas/v0.1/resolved-config.schema.json`. It preserves root configuration, addition configurations keyed by package ID, and each configuration's `example-unreviewed`, `example`, or `custom` selection provenance. Answered decisions and technical preferences remain separate namespaces. Technical preferences remain extensible while the optional `implementation_targets` envelope receives core structural and reference validation.
 

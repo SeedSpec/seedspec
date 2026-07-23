@@ -1,13 +1,15 @@
 # SeedSpec use cases
 
-> **Informative examples.** These scenarios illustrate the protocol's intended
-> range without requiring a particular realization or market.
+> **Informative examples.** These scenarios illustrate how the SeedSpec system
+> may be authored, distributed, adopted, and realized without requiring a
+> particular implementation or market.
 
-SeedSpec is a protocol for packaging intent into portable, agent-ready
-specifications. Each package describes what should be accomplished, provides
-relevant context and resources, and defines the criteria for success while
-leaving execution and implementation to the agent under the end user's
-direction.
+SeedSpec helps people turn reusable product and domain expertise into portable,
+agent-ready starting points. Guided authoring helps make important intent,
+choices, unknowns, and success criteria explicit. The protocol then gives that
+material identity and stable semantic roles so it can be distributed,
+configured, and handed to different agents without requiring one implementation
+stack.
 
 The package kind hints in the 0.1 alpha help tools recognize applications,
 features, workflows, automations, configurations, integrations, and compound
@@ -15,12 +17,19 @@ solutions without defining separate protocols. A SeedSpec realization may create
 source code, change an authenticated external system, establish an automation,
 produce an operational artifact, or combine several of those results.
 
+Use cases have two independent dimensions:
+
+- **Realization:** what an implementing agent produces or configures.
+- **Distribution:** who authors the reusable seed, how an adopter obtains it,
+  and which separate authority recommends or approves an exact version.
+
 ## Realization use cases
 
 ### New application
 
 An author packages the behavior, actors, configuration, supporting artifacts,
-optional implementation resources, and acceptance criteria for an application.
+an optional ordered implementation task runbook, optional implementation
+resources, and acceptance criteria for an application.
 The user chooses technical preferences and an agent selects an architecture,
 creates the implementation, and records verification evidence.
 
@@ -86,17 +95,37 @@ Example: generate a temporary operations dashboard for an incident, campaign,
 or executive review using existing dashboard, ingestion, and notification
 realizations.
 
-## Author and distribution use cases
+## Authoring and distribution patterns
 
-### Internal solution libraries
+The neutral protocol makes a package identifiable and portable. It does not
+decide which package is authoritative for an organization, certify publisher
+expertise, set commercial terms, or guarantee fit for a particular adopter.
+Libraries, vendors, consultancies, and marketplaces add those policies and
+claims around ordinary SeedSpec packages.
 
-An organization maintains packages for recurring solution shapes without
-forcing every team onto one framework or deployment environment. Internal
-authors accumulate company terminology, integration knowledge, security rules,
-skills, examples, and verification practices. Teams retain control over the
-actual implementation.
+### Internal enterprise seed library
 
-### Consultancies and agencies
+An organization packages recurring solution knowledge that would otherwise
+live in shared documents, tickets, example repositories, and a few employees'
+memories. Internal authors can preserve company terminology, security and data
+rules, approved integration patterns, configuration choices, domain skills,
+examples, and verification practices without forcing every team onto one
+framework.
+
+For example, an enterprise may maintain one approved customer-support widget
+seed. Product intent defines the widget behavior and boundaries; configuration
+captures brand, region, and deployment choices; implementation resources carry
+platform guidance; and acceptance material defines the release checks. An
+internal catalog or governance system designates the approved package ID,
+version, and digest.
+
+The catalog creates organizational authority. The SeedSpec Protocol supplies
+the exact, inspectable object about which that authority can be expressed. A
+team can therefore say “use this widget seed at this version” instead of relying
+on whichever Google Doc, copied prompt, or starter repository a person happens
+to find.
+
+### Consultancy- and agency-authored seeds
 
 A consultancy captures repeated horizontal solution expertise while adapting
 each realization to the customer's stack, systems, compliance obligations, and
@@ -104,7 +133,12 @@ operating model. One package might produce a Vercel-hosted Next.js application
 for one customer and a Rails application on Azure for another while preserving
 the same intended outcome.
 
-### Software vendors
+The package separates the consultancy's reusable product and domain knowledge
+from one engagement's applied intent and technical preferences. A consultancy
+may attach its own support, review, and evidence claims; those claims do not
+become protocol conformance.
+
+### Vendor-produced seeds
 
 A platform vendor publishes high-quality solution examples that use its own
 data model, APIs, extension points, and operational guidance. The package may be
@@ -117,7 +151,12 @@ mappings, API guidance, UI-extension options, examples, and verification. The
 package can describe a solution larger than HubSpot's native interface without
 requiring HubSpot to ship every possible customer application.
 
-### Software and component ecosystems
+Vendor authorship gives the package a valuable source of domain knowledge. It
+does not give discovered content automatic execution authority, and adaptation
+to another provider must remain explicit rather than being represented as the
+vendor-authored package unchanged.
+
+### Software and component ecosystem seeds
 
 A library or framework distributes more than snippets. Its package can preserve
 use cases, composition patterns, constraints, examples, skills, and acceptance
@@ -127,12 +166,31 @@ Example: a UI component ecosystem publishes complete dashboard realizations
 that demonstrate accessibility, data loading, responsive behavior, and
 customization rather than only distributing one component invocation.
 
+An ecosystem can publish small feature seeds, complete solution seeds, or
+implementation resources. Capability declarations and evidence help an agent
+prioritize review, but actual compatibility still depends on the target
+project.
+
 ### Independent authors and marketplaces
 
 Authors may distribute or sell packages representing valuable solution
 knowledge. Commercial terms, payments, publisher reputation, and licensing
 enforcement stay outside the neutral protocol. Buyers receive ordinary
 SeedSpec packages that remain inspectable and independently validatable.
+
+A marketplace can add discovery, curation, reviews, update policy, provenance,
+support, and evidence requirements. It may label a package recommended or
+approved under its own stated criteria. Marketplace selection is not a new
+package kind and does not change what protocol validity establishes.
+
+### Public and open-source libraries
+
+Communities may maintain free collections of reusable applications, features,
+workflows, or configuration seeds. Versioned packages let maintainers improve
+shared intent without requiring every adopter to copy a document and lose its
+lineage. Community review and maintainership remain social or registry claims;
+the protocol preserves their artifacts and exact identities but does not infer
+their trustworthiness.
 
 ## Related realizations and registries
 
@@ -171,3 +229,8 @@ security consequences, or represents expertise worth reusing.
 SeedSpec is not a substitute for agent intelligence. It gives an intelligent
 agent a better starting state: authored intent, accumulated context, explored
 approaches, relevant resources, and explicit evidence of success.
+
+See [why semantic structure matters](semantic-structure.md) for the handoff and
+distribution rationale and [evaluation findings](evaluations.md) for the
+current evidence about guided authoring, standalone Markdown, and specialized
+package guidance.

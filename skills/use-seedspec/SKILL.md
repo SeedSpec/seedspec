@@ -73,6 +73,7 @@ Summarize in plain language:
 - candidate implementation profiles, their conditions and tradeoffs;
 - capabilities available to features;
 - optional artifacts and the concerns they address.
+- any package-authored task sequence and its referenced context;
 - author-selected implementation resources, usage levels, bundled fallbacks,
   and whether additional guidance discovery is delegated.
 
@@ -184,7 +185,9 @@ honest completion claim; record scope before concluding the work. If
 explicitly deferred ones and surface only those that become consequential. If
 `declaration_status` is `review`, inspect the real code for equivalent concepts
 and resolve the recorded capability, conflict, or cycle concerns in the
-integration plan. They are not automatic rejection gates.
+integration plan. Prioritize revision differences by provider direction,
+major/minor/patch distance, severity, and attached structured change history.
+They are not automatic rejection gates.
 
 ### 8. Prepare the implementing agent
 
@@ -210,12 +213,20 @@ Have the implementing agent read, in order:
 4. `.seedspec/resolved-config.yaml`
 5. `.seedspec/implementation-profile-state.yaml`
 6. relevant preserved `.seedspec/implementation-profiles/*` guidance
-7. `.seedspec/implementation-resources.yaml`
-8. `.seedspec/implementation-resource-state.yaml`
-9. `.seedspec/components.yaml`
-10. `.seedspec/artifacts.yaml`
-11. relevant `.seedspec/additions/*/integration-decisions.md`
-12. the existing solution's code, configuration, external state, tests, and `.seedspec/implementation-notes.md`
+7. `.seedspec/tasks.yaml`
+8. referenced `.seedspec/task-references/*` files as each task is reached
+9. `.seedspec/implementation-resources.yaml`
+10. `.seedspec/implementation-resource-state.yaml`
+11. `.seedspec/components.yaml`
+12. `.seedspec/artifacts.yaml`
+13. relevant `.seedspec/additions/*/integration-decisions.md`
+14. the existing solution's code, configuration, external state, tests, and `.seedspec/implementation-notes.md`
+
+Within each package, address tasks in listed order. Do not infer dependencies,
+branches, parallel execution, or a cross-package sequence. If a reminder is
+inapplicable or blocked in the actual environment, record the reason instead of
+silently rewriting it. Task completion is progress, not acceptance or
+conformance evidence.
 
 Explain any artifact-specific choice the user made. A selected execution artifact is still not activated. If no choice was made, tell the agent to surface the format when consequential and ask the end user rather than activating it.
 
@@ -224,6 +235,14 @@ Ask the user about their implementation ecosystem only when it becomes relevant:
 ### 9. Close the loop
 
 During implementation, preserve established behavior and terminology unless the user requests a migration. Record material mappings and deviations in `.seedspec/implementation-notes.md`, detailed realization and outcome evidence in `.seedspec/verification-report.md`, and concise per-scope results in `.seedspec/verification-state.yaml`. Keep each evidence reference attached to the subject named by its verification plan. Package evidence, baseline evidence, realization evidence, and outcome evidence never substitute for one another.
+
+When a selected provider declares capability conformance material, inspect its
+binding with `seedspec capability-conformance <package-path> <capability-id>`.
+Use the named runner only with appropriate execution authority, then validate
+its result with `--result`. A passed result is evidence about the named
+realization and declared suite coverage; it is not project completion and must
+not be copied into `verification-state.yaml` without an applicable completion
+item and evidence reference.
 
 Record each resolved resource as `consulted` or `skipped` with a concise reason by
 using `seedspec record-resource-use`. This is local project memory and optional

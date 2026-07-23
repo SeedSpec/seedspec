@@ -1,7 +1,12 @@
 # `@seedspec/runtime`
 
-Reference JavaScript runtime for validating, inspecting, resolving, and
-verifying SeedSpec packages.
+Reference JavaScript runtime for authoring, validating, inspecting, resolving,
+and verifying SeedSpec packages.
+
+The runtime supports two deliberately separate results: protocol-aware tools
+can determine whether a package is valid, while guided authoring can help a
+person or agent examine semantic completeness without presenting that judgment
+as protocol conformance.
 
 ## Install
 
@@ -12,7 +17,12 @@ npm install @seedspec/runtime@next
 ## Example
 
 ```js
-import { auditPackage, inspectPackage, validatePackage } from "@seedspec/runtime";
+import {
+  auditPackage,
+  inspectCapabilityConformance,
+  inspectPackage,
+  validatePackage
+} from "@seedspec/runtime";
 
 const record = await validatePackage("./my-seedspec-package");
 const inspection = await inspectPackage(record.root);
@@ -23,14 +33,27 @@ const audit = await auditPackage("./my-seedspec-package", {
   toolVersion: "my-authoring-tool@1.0.0"
 });
 console.log(audit.current?.instructions);
+
+const capability = await inspectCapabilityConformance(
+  "./my-seedspec-package",
+  "org.example.product.transactions",
+  "./transaction-conformance.yaml"
+);
+console.log(capability.status);
 ```
 
 Validation establishes package structure and content identity. It does not
 establish authorship, publisher identity, compatibility with an unseen
-environment, safety to execute, or permission for external effects.
+environment, semantic completeness, safety to execute, or permission for
+external effects.
+
+Resolution preserves package task runbooks in authored order, copies their
+package-local references into the handoff, and surfaces them to the implementing
+agent. It does not infer a task graph or treat task completion as conformance.
 
 Protocol `0.1` is a design alpha. Pin exact prerelease versions when building
 interoperable tools.
 
 - Documentation: [seedspec.dev](https://seedspec.dev)
+- Authoring: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/authoring.md)
 - Source: [SeedSpec/seedspec](https://github.com/SeedSpec/seedspec)

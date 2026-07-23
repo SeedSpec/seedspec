@@ -68,9 +68,19 @@ Write:
 - `configuration/schema.json`, `configuration/example.yaml`, and a guide when options need explanation;
 - `acceptance/criteria.md` with numbered, observable behaviors covering success, authorization, state, configuration, idempotency, and failure paths.
 
-Use Markdown as the expressive center. Keep structured files limited to metadata, discovery, validation, configuration, and composition.
+When sequence itself adds implementation value, optionally declare a `tasks`
+runbook. Keep it to ordered agent reminders with only stable `id`,
+`instruction`, and optional package-file `references`. Do not restate features,
+add checkpoints or dependency fields, or put mutable progress in the package.
+Array order is the task order, and completing it never proves acceptance.
+
+Use Markdown as the expressive center. Structured capability change history and optional conformance material may add machine-operable severity, data-shape, scenario, and eval evidence without replacing the behavioral contract.
 
 Declare capabilities as namespaced, versioned product contracts such as `org.seedspec.core.actors`, not screens, classes, endpoints, or infrastructure.
+For every revised capability, declare a contiguous change-history transition
+tagged breaking, additive, or clarifying consistently with its version bump.
+When useful, attach a version-bound conformance suite and label its coverage
+`partial` unless its checks credibly exercise the entire contract.
 
 Use native SeedSpec Markdown for the primary intent unless the author already
 uses a recognized external intent format. To make an external document such as

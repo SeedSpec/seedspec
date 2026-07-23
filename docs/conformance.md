@@ -20,7 +20,8 @@ case declares an operation, input packages, and expected success or stable
 error code. Resolution cases may also assert deterministic addition order,
 applied-intent status, implementation-profile preferences, and project status.
 Resolved-state checks include `resolved-intent.yaml`, `artifacts.yaml`, and
-`implementation-profile-state.yaml`.
+`implementation-profile-state.yaml`; task cases cover ordered runbook
+validation, package-local references, and resolved `tasks.yaml` preservation.
 
 Core SeedSpec conformance and adapter conformance are separate. The core suite verifies artifact declaration, references, relationships, materialization, and schema-valid indexing. Adapter tests verify native formats such as ProductSpec by invoking their upstream validators explicitly.
 
@@ -38,7 +39,9 @@ A runtime experiment should record:
 
 The suite tests protocol interoperability. It is not a public certification, a
 claim that agent execution is deterministic, or evidence that a realization
-satisfies its core intent.
+satisfies its core intent. It also does not establish that a valid package is a
+complete or high-quality seed; authoring review and evaluation are separate
+surfaces.
 
 ## Adding cases
 
@@ -49,12 +52,18 @@ A behavioral correction that changes whether an artifact passes, its error class
 
 Fixtures should isolate one rule where practical. Negative cases assert stable error codes rather than implementation-specific prose.
 
-## Operations in suite 2.0.0
+## Operations in suite 2.1.0
 
-- `validate` checks structural, referenced-file, configuration, artifact-reference, relationship, semantic, and content-safety behavior without invoking artifact adapters.
+- `validate` checks structural, referenced-file, configuration, task-runbook,
+  artifact-reference, relationship, semantic, and content-safety behavior
+  without invoking artifact adapters.
 - `digest-stability` checks repeated calculation over identical package bytes.
 - `resolve` checks deterministic declaration analysis, applied-intent
-  readiness, review records, and resolved project state.
+  readiness, review records, preserved task order and references, and resolved
+  project state.
+- `capability-conformance` checks that a realization result is bound to the
+  exact capability revision, contract and suite digests, complete check set,
+  evidence, and derived status without conflating it with project completion.
 
 Design-alpha corrections increment `suite_version` and may change expected
 results. A conformance report is incomplete unless it identifies the exact

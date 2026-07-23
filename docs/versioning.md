@@ -7,13 +7,19 @@ SeedSpec uses separate version domains so that a protocol contract, its test
 suite, and first-party implementations can evolve without implying false
 compatibility.
 
+Not every audience needs every identifier. A package adopter normally needs the
+package version and a compatible CLI; an author also needs the declared protocol
+family; an independent tool implementer or evaluator records the exact schema,
+conformance-suite, runtime, and CLI versions. The domains remain separate even
+when a user interface presents a simpler compatibility summary.
+
 | Version | Identifies | Current value |
 | --- | --- | --- |
 | Protocol family | The package and handoff vocabulary declared in protocol documents | `0.1` |
-| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.1.0-alpha.4` |
-| Conformance suite | The exact indexed cases, fixtures, and expected results | `2.0.0` |
-| Runtime | One release of the reference JavaScript implementation | `0.1.0-alpha.5` |
-| CLI | One release of the public command-line interface | `0.1.0-alpha.6` |
+| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.1.0-alpha.5` |
+| Conformance suite | The exact indexed cases, fixtures, and expected results | `2.1.0` |
+| Runtime | One release of the reference JavaScript implementation | `0.1.0-alpha.6` |
+| CLI | One release of the public command-line interface | `0.1.0-alpha.7` |
 | SeedSpec package | One author-controlled version of a portable solution package | Declared in `seedspec.yaml` |
 
 `protocol_version: "0.1"` states that a package uses the Protocol 0.1 family.

@@ -1,0 +1,1 @@
+# Invalid capability history fixture

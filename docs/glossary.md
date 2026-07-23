@@ -6,11 +6,16 @@
 
 ## Protocol and package
 
+- **SeedSpec**: the broader project and system comprising guided authoring, the
+  SeedSpec Protocol, reference runtime and CLI tooling, package distribution,
+  and user-directed implementation. Only the SeedSpec Protocol defines package
+  conformance.
 - **SeedSpec Protocol**: the interoperability rules for packages, composition,
   integrity, resolution, handoff state, and verification state.
 - **SeedSpec package**: a portable directory rooted at `seedspec.yaml`. The
   package is the container for core intent, optional implementation profiles,
-  optional implementation resources, and related artifacts.
+  optional ordered task runbooks, optional implementation resources, and
+  related artifacts.
 - **core intent**: the intended outcome expressed collectively by a package's
   definition, configuration surface, decisions, capability contracts,
   constraints, and acceptance material. Core intent is a logical part of the
@@ -26,13 +31,36 @@
 - **root package**: the first package selected for one resolution.
 - **addition**: any other package selected into that resolution. Root and
   addition are resolution roles, not package kinds.
+- **semantic role**: the recognized responsibility of package or project
+  material, such as product intent, adopter configuration, implementation
+  guidance, or evidence. A semantic role identifies how material participates
+  in the handoff; it is not a quality score.
 
 Use the unqualified word **specification** carefully. Public documentation
 should identify whether it means a SeedSpec package, the package's core intent,
 the normative protocol specification, or a resolved project specification.
 
+## Capability contracts
+
+- **capability contract**: a namespaced, versioned Markdown statement of
+  observable solution behavior that a provider offers or a consumer expects.
+  Optional structured material supplements but does not replace it.
+- **structured change history**: steward-declared breaking, additive, and
+  clarifying changes forming a semver-consistent chain between capability
+  revisions.
+- **capability conformance suite**: optional version-bound JSON Schema,
+  acceptance-scenario, or eval checks with declared partial or full coverage.
+- **capability conformance result**: a separate evaluation record bound to one
+  capability revision, exact contract and suite bytes, one realization,
+  evaluator, complete check set, and evidence. It is not project completion
+  state.
+
 ## Realization guidance
 
+- **task runbook**: an optional package-authored list of implementation
+  reminders consumed in array order. Tasks have stable IDs, instructions, and
+  optional package-file references; they do not form a workflow graph or prove
+  completion.
 - **implementation profile**: one package-authored way to implement the core
   intent. A package may contain zero or more profiles with prerequisites,
   blockers, tradeoffs, guidance, and implementation-resource references.
@@ -53,6 +81,16 @@ An implementation profile is specific to implementing one package's core
 intent. A skill is reusable knowledge for performing a class of work. A profile
 may reference one or more skills without turning them into core intent.
 
+## Authoring
+
+- **authoring review**: an informative, tool-supported examination of concern
+  separation, kind-specific coverage, material ambiguity, decision provenance,
+  consistency, progressive depth, and handoff quality. Completing a review does
+  not certify package completeness or realization quality.
+- **authoring state**: sources, candidates, questions, instructions, results,
+  and provenance kept outside the distributable package while it is being
+  shaped. Authoring state does not become package authority implicitly.
+
 ## Handoff and outcome
 
 - **applied intent**: project-local input recording how the end user intends to
@@ -66,7 +104,7 @@ may reference one or more skills without turning them into core intent.
 - **resolved project specification** or **resolved handoff**: the project-local
   output created from selected packages and explicit end-user inputs. It
   includes resolved intent, configuration, profile state, resource state,
-  artifacts, locks, guidance, and verification scaffolding.
+  ordered tasks, artifacts, locks, guidance, and verification scaffolding.
 - **realization**: the software, configured external state, workflow,
   automation, operational artifact, or composite outcome produced from the
   resolved core intent.

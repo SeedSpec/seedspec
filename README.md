@@ -1,42 +1,119 @@
-# SeedSpec Protocol v0.1 Alpha
+# SeedSpec
 
-SeedSpec is an agentically composable protocol for packaging intent into
-portable, agent-ready specifications. Each package describes what should be accomplished, provides
-relevant context and resources, and defines the criteria for success while
-leaving execution and implementation to the agent under the end user's
-direction.
+**Protocol 0.1 design alpha**
 
-Its package format is a small declarative DSL; the larger SeedSpec contract is
-a protocol because it also defines identity, composition, integrity, trust,
-resolution, implementation handoff, and verification across tools and agents.
+SeedSpec helps people turn product and domain expertise into portable,
+agent-ready starting points. A SeedSpec package keeps the intended outcome,
+important decisions, adopter choices, supporting context, and ways to check
+success together so another person or agent does not have to reconstruct them
+from a prompt, chat history, or informal document.
 
-The protocol increases implementation fidelity without promising deterministic
-agent execution or identical output. A realization may be a new application, a
-feature adapted into an existing product, configured state in an external
-system, an automation, an operational artifact, or a composite of those forms.
+SeedSpec is more than its package format. The project includes guided authoring
+tools that help authors find material gaps, an open protocol that gives package
+content stable semantic roles, and reference tooling that validates, resolves,
+and hands the selected material to an implementing agent. The agent and end user
+still decide how to realize the outcome in the actual environment.
 
-This design alpha contains the protocol schemas, authoring and resolution
-toolchain, and small protocol-owned fixtures used to exercise conformance.
-Independently versioned packages and their realized outputs live in
-[SeedSpec/reference-solutions](https://github.com/SeedSpec/reference-solutions).
+The protocol makes a seed portable and interpretable. It does not certify that
+the seed is complete or guarantee a particular implementation. Authoring review,
+package conformance, and realization evidence are deliberately separate claims.
 
-## Use the published CLI
+## Why semantic structure matters
 
-Run the CLI without installing it globally:
+SeedSpec distinguishes:
+
+- **Product intent** — what must be true.
+- **Configuration** — what the adopter may choose.
+- **Decisions and provenance** — who selected what, and why.
+- **Acceptance** — how success should be evaluated.
+- **Implementation resources and tasks** — guidance about how to do the work.
+- **Evidence** — what has actually been observed or verified.
+
+A model can receive all of that in one Markdown file, and a well-authored
+Markdown specification can be excellent. Without standardized roles, however,
+each recipient must rediscover which passages are authoritative, which values
+are examples, which decisions remain open, what applies to this adopter, and
+what constitutes evidence.
+
+Semantic structure helps people and models preserve meaning across authoring,
+review, distribution, adaptation, and implementation. File structure alone is
+not the advantage; the value comes from the meaning assigned to each concern
+and the authoring workflow that helps populate it. See [why semantic structure
+matters](docs/semantic-structure.md) and the [current evaluation
+findings](docs/evaluations.md).
+
+## The SeedSpec system
+
+| Layer | Role |
+| --- | --- |
+| **SeedSpec Authoring** | Guided audits, skills, and frontends help authors capture intent, expose material ambiguity, record decision provenance, and prepare a useful handoff. |
+| **SeedSpec Protocol** | The package and handoff contract defines semantic roles, identity, configuration, composition, integrity, resolution, and scoped verification state. |
+| **SeedSpec Runtime and CLI** | Reference tools validate, inspect, author, configure, resolve, and prepare packages for an agent without executing package content implicitly. |
+| **Publishers, libraries, and marketplaces** | Independent distribution systems curate packages, versions, evidence, support, and policy without changing the neutral package contract. |
+| **Implementation environments** | User-chosen agents and tools adapt resolved intent to a real codebase, external system, workflow, or other target and record scoped evidence. |
+
+The normative SeedSpec Protocol lives in this repository as
+[`@seedspec/protocol`](packages/protocol/README.md), the [Protocol 0.1
+specification](docs/protocol.md), the [versioned schemas](packages/protocol/schemas/v0.1/),
+and the [conformance suite](conformance/cases.yaml). The former
+`SeedSpec/seedspec-protocol` preview repository is retired; this repository is
+the canonical source for both the protocol and first-party tooling.
+
+## What the different results mean
+
+- A **valid package** satisfies protocol structure and semantic validation. It
+  is not automatically a strong or complete seed.
+- A **completed authoring review** records that the requested review areas were
+  examined. It does not eliminate every unknown or certify quality.
+- A **resolved handoff** preserves selected package material, user choices, and
+  provenance for one implementation context. It does not prove the guidance was
+  followed.
+- A **verified completion result** applies only to its declared scope and
+  recorded evidence. It is not a universal certification of the package or
+  realization.
+
+## Use a published package
+
+Run the current design-alpha CLI without installing it globally:
 
 ```bash
 npx --yes @seedspec/cli@next --help
 npx --yes @seedspec/cli@next version
 npx --yes @seedspec/cli@next validate <package-path>
-npx --yes @seedspec/cli@next audit <package-path>
 npx --yes @seedspec/cli@next begin <package-path>
 ```
 
-The `next` tag identifies the current public design-alpha CLI. Pin exact
-prerelease versions when building tools that depend on schemas, conformance
-behavior, or runtime output.
+`seedspec begin` is the read-only starting point for an agent. It validates the
+package, inventories the available intent and supporting material, explains the
+trust boundary, and identifies the user choices needed before resolution or
+implementation.
 
-## Work on the protocol
+The `next` tag identifies the current public design-alpha CLI. Pin exact
+prerelease versions when building integrations that depend on schemas,
+conformance behavior, or runtime output.
+
+## Author a package
+
+SeedSpec authoring is intended to be guided rather than a requirement to
+hand-edit every YAML and JSON file:
+
+```bash
+npx --yes @seedspec/cli@next init application --output <package-path>
+npx --yes @seedspec/cli@next audit <package-path>
+npx --yes @seedspec/cli@next lint <package-path>
+npx --yes @seedspec/cli@next validate <package-path>
+```
+
+The audit workflow combines deterministic protocol checks with agent-guided
+semantic review. It helps separate concerns, apply a kind-aware lens, identify
+material ambiguity, record decision provenance, check internal consistency,
+harden the seed progressively, and review the independent handoff. The CLI does
+not embed a model or silently rewrite package content.
+
+See [authoring guidance](docs/authoring.md), [kind-aware authoring](docs/kind-guidance.md),
+and the bundled authoring skills under [`skills/`](skills/).
+
+## Work in this repository
 
 ```bash
 npm install
@@ -54,130 +131,86 @@ npx seedspec inspect conformance/fixtures/portable-feature
 npx seedspec lint conformance/fixtures/profiled-workflow
 npx seedspec artifacts conformance/fixtures/comprehensive-application
 npx seedspec validate-artifact conformance/fixtures/comprehensive-application product-spec
+npx seedspec capability-conformance conformance/fixtures/comprehensive-application \
+  org.seedspec.core.chores
 npx seedspec discover-features conformance/fixtures/comprehensive-application \
   --catalog conformance/fixtures/
 ```
 
-Use `--applied-intent <yaml>` to affirm whether every selected package applies
-as authored, requires adaptation, or is only partially useful and to record
-project-local intent. Omitting it preserves the package-author sources but
-produces `intent_status: review`, never a ready project. Use
-`--configuration-selections <yaml>` to choose each selected package's exact
-example or a complete custom configuration. Use `-i <profile>` or
-`--implementation <profile>` only after comparing applied intent with candidate
-implementation profiles. Use `--completion-scope <yaml>` to select author
-acceptance material or record project-local criteria; every included item must
-declare what realization or outcome evidence will prove it. `ready` describes
-implementation input, while `seedspec completion` independently reports actual
-verification progress. Use `--technical-preferences <yaml>` for non-product
-implementation preferences and `--artifact-selections <yaml>` for optional
-artifact dispositions. A primary intent artifact is core intent and cannot be
-declined, but its native workflow still requires separate direction.
+Use `--applied-intent <yaml>` to record whether each selected package applies as
+authored, requires adaptation, or is only partially useful. Use
+`--configuration-selections <yaml>` to select an example or supply complete
+custom configuration for every package. Implementation profiles, technical
+preferences, optional artifacts, completion scope, and evidence remain explicit
+inputs or state rather than assumptions hidden in resolution. See [runtime
+behavior](docs/runtime.md) for the complete lifecycle.
 
 ## What exists in v0.1 alpha
 
-- A compact declarative package DSL with versioned JSON Schemas inside a wider
-  handoff and composition protocol.
-- Self-contained conformance fixtures for a comprehensive application,
-  portable and revision-different features, and a workflow with several
-  implementation profiles. These are test data, not reference packages.
-- A generic `seedspec` CLI with a package-to-agent instruction, kind-aware authoring
-  audits, bundled authoring guidance, read-only root-package bootstrap,
-  validation, inspection, artifact adapters, feature discovery, resolution,
-  and initialization.
-- Kind-aware authoring lint that keeps advisory scope and completeness feedback
-  separate from protocol validity.
-- Authoring skills for application and feature packages, plus a guided
-  `use-seedspec` lifecycle skill.
-- A generic artifact model and explicit ProductSpec adapter backed by the
-  official ProductSpec parser. ProductSpec may be the package's primary intent
-  format without becoming a protocol dependency.
-- Versioned capability contracts, provider candidates, compatibility statements,
-  and conflicts that create implementation review context rather than dependency
-  gates or compatibility verdicts.
-- Kind hints for solutions, applications, features, workflows, automations,
-  configurations, and integrations without kind-specific composition gates.
-- Explicit package-author and applied intent with provenance, configuration
-  choices, implementation profiles, completion verification plans, typed
-  realization and outcome evidence, structured decisions, artifact
-  dispositions, validated implementation-target guidance, content-addressed
-  locks, agent handoff guidance, and durable deviation records.
-- Author-controlled, independently versioned implementation resources with
-  explicitly consultable package-scoped skills, target and capability context, verified canonical
-  resolution, visible bundled fallbacks, and local use records.
-- Tooling tests and a format conformance suite.
+- A compact declarative package format inside a wider handoff and composition
+  protocol.
+- Kind-aware authoring audits, bundled guidance, package scaffolding, linting,
+  and authoring skills.
+- A generic CLI and JavaScript runtime for validation, inspection, authoring,
+  artifact adapters, discovery, configuration, resolution, locks, and scoped
+  completion checks.
+- One package-author primary intent source plus separately preserved end-user
+  applied intent and agent proposals.
+- Configuration choices, decision provenance, implementation profiles,
+  implementation resources, ordered task runbooks, completion plans, typed
+  evidence, and durable deviation records.
+- Versioned capability contracts with structured history, review severity, and
+  optional digest-bound conformance material.
+- A generic artifact model and an explicit ProductSpec adapter without making
+  ProductSpec a core dependency.
+- Self-contained protocol fixtures, tooling tests, and a format conformance
+  suite.
 
-The layers and alpha boundary are summarized in [ARCHITECTURE.md](ARCHITECTURE.md),
-the public vocabulary is defined in the [glossary](docs/glossary.md), and the
-release domains are explained in [versioning](docs/versioning.md). The
-protocol's decision principles are recorded in
-[docs/principles.md](docs/principles.md). [Use cases](docs/use-cases.md) include
-applications, configured SaaS systems, cross-system automations, composite
-enterprise solutions, and distribution models. The decision to keep those
-outcomes in one protocol is recorded in [ADR
-0008](docs/decisions/0008-one-protocol-for-agent-realized-solutions.md); kind
-hints and implementation profiles are defined in [ADR
-0009](docs/decisions/0009-kind-hints-and-implementation-profiles.md), with
-operational guidance in [kind-aware authoring](docs/kind-guidance.md) and
-[implementation profiles and state](docs/implementation-profiles.md). The
-artifact and ProductSpec boundary is documented in
-[docs/adapters.md](docs/adapters.md). The normative format is defined by
-[docs/protocol.md](docs/protocol.md), the
-[schemas](packages/protocol/schemas/v0.1/), and the
-[conformance suite](conformance/cases.yaml).
-
-Capability contracts and author-selected skills, instructions, verification,
-tools, and target profiles are separated in
-[docs/implementation-resources.md](docs/implementation-resources.md).
+The [architecture](ARCHITECTURE.md) explains how these pieces fit together. The
+[principles](docs/principles.md), [glossary](docs/glossary.md), [use
+cases](docs/use-cases.md), and [versioning guide](docs/versioning.md) explain the
+design boundaries. Normative behavior is defined only by the [protocol
+specification](docs/protocol.md), [schemas](packages/protocol/schemas/v0.1/), and
+[conformance contract](conformance/cases.yaml).
 
 ## Repository layout
 
 ```text
 packages/
 ├── protocol/    canonical schemas and protocol metadata
-├── runtime/     reference validation, resolution, and conformance library
+├── runtime/     authoring, validation, resolution, and conformance library
 └── cli/         the seedspec command-line interface
 conformance/     portable conformance cases and fixtures
-docs/            normative specification, informative guidance, and rationale
+docs/            specification, guidance, use cases, evidence, and rationale
 skills/          authoring and implementation-handoff workflows
 ```
 
-This repository contains protocol-owned assets and first-party protocol
-tooling. Reference packages, realized solutions, websites, and marketplaces are
-maintained as independent consumers.
+Related public repositories remain independent so their claims and release
+cycles do not become protocol requirements:
 
-## Concept flows
+- [SeedSpec/reference-solutions](https://github.com/SeedSpec/reference-solutions)
+  contains complete example packages and realized outputs.
+- [SeedSpec/seedspec-evals](https://github.com/SeedSpec/seedspec-evals)
+  contains evaluation cases, harnesses, methods, and evidence.
+- [SeedSpec/seedspec-marketplace](https://github.com/SeedSpec/seedspec-marketplace)
+  explores distribution without making marketplace policy part of the protocol.
 
-```text
-idea + optional native or external-format primary intent
-  -> SeedSpec root package
-  -> end-user applied intent + addition discovery + package configuration
-  -> resolved project specification
-  -> user-directed agent handoff
-  -> agent-realized solution + scoped realization or outcome evidence
-```
+## Concept flow
 
 ```text
-existing project
-  -> feature idea
-  -> SeedSpec feature package
-  -> updated resolved specification
-  -> integration review
-  -> implementing agent adapts the existing solution
+source idea, expertise, or existing solution
+  -> guided SeedSpec authoring
+  -> versioned SeedSpec package
+  -> end-user fit, configuration, and implementation choices
+  -> resolved project handoff
+  -> user-directed implementing agent
+  -> realization + scoped evidence
 ```
 
-```text
-configured-system intent + optional realization guidance
-  -> SeedSpec root package
-  -> user-selected configuration and preferred implementation profile
-  -> agent inspects authorized external systems
-  -> configured state + automation + verification evidence
-```
-
-Manifest `kind` is a strong authoring and agent-communication hint, not a
-composition gate. Resolution position determines root versus addition. The
-profiled-workflow fixture verifies that multiple implementation profiles can
-preserve one core intent without turning a fixture into a recommended solution.
+A package may describe a new application, a feature adapted into an existing
+product, configured state in an external system, an automation, an operational
+artifact, or a composite outcome. See [use cases](docs/use-cases.md) for both
+realization patterns and distribution models.
 
 ## Validation and trust
 
@@ -186,6 +219,7 @@ npm run check
 npm run conformance
 ```
 
-Format conformance proves structure, digesting, and deterministic runtime
-output. It does not make agent execution deterministic or prove publisher
-identity, package safety, or realization quality.
+Format conformance proves structure, digesting, and deterministic runtime output
+for fixed inputs. It does not make agent execution deterministic or prove
+publisher identity, package safety, semantic completeness, compatibility with
+an unseen environment, or realization quality.

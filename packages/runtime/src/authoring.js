@@ -342,6 +342,7 @@ function concernSeparationInstructions() {
     "- configuration: meaningful product behavior that installations may choose differently;",
     "- addition: independently composable behavior that extends or changes the solution;",
     "- implementation profile: a materially different platform, architecture, provider, or realization direction for the same core intent;",
+    "- task runbook: optional ordered implementation reminders with package-file references, separate from product intent and acceptance;",
     "- artifact: useful source material preserved in its native format;",
     "- implementation resource: versioned help for an implementing agent;",
     "- package evidence: material supporting a claim about the package, its testing, or known compatibility;",
@@ -395,7 +396,7 @@ function consistencyInstructions(lint) {
     : ["- The deterministic kind-aware lint produced no diagnostics; this is not a semantic consistency certification."];
   return [
     "Use deterministic validation for schema, path, ID, configuration, relationship, and reference checks. Then perform semantic consistency review across the package.",
-    "Look for contradictory permissions or state behavior, configuration with no defined effect, acceptance without corresponding intent, profile guidance that changes the product outcome, inconsistent terminology, and capability contracts that disagree with the definition.",
+    "Look for contradictory permissions or state behavior, configuration with no defined effect, acceptance without corresponding intent, task instructions that restate features or imply completion, profile guidance that changes the product outcome, inconsistent terminology, and capability contracts that disagree with the definition.",
     "Distinguish deterministic errors from agent judgments. Cite both sides of every claimed contradiction and avoid rewriting merely stylistic differences.",
     "Current deterministic diagnostics:",
     ...diagnostics
@@ -424,10 +425,11 @@ function hardeningInstructions(target) {
 function handoffInstructions() {
   return [
     "Simulate receiving this package as a capable implementing agent with no access to the authoring conversation.",
-    "Explain the package-author primary intent and its native format, intended outcome, obligations, boundaries, decision latitude, configuration choices, unresolved product decisions, implementation profiles, optional artifacts and resources, and observable success conditions.",
+    "Explain the package-author primary intent and its native format, intended outcome, obligations, boundaries, decision latitude, configuration choices, unresolved product decisions, implementation profiles, ordered task reminders, optional artifacts and resources, and observable success conditions.",
     "Before choosing an implementation profile, draft the minimum applied-intent questions needed to determine whether the end user wants each package as authored, adapted, partially reused, or rejected. Separate safe environmental observation from agent inference and required user affirmation.",
     "Identify facts the implementing agent would otherwise guess, instructions that could be misread as authority, important material buried in excessive context, and acceptance criteria that cannot be observed.",
     "Identify every evidence claim by subject. Package evidence, baseline evidence, realization evidence, and outcome evidence are not interchangeable; a verification plan is not evidence.",
+    "When a task runbook exists, confirm that array order is sufficient, references are useful context, and the tasks do not introduce dependency, checkpoint, progress, or conformance semantics.",
     "Run `seedspec begin <package-path>` and inspect the actual versioned handoff instructions. Review the emitted workflow rather than an idealized reading of source files.",
     "Recommend only changes to the package that improve an independent handoff; do not prescribe architecture or implementation workflow."
   ];

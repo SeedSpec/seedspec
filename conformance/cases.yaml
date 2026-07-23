@@ -1,4 +1,4 @@
-suite_version: "2.0.0"
+suite_version: "2.1.0"
 protocol_version: "0.1"
 
 cases:
@@ -22,6 +22,42 @@ cases:
     package: fixtures/revision-feature
     expect:
       result: pass
+
+  - id: verify-capability-conformance-result
+    description: A capability result binds the exact contract and suite bytes, covers every declared check, and derives a passing status independently from project completion.
+    operation: capability-conformance
+    package: fixtures/comprehensive-application
+    capability: org.seedspec.core.chores
+    result_file: fixtures/capability-conformance-pass.yaml
+    expect:
+      result: pass
+      capability_status: passed
+
+  - id: reject-stale-capability-conformance-result
+    description: A result bound to different suite bytes cannot establish capability conformance.
+    operation: capability-conformance
+    package: fixtures/comprehensive-application
+    capability: org.seedspec.core.chores
+    result_file: fixtures/capability-conformance-stale.yaml
+    expect:
+      result: fail
+      code: STALE_CAPABILITY_CONFORMANCE_RESULT
+
+  - id: reject-capability-change-tag-version-mismatch
+    description: Breaking, additive, and clarifying change tags must agree with the declared capability version transition.
+    operation: validate
+    package: fixtures/invalid-capability-history
+    expect:
+      result: fail
+      code: INVALID_MANIFEST_SEMANTICS
+
+  - id: reject-invalid-task-runbook-reference
+    description: Package-authored task references must identify regular files inside the package.
+    operation: validate
+    package: fixtures/invalid-task-runbook
+    expect:
+      result: fail
+      code: INVALID_TASK_RUNBOOK
 
   - id: validate-profiled-workflow
     description: A workflow kind hint can package configured external state and cross-system automation without requiring a standalone codebase.
@@ -138,7 +174,7 @@ cases:
     package: fixtures/comprehensive-application
     expect:
       result: pass
-      digest: sha256:4c12b067833393a6ab3b27caba7dfcfc027933c8807d4a42bac5a2aef97d72bd
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
 
   - id: resolve-application-with-portable-feature
     description: The comprehensive application and portable feature fixtures produce a ready project.

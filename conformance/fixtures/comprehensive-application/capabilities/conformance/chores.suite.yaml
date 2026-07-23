@@ -1,0 +1,17 @@
+protocol_version: "0.1"
+capability:
+  id: org.seedspec.core.chores
+  version: "1.1.0"
+coverage: partial
+checks:
+  - id: chore-shape
+    kind: json-schema
+    subject: data-shape
+    description: Observable work descriptions have stable identity, a non-empty title, and an active or archived state.
+    path: capabilities/conformance/chores.schema.json
+  - id: archive-behavior
+    kind: acceptance-scenarios
+    subject: behavior
+    description: Archived work descriptions remain historical but cannot be selected for new assignments.
+    path: capabilities/conformance/chores.scenarios.yaml
+    runner: org.seedspec.runner.capability-scenarios

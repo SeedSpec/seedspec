@@ -58,7 +58,7 @@ does not prove compatibility or incompatibility with a realization.
 
 ## 4. Declare capabilities and configuration
 
-Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one contract file per provided capability. Missing, multiple, cyclic, self-provided, or revision-different declarations are integration-review signals, not installation gates or observations of the actual host.
+Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one Markdown contract per provided capability. When revising a provided capability, add a contiguous structured change-history transition whose breaking, additive, or clarifying entries agree with the version bump. When behavior has a stable checkable surface, optionally ship a version-bound conformance suite with honest partial or full coverage; keep schemas, scenarios, and eval bundles subordinate to the expressive contract. Missing, multiple, cyclic, self-provided, or revision-different declarations are severity-ranked integration-review signals, not installation gates or observations of the actual host.
 
 Turn variable product behavior into JSON Schema-backed configuration. Keep implementation preferences outside feature configuration. When a configured behavior needs a host operation not guaranteed by declared capabilities, document it as an explicit integration requirement or unresolved decision; never silently approximate it.
 
@@ -68,11 +68,19 @@ Run `seedspec init feature --output <package-path>` when available, then write:
 
 - `seedspec.yaml` with feature kind, tested-against requirements, versioned provisions, compatibility, known conflicts, durable decisions, and components;
 - a capability contract for every provided capability;
+- structured change history for revised capabilities and optional checkable
+  conformance material where it detects meaningful defects;
 - one primary intent source with clear **Purpose**, **Obligations and
   boundaries**, **Success and evidence**, and **Decision latitude** semantics;
 - configuration schema and example;
 - `integration/requirements.md` with host mappings, authorization, atomicity, and unresolved-decision rules;
 - `acceptance/criteria.md` with observable host-independent behavior.
+
+If the author knows a useful realization sequence, optionally add a `tasks`
+runbook containing ordered agent reminders. Each task has only a stable `id`,
+an `instruction`, and optional package-file `references`. Do not turn feature
+requirements into a backlog or add task dependencies, checkpoints, progress,
+or completion claims; array order is sufficient.
 
 Use native SeedSpec Markdown for the primary intent unless the author already
 uses a recognized external intent format. To make an external document such as

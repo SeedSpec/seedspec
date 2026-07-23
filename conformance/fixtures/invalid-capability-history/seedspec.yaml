@@ -1,0 +1,22 @@
+protocol_version: "0.1"
+id: org.example.invalid-capability-history
+name: Invalid Capability History
+version: "0.1.0"
+kind: application
+definition:
+  entrypoint: definition/app.md
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities:
+    - id: org.example.product.widgets
+      version: "1.1.0"
+      contract: capabilities/widgets.md
+      change_history:
+        - from: "1.0.0"
+          to: "1.1.0"
+          changes:
+            - id: removed-widget-state
+              type: breaking
+              summary: Removes an observable state despite using a minor revision.

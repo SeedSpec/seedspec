@@ -55,10 +55,18 @@ export {
 } from "./completion.js";
 export {
   analyzeCapabilityDeclarations,
+  classifyCapabilityRevision,
   capabilityMatches,
   resolveCapabilityGraph
 } from "./capabilities.js";
+export {
+  capabilityConformanceBinding,
+  formatCapabilityConformance,
+  inspectCapabilityConformance,
+  validateCapabilityConformanceDeclarations
+} from "./capability-conformance.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
 export { resolveProject } from "./resolve.js";
 export { formatResolvedIntentSummary, resolveAppliedIntent } from "./intent.js";
 export { validatePackage } from "./validate.js";
+export { materializeTasks, validateTaskRunbook } from "./tasks.js";

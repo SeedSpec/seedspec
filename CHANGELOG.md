@@ -9,10 +9,10 @@ versioned independently; see [versioning](docs/versioning.md).
 | Surface | Version |
 | --- | --- |
 | Protocol family | `0.1` |
-| `@seedspec/protocol` | `0.1.0-alpha.3` |
-| Conformance suite | `2.0.0` |
-| `@seedspec/runtime` | `0.1.0-alpha.4` |
-| `@seedspec/cli` | `0.1.0-alpha.5` |
+| `@seedspec/protocol` | `0.1.0-alpha.5` |
+| Conformance suite | `2.1.0` |
+| `@seedspec/runtime` | `0.1.0-alpha.6` |
+| `@seedspec/cli` | `0.1.0-alpha.7` |
 
 ### Protocol and conformance
 
@@ -28,6 +28,16 @@ versioned independently; see [versioning](docs/versioning.md).
   evidence references for recorded verification results.
 - Add conformance cases for rich applied intent, unexplained adaptation,
   primary-intent artifact integrity, and omitted applied intent.
+- Add structured capability revision history with semver-consistent breaking,
+  additive, and clarifying change tags.
+- Classify provider revision differences by direction, semver distance, review
+  severity, and available structured change evidence.
+- Add optional version-bound capability conformance suites for JSON Schema,
+  structured acceptance scenarios, and adapter-run eval bundles.
+- Add separate capability-conformance result records bound to exact contract,
+  suite, realization, evaluator, check coverage, and evidence.
+- Add optional ordered implementation task runbooks with stable task IDs,
+  instructions, and validated package-local references.
 
 ### Reference tooling
 
@@ -37,6 +47,21 @@ versioned independently; see [versioning](docs/versioning.md).
   artifact workflows separately activated.
 - Teach authoring audits and bundled skills to separate target intent,
   decision latitude, verification plans, and evidence subjects.
+- Add `seedspec capability-conformance` to inspect suite bindings and validate
+  runner-produced results without executing untrusted package content.
+- Preserve each package's task order and referenced context in resolved
+  `tasks.yaml` handoffs without inferring a workflow graph or completion claim.
+
+### Documentation and package presentation
+
+- Present SeedSpec as a broader authoring-and-distribution system built around
+  the SeedSpec Protocol rather than treating the protocol as the entire product.
+- Explain the stable semantic roles for product intent, adopter configuration,
+  decision provenance, acceptance, implementation guidance, and evidence.
+- Add an evidence-scoped evaluation summary and expand internal-enterprise,
+  vendor, consultancy, ecosystem, and marketplace distribution use cases.
+- Update npm package descriptions and READMEs to give authoring, adoption, and
+  package distribution first-class status without changing conformance claims.
 
 ## Previous design-alpha publication
 

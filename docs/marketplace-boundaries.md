@@ -26,3 +26,10 @@ evidence, known limitations, and derivation lineage. These relationships can
 help an agent compare and compose accumulated solution knowledge, but registry
 discovery remains context rather than activation, compatibility proof, or
 authority to override an end user's selected direction.
+
+A private enterprise library may designate one exact package version and digest
+as approved for a recurring solution. That designation is organization policy,
+not protocol conformance. The protocol makes the approved object identifiable
+and independently validatable; the library supplies the authority, access
+control, review criteria, and update policy. See [use cases](use-cases.md) for
+internal, vendor, consultancy, ecosystem, and marketplace patterns.

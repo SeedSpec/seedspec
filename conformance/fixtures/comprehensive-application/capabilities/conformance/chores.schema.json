@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Observable work description",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "title", "state"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "instructions": { "type": "string" },
+    "suggested_reward": { "type": "number", "minimum": 0 },
+    "state": { "enum": ["active", "archived"] }
+  }
+}

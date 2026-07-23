@@ -13,6 +13,8 @@ import {
   AUTHORING_RESULT_FORMAT,
   auditPackage,
   beginPackage,
+  capabilityConformanceBinding,
+  classifyCapabilityRevision,
   completionScopeDigest,
   conformanceSuiteVersion,
   computeDirectoryDigest,
@@ -22,6 +24,7 @@ import {
   formatPackageAgentPrompt,
   formatPackageBeginning,
   inspectPackage,
+  inspectCapabilityConformance,
   inspectProjectCompletion,
   initPackage,
   listArtifactAdapters,
@@ -171,6 +174,10 @@ test("representative protocol fixtures validate", async () => {
   assert.equal(application.manifest.artifacts[0].type, "org.seedspec.artifact.product-spec");
   assert.equal(application.manifest.definition.artifact, "product-spec");
   assert.equal(application.manifest.definition.entrypoint, application.manifest.artifacts[0].path);
+  assert.deepEqual(
+    application.taskRunbook.tasks.map((task) => task.id),
+    ["inspect-current-state", "review-author-context", "realize-package", "verify-realization"]
+  );
 });
 
 test("kind is a tooling hint rather than a composition gate", async (t) => {
@@ -435,15 +442,119 @@ test("capability revision differences request review without blocking handoff", 
   assert.equal(binding.tested_against, "1.0.0");
   assert.equal(binding.providers[0].provided_version, "1.1.0");
   assert.equal(binding.providers[0].revision_status, "different-revision");
+  assert.equal(binding.providers[0].revision_direction, "provider-newer");
+  assert.equal(binding.providers[0].revision_difference, "minor");
+  assert.equal(binding.providers[0].review_severity, "medium");
+  assert.equal(binding.providers[0].change_evidence, "complete");
+  assert.equal(binding.providers[0].declared_changes[0].changes[0].type, "additive");
   assert.deepEqual(binding.issues, ["revision-difference"]);
   assert.equal(binding.status, "review");
   assert.ok(result.lock.reviews.some(
     (review) => review.code === "revision-difference"
       && review.capability === "org.seedspec.core.chores"
+      && review.severity === "medium"
+      && review.revision.direction === "provider-newer"
+      && review.revision.difference === "minor"
+      && review.revision.declared_changes[0].changes[0].type === "additive"
   ));
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
     /Create an integration plan/
+  );
+});
+
+test("capability revision classification preserves direction and semver severity", () => {
+  assert.deepEqual(classifyCapabilityRevision("1.0.0", "1.0.0"), {
+    revision_status: "tested-revision",
+    revision_direction: "exact",
+    revision_difference: "none",
+    review_severity: "none"
+  });
+  assert.equal(classifyCapabilityRevision("1.0.0", "1.0.1").review_severity, "low");
+  assert.equal(classifyCapabilityRevision("1.0.0", "1.1.0").review_severity, "medium");
+  assert.equal(classifyCapabilityRevision("1.1.0", "1.0.0").review_severity, "high");
+  assert.equal(classifyCapabilityRevision("1.0.0", "2.0.0").review_severity, "high");
+});
+
+test("capability conformance results bind exact contract, suite, checks, and realization evidence", async (t) => {
+  const output = await temporaryDirectory(t);
+  const record = await validatePackage(allowance);
+  const binding = await capabilityConformanceBinding(record, "org.seedspec.core.chores");
+  assert.equal(binding.checks.length, 2);
+  assert.match(binding.contract_digest, /^sha256:[a-f0-9]{64}$/);
+  assert.match(binding.suite_digest, /^sha256:[a-f0-9]{64}$/);
+
+  const resultPath = path.join(output, "capability-conformance.yaml");
+  const result = {
+    protocol_version: "0.1",
+    capability: binding.capability,
+    contract_digest: binding.contract_digest,
+    suite_digest: binding.suite_digest,
+    realization: {
+      reference: "https://example.test/builds/allowance-123",
+      digest: `sha256:${"1".repeat(64)}`,
+      environment: "isolated contract-test environment"
+    },
+    evaluator: {
+      id: "org.seedspec.runner.reference",
+      version: "0.1.0"
+    },
+    evaluated_at: "2026-07-22T15:00:00Z",
+    status: "passed",
+    checks: binding.checks.map((check) => ({
+      id: check.id,
+      result: "pass",
+      evidence: [{
+        source: "tool",
+        reference: `results/${check.id}.json`
+      }]
+    }))
+  };
+  await writeFile(resultPath, stringifyYaml(result), "utf8");
+  const inspected = await inspectCapabilityConformance(
+    allowance,
+    "org.seedspec.core.chores",
+    resultPath
+  );
+  assert.equal(inspected.status, "passed");
+  assert.equal(inspected.result.realization.reference, result.realization.reference);
+
+  result.suite_digest = `sha256:${"2".repeat(64)}`;
+  await writeFile(resultPath, stringifyYaml(result), "utf8");
+  await assert.rejects(
+    inspectCapabilityConformance(allowance, "org.seedspec.core.chores", resultPath),
+    (error) => error.code === "STALE_CAPABILITY_CONFORMANCE_RESULT"
+  );
+});
+
+test("capability revision histories and suites receive semantic validation", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "invalid-capability-contract");
+  await cp(allowance, packagePath, { recursive: true });
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  const chores = manifest.provides.capabilities.find(
+    (capability) => capability.id === "org.seedspec.core.chores"
+  );
+  chores.change_history[0].changes[0].type = "breaking";
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+  await assert.rejects(
+    validatePackage(packagePath),
+    (error) => error.code === "INVALID_MANIFEST_SEMANTICS"
+  );
+
+  chores.change_history[0].changes[0].type = "additive";
+  const scenariosPath = path.join(
+    packagePath,
+    "capabilities/conformance/chores.scenarios.yaml"
+  );
+  const scenarios = parseYaml(await readFile(scenariosPath, "utf8"));
+  scenarios.capability.version = "1.0.0";
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+  await writeFile(scenariosPath, stringifyYaml(scenarios), "utf8");
+  await assert.rejects(
+    validatePackage(packagePath),
+    (error) => error.code === "INVALID_CAPABILITY_CONFORMANCE"
   );
 });
 
@@ -505,12 +616,18 @@ test("begin validates an application and exposes the pre-resolution workflow", a
   assert.ok(beginning.artifacts.some(
     (artifact) => artifact.id === "product-spec" && artifact.adapter?.id === "org.seedspec.adapter.product-spec"
   ));
+  assert.equal(beginning.tasks.path, "tasks.yaml");
+  assert.equal(beginning.tasks.items[0].id, "inspect-current-state");
   assert.equal(beginning.trust.discovery_activates_content, false);
   assert.ok(beginning.next_actions.some(
     (action) => action.id === "record-artifact-dispositions"
       && /primary intent artifact.*native workflow remains inactive/.test(action.action)
   ));
+  assert.ok(beginning.next_actions.some(
+    (action) => action.id === "review-task-sequence" && /listed order/.test(action.action)
+  ));
   assert.ok(beginning.next_actions.some((action) => action.id === "resolve-handoff"));
+  assert.match(formatted, /Their order is their only sequencing mechanism/);
   assert.ok(formatted.indexOf("No package-declared solution decisions were supplied.")
     < formatted.indexOf("## Implementation profiles"));
 });
@@ -924,6 +1041,25 @@ test("invalid fixture fails with a useful referenced-file error", async () => {
   );
 });
 
+test("task runbooks reject duplicate IDs and missing or non-file references", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "invalid-tasks");
+  await cp(allowance, packagePath, { recursive: true });
+  const taskPath = path.join(packagePath, "tasks.yaml");
+  const runbook = parseYaml(await readFile(taskPath, "utf8"));
+  runbook.tasks[1].id = runbook.tasks[0].id;
+  runbook.tasks[0].references = ["missing/context.md", "reference/capabilities"];
+  await writeFile(taskPath, stringifyYaml(runbook), "utf8");
+
+  await assert.rejects(
+    validatePackage(packagePath),
+    (error) => error.code === "INVALID_TASK_RUNBOOK"
+      && error.details.some((detail) => detail.includes("appears more than once"))
+      && error.details.some((detail) => detail.includes("does not exist"))
+      && error.details.some((detail) => detail.includes("must reference a file"))
+  );
+});
+
 test("the comprehensive application fixture resolves without additions", async (t) => {
   const output = await temporaryDirectory(t);
   const result = await resolveProject(allowance, { outputDirectory: output });
@@ -941,6 +1077,18 @@ test("the comprehensive application fixture resolves without additions", async (
   assert.equal(result.artifactIndex.artifacts[0].disposition, "selected");
   assert.equal(result.artifactIndex.artifacts[0].intent_role, "primary");
   assert.equal(result.project.artifact_status, "recorded");
+  assert.equal(project.task_index, "tasks.yaml");
+  assert.deepEqual(
+    result.taskIndex.packages[0].tasks.map((task) => task.id),
+    ["inspect-current-state", "review-author-context", "realize-package", "verify-realization"]
+  );
+  assert.ok(await readFile(
+    path.join(
+      result.workspace,
+      result.taskIndex.packages[0].tasks[1].references[0].path
+    ),
+    "utf8"
+  ));
   assert.ok(result.componentIndex.components.some(
     (component) => component.name === "reference" && component.review === "before-planning"
   ));
@@ -962,6 +1110,10 @@ test("the comprehensive application fixture resolves without additions", async (
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
     /Do not treat the recorded example values as selected product behavior/
+  );
+  assert.match(
+    await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
+    /address these reminders from top to bottom/
   );
 });
 
@@ -1660,6 +1812,7 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
   const validateResolvedConfiguration = await compileProtocolSchema("resolved-config.schema.json");
   const validateResolvedIntent = await compileProtocolSchema("resolved-intent.schema.json");
   const validateComponentIndex = await compileProtocolSchema("component-index.schema.json");
+  const validateTaskIndex = await compileProtocolSchema("task-index.schema.json");
   const validateArtifactIndex = await compileProtocolSchema("artifact-index.schema.json");
   const validateImplementationResourceIndex = await compileProtocolSchema(
     "implementation-resource-index.schema.json"
@@ -1695,6 +1848,9 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
   const componentIndex = parseYaml(
     await readFile(path.join(result.workspace, "components.yaml"), "utf8")
   );
+  const taskIndex = parseYaml(
+    await readFile(path.join(result.workspace, "tasks.yaml"), "utf8")
+  );
   const completionScope = parseYaml(
     await readFile(path.join(result.workspace, "completion-scope.yaml"), "utf8")
   );
@@ -1718,6 +1874,11 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
     validateComponentIndex(componentIndex),
     true,
     formatSchemaErrors(validateComponentIndex.errors).join("\n")
+  );
+  assert.equal(
+    validateTaskIndex(taskIndex),
+    true,
+    formatSchemaErrors(validateTaskIndex.errors).join("\n")
   );
   assert.equal(
     validateCompletionScope(completionScope),
@@ -1783,6 +1944,12 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   const inspection = await execFileAsync(process.execPath, [cli, "inspect", savings]);
   const lint = await execFileAsync(process.execPath, [cli, "lint", hubspotMetric]);
   const artifacts = await execFileAsync(process.execPath, [cli, "artifacts", allowance]);
+  const capabilityConformance = await execFileAsync(process.execPath, [
+    cli,
+    "capability-conformance",
+    allowance,
+    "org.seedspec.core.chores"
+  ]);
   const productSpec = await execFileAsync(process.execPath, [
     cli,
     "validate-artifact",
@@ -1799,8 +1966,8 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.1");
-  assert.equal(versionInfo.conformance_suite_version, "2.0.0");
-  assert.equal(versionInfo.cli_version, "0.1.0-alpha.6");
+  assert.equal(versionInfo.conformance_suite_version, "2.1.0");
+  assert.equal(versionInfo.cli_version, "0.1.0-alpha.7");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
@@ -1814,6 +1981,8 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.match(inspection.stdout, /Components: acceptance, integration/);
   assert.match(artifacts.stdout, /ProductSpec/);
   assert.match(artifacts.stdout, /Intent role: primary/);
+  assert.match(capabilityConformance.stdout, /Conformance status: not-evaluated/);
+  assert.match(capabilityConformance.stdout, /Declared suite coverage: partial/);
   assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
   assert.match(discovery.stdout, /Portable Feature Fixture.*candidate/);
 });
@@ -1848,12 +2017,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.6`/);
+  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.7`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.6/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.7/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
@@ -2028,7 +2197,7 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "2.0.0",
+    suite_version: "2.1.0",
     protocol_version: "0.1",
     cases: [{
       id: "outside-fixture",

@@ -4,8 +4,11 @@
 > first-party CLI and JavaScript runtime, not requirements for every conforming
 > implementation.
 
-The runtime is a neutral CLI and JavaScript library. It does not depend on
-marketplace product policy or any particular agent prompt format.
+The runtime is the first-party CLI and JavaScript library behind SeedSpec
+authoring, validation, inspection, resolution, and verification. It combines
+strict protocol-aware operations with informative authoring workflows while
+keeping their results distinct. It does not depend on marketplace product
+policy or any particular agent prompt format.
 
 ## Commands
 
@@ -29,6 +32,7 @@ seedspec init <solution|application|feature|workflow|automation|configuration|in
 seedspec conformance [cases.yaml]
 seedspec verify-lock <project-path> --package <path> [--package <path>]
 seedspec completion <project-path> [--json]
+seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
 ```
 
 `prompt` prints a short, agent-agnostic instruction that a distributor or end
@@ -178,9 +182,22 @@ not necessarily followed. Core does not export this telemetry.
 
 Addition argument order is not semantic. `declaration-review-v1` records additions in deterministic package-ID order and preserves all capability candidates, revision comparisons, conflicts, and cycles as author-supplied review context. Missing or multiple declarations do not reject an addition because the runtime cannot observe the real implementation. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, deterministic order, declaration candidates, and review records from explicitly supplied package directories.
 
+Revision comparisons preserve provider-newer/provider-older direction, the
+major/minor/patch difference, low/medium/high review severity, and applicable
+structured provider change history. These fields prioritize integration review
+without becoming compatibility verdicts.
+
 `artifacts` lists declarations and registered adapters without invoking them. `adapters` lists the runtime's known artifact integrations. `validate-artifact` is an explicit request to run the registered format-specific validator. The official `org.seedspec.adapter.product-spec` adapter recognizes `org.seedspec.artifact.product-spec` and invokes `@productspec/parser`; ProductSpec is an optional dependency rather than a core package requirement.
 
 `discover-features` recursively inspects local catalog directories and reports each valid feature as `candidate` or `review`. It may show capability, revision, compatibility-scope, and conflict declarations, but it never makes a compatibility verdict or selects a feature. Remote registry search and package acquisition remain separate catalog responsibilities.
+
+`capability-conformance <package> <capability-id>` validates and reports the
+exact contract and suite binding for a provided capability. Adding
+`--result <yaml>` checks a separately produced realization result for exact
+contract/suite digests, complete check coverage, required evidence, and a
+consistent derived status. The command validates results; it does not execute
+untrusted package runners. Capability conformance results remain distinct from
+the project's `.seedspec/verification-state.yaml`.
 
 The resulting workspace is:
 
@@ -189,6 +206,8 @@ The resulting workspace is:
 ├── project.yaml
 ├── agent-guide.md
 ├── resolved-intent.yaml
+├── tasks.yaml
+├── task-references/
 ├── components.yaml
 ├── components/
 ├── artifacts.yaml
@@ -213,6 +232,13 @@ The runtime supplies implementation guidance and project-memory scaffolding,
 but the end user directs how the agent uses optional artifact workflows and
 whether it may make consequential changes. SeedSpec does not choose or change
 application code, external systems, or user data.
+
+When a package declares `tasks`, `tasks.yaml` preserves its ordered reminders
+and maps every package-relative reference to a copied file under
+`task-references/`. The agent consumes each package's list from top to bottom.
+There is no dependency graph, branching language, cross-package order, or
+package-owned progress state. Task completion is implementation progress, not
+acceptance or conformance evidence.
 
 The resolved handoff distinguishes evidence by what it can establish. Package
 evidence supports package claims; baseline evidence describes pre-work state;

@@ -1,13 +1,15 @@
 {
   "name": "@seedspec/runtime",
-  "version": "0.1.0-alpha.5",
-  "description": "Reference JavaScript runtime for the SeedSpec Protocol",
+  "version": "0.1.0-alpha.6",
+  "description": "Authoring, validation, resolution, and verification for SeedSpec packages",
   "keywords": [
     "seedspec",
     "agents",
     "intent",
+    "authoring",
     "validation",
-    "specifications"
+    "specifications",
+    "portable"
   ],
   "type": "module",
   "exports": {
@@ -24,7 +26,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@seedspec/protocol": "0.1.0-alpha.4",
+    "@seedspec/protocol": "0.1.0-alpha.5",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "yaml": "^2.8.0"

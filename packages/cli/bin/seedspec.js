@@ -13,6 +13,7 @@ import {
   formatArtifactValidation,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatCapabilityConformance,
   formatConformanceResult,
   formatFeatureDiscovery,
   formatPackageAgentPrompt,
@@ -24,6 +25,7 @@ import {
   formatProjectCompletion,
   initPackage,
   inspectPackage,
+  inspectCapabilityConformance,
   lintPackage,
   inspectProjectCompletion,
   listArtifactAdapters,
@@ -67,6 +69,7 @@ Usage:
   seedspec conformance [cases.yaml]
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
   seedspec completion <project-path> [--json]
+  seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
   seedspec resolve <root-package-path> [options]
   seedspec init <solution|application|feature|workflow|automation|configuration|integration> [--output <path>]
 
@@ -350,6 +353,20 @@ async function run() {
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(result, null, 2)}\n`
         : `${formatProjectCompletion(result)}\n`);
+      break;
+    }
+    case "capability-conformance": {
+      rejectUnknownOptions(options, ["result", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const capabilityId = requirePositional(positional, 1, "capability ID");
+      const result = await inspectCapabilityConformance(
+        packagePath,
+        capabilityId,
+        oneOption(options, "result")
+      );
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatCapabilityConformance(result)}\n`);
       break;
     }
     case "init": {

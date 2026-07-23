@@ -8,7 +8,12 @@ protocol makes those materials portable, discoverable, composable, and
 verifiable without claiming control over agent execution or promising identical
 outputs.
 
-These principles guide protocol, runtime, authoring, adapter, and marketplace decisions.
+SeedSpec also includes authoring and runtime tools that help people produce and
+use those packages. Protocol validity, authoring quality, and realization
+success remain separate claims.
+
+These principles guide protocol, runtime, authoring, adapter, and marketplace
+decisions.
 
 ## Increase fidelity without promising determinism
 
@@ -29,10 +34,42 @@ invariants, constraints, forbidden states, non-goals, success criteria, and
 decision latitude. Skills and tools provide capabilities; the model and harness
 choose actions and correct course against observed reality.
 
-A task sequence may be useful implementation material, but it is not a
-substitute for a target an agent can recognize. Authoring should ask whether an
-otherwise capable agent could detect success, boundary violations, and a poor
-package-to-user fit—not whether every implementation step was anticipated.
+An optional task sequence can preserve the author's ordered implementation
+reminders for an agent, but it is not a substitute for a target the agent can
+recognize. Its array order is enough; SeedSpec does not turn it into a workflow
+graph or infer that completing it proves success. Authoring should ask whether
+an otherwise capable agent could detect success, boundary violations, and a
+poor package-to-user fit—not whether every implementation step was anticipated.
+
+## Give recurring concerns stable semantic owners
+
+Product intent, adopter configuration, decision provenance, acceptance,
+implementation guidance, and observed evidence answer different questions.
+SeedSpec gives those concerns stable roles so their meaning can survive review,
+distribution, adaptation, and implementation.
+
+A single Markdown document can express all of them clearly. Semantic structure
+becomes especially useful when material crosses people, agents, projects, or
+time: recipients should not have to rediscover which passage is authoritative,
+which value is only an example, which decision remains open, what applies to
+this adopter, or what constitutes evidence.
+
+Stable ownership is not an excuse for fragmentation. Keep human-readable intent
+coherent, use structure where it preserves a meaningful boundary, and link
+rather than duplicate authority across files.
+
+## Treat authoring quality separately from format validity
+
+File structure and schema validity do not create missing expertise. A valid
+SeedSpec may be sparse, ambiguous, or poorly suited to a particular adopter,
+while a carefully authored standalone document may communicate intent well.
+
+Guided authoring should help expose material ambiguity, clarify decision
+authority, preserve genuine unknowns, distinguish claims from evidence, and
+test the handoff an independent agent will receive. Those are quality
+opportunities and review judgments, not additional meanings of protocol
+conformance. See [why semantic structure matters](semantic-structure.md) and
+the [current evaluation findings](evaluations.md).
 
 ## Keep evidence attached to the claim it proves
 
@@ -174,7 +211,7 @@ Adapters must not redefine core fields, relax core validation, or silently turn 
 
 ## Handoff, not permanent control
 
-SeedSpec is a handoff protocol, not a continuing control plane. A realized
+The SeedSpec Protocol defines a handoff, not a continuing control plane. A realized
 solution may retain lineage to the packages and artifacts that informed it, but
 the protocol does not require code, configured external state, and source
 artifacts to remain synchronized forever.
@@ -210,6 +247,13 @@ user intent.
 Implementation resources do not change this boundary. A resource associated
 with a capability is advice about authoring, implementation, or verification,
 not evidence that the actual realization provides the capability.
+
+A capability-conformance result is narrower: it is realization evidence that
+the exact declared suite ran with the recorded outcomes. Direction-aware
+revision severity and structured change history help prioritize what to run or
+inspect. Neither a package declaration nor a passing partial suite proves every
+meaning carried by the prose contract, and capability evidence does not replace
+project completion scope.
 
 Structured spec workflows demonstrate the value of making requirements, design, and implementation tasks separately inspectable; linking transformed outputs back to their sources; and checking requirements before expensive implementation begins. SeedSpec adopts those lessons as authoring and analysis capabilities. It does not require every package to pass through the same stages or make a task plan part of product intent.
 
