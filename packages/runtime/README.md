@@ -11,7 +11,7 @@ as protocol conformance.
 ## Install
 
 ```bash
-npm install @seedspec/runtime@next
+npm install @seedspec/runtime@0.2.0
 ```
 
 ## Example
@@ -19,8 +19,12 @@ npm install @seedspec/runtime@next
 ```js
 import {
   auditPackage,
+  createAuthorEvaluation,
   inspectCapabilityConformance,
   inspectPackage,
+  packPackage,
+  preparePackage,
+  publishCheckPackage,
   validatePackage
 } from "@seedspec/runtime";
 
@@ -42,6 +46,11 @@ const capability = await inspectCapabilityConformance(
 console.log(capability.status);
 ```
 
+The preparation, publish-check, evaluation, and pack functions are headless
+operations used by the CLI and suitable for a future web authoring interface.
+Their JSON results are versioned, while semantic agent work remains explicit
+and outside the runtime.
+
 Validation establishes package structure and content identity. It does not
 establish authorship, publisher identity, compatibility with an unseen
 environment, semantic completeness, safety to execute, or permission for
@@ -51,8 +60,8 @@ Resolution preserves package task runbooks in authored order, copies their
 package-local references into the handoff, and surfaces them to the implementing
 agent. It does not infer a task graph or treat task completion as conformance.
 
-Protocol `0.1` is a design alpha. Pin exact prerelease versions when building
-interoperable tools.
+Protocol `0.2` is experimental. Pin exact versions when building interoperable
+tools.
 
 - Documentation: [seedspec.dev](https://seedspec.dev)
 - Authoring: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/authoring.md)

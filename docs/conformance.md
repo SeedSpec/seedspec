@@ -1,11 +1,11 @@
-# SeedSpec Protocol 0.1 conformance suite
+# SeedSpec Protocol 0.2 conformance suite
 
 > **Normative conformance contract.** Together with the protocol specification
-> and versioned schemas, the indexed cases and fixtures form the Protocol 0.1
-> design-alpha release bundle.
+> and versioned schemas, the indexed cases and fixtures form the exact Protocol
+> 0.2 release bundle.
 
 The suite is indexed by `conformance/cases.yaml`, validated by
-`packages/protocol/schemas/v0.1/conformance.schema.json`, and bound to the
+`packages/protocol/schemas/v0.2/conformance.schema.json`, and bound to the
 declared `protocol_version` and `suite_version`. The exact protocol release
 records both the index-file digest and the canonical aggregate digest of the
 complete conformance directory, including fixtures and golden handoffs.
@@ -70,7 +70,7 @@ A behavioral correction that changes whether an artifact passes, its error class
 
 Fixtures should isolate one rule where practical. Negative cases assert stable error codes rather than implementation-specific prose.
 
-## Operations in suite 2.2.0
+## Operations in suite 0.2.0
 
 - `validate` checks structural, referenced-file, configuration, task-runbook,
   artifact-reference, relationship, semantic, and content-safety behavior
@@ -83,6 +83,6 @@ Fixtures should isolate one rule where practical. Negative cases assert stable e
   exact capability revision, contract and suite digests, complete check set,
   evidence, and derived status without conflating it with project completion.
 
-Design-alpha corrections increment `suite_version` and may change expected
-results. A conformance report is incomplete unless it identifies the exact
-suite version and source revision used.
+Corrections increment the coordinated release and may change expected results.
+A conformance report is incomplete unless it identifies the exact suite version
+and source revision used.

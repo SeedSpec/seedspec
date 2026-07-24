@@ -6,9 +6,15 @@ import path from "node:path";
 import process from "node:process";
 import { withPackageSource } from "../src/package-source.js";
 import {
+  exportBundledSkills,
+  formatBundledSkills,
+  listBundledSkills
+} from "../src/bundled-skills.js";
+import {
   auditPackage,
   beginPackage,
   computeDirectoryDigest,
+  createAuthorEvaluation,
   discoverFeatures,
   formatError,
   formatAdapterListing,
@@ -16,6 +22,7 @@ import {
   formatArtifactValidation,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatAuthorEvaluation,
   formatCapabilityConformance,
   formatConformanceResult,
   formatFeatureDiscovery,
@@ -26,7 +33,11 @@ import {
   formatImplementationResourceListing,
   formatImplementationResourceResolution,
   formatInstallationInspection,
+  formatPackResult,
+  formatPreparation,
+  formatPublishCheck,
   formatProjectCompletion,
+  formatUpgrade,
   initPackage,
   inspectPackage,
   inspectCapabilityConformance,
@@ -36,6 +47,9 @@ import {
   listArtifactAdapters,
   listPackageArtifacts,
   listPackageImplementationResources,
+  packPackage,
+  preparePackage,
+  publishCheckPackage,
   recordImplementationResourceUse,
   resolveImplementationResources,
   resolveProject,
@@ -47,6 +61,7 @@ import {
   protocolRelease,
   protocolReleaseDigest,
   protocolVersion,
+  upgradePackage,
   verifyProjectLock,
   validateArtifact,
   validatePackage
@@ -58,10 +73,17 @@ const IMPLEMENTING_GUIDE = readFileSync(
   "utf8"
 );
 
-const HELP = `SeedSpec CLI v0.1 alpha
+const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experimental)
 
 Usage:
+  seedspec prepare <package-path> [--state <directory>] [--status] [--json]
+  seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
   seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
+  seedspec publish-check <package-path> [--state <directory>] [--json]
+  seedspec pack <package-path> [--output <directory>] [--state <directory>] [--json]
+  seedspec eval <package-path> [--output <directory>] [--json]
+  seedspec skills <list|export> [--output <directory>] [--skill <id>] [--json]
+  seedspec upgrade <package-path> [--to <release>] [--dry-run|--write] [--json]
   seedspec docs <authoring [area]|implementing>
   seedspec version [--json]
   seedspec doctor [--full] [--json]
@@ -119,7 +141,14 @@ function parseArguments(args) {
       continue;
     }
 
-    if (value === "--json" || value === "--help" || value === "--status" || value === "--full") {
+    if (
+      value === "--json"
+      || value === "--help"
+      || value === "--status"
+      || value === "--full"
+      || value === "--write"
+      || value === "--dry-run"
+    ) {
       options.set(value.slice(2), [true]);
       continue;
     }
@@ -209,7 +238,8 @@ async function run() {
       if (result.status !== "healthy") process.exitCode = 1;
       break;
     }
-    case "audit": {
+    case "audit":
+    case "review": {
       rejectUnknownOptions(options, ["area", "target", "state", "status", "json"]);
       const packagePath = requirePositional(positional, 0, "package path");
       const statusOnly = options.has("status");
@@ -223,6 +253,95 @@ async function run() {
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(result, null, 2)}\n`
         : `${formatAuthoringAudit(result, { statusOnly })}\n`);
+      break;
+    }
+    case "prepare": {
+      rejectUnknownOptions(options, ["state", "status", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const statusOnly = options.has("status");
+      const result = await preparePackage(packagePath, {
+        stateDirectory: oneOption(options, "state"),
+        toolVersion: CLI_VERSION,
+        statusOnly
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatPreparation(result, { statusOnly })}\n`);
+      break;
+    }
+    case "publish-check": {
+      rejectUnknownOptions(options, ["state", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const result = await publishCheckPackage(packagePath, {
+        stateDirectory: oneOption(options, "state"),
+        toolVersion: CLI_VERSION
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatPublishCheck(result)}\n`);
+      if (!result.ready) process.exitCode = 1;
+      break;
+    }
+    case "pack": {
+      rejectUnknownOptions(options, ["output", "state", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const result = await packPackage(packagePath, {
+        outputDirectory: oneOption(options, "output"),
+        stateDirectory: oneOption(options, "state"),
+        toolVersion: CLI_VERSION
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatPackResult(result)}\n`);
+      break;
+    }
+    case "eval": {
+      rejectUnknownOptions(options, ["output", "json"]);
+      const packagePath = requirePositional(positional, 0, "package path");
+      const result = await createAuthorEvaluation(packagePath, {
+        outputDirectory: oneOption(options, "output"),
+        toolVersion: CLI_VERSION
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatAuthorEvaluation(result)}\n`);
+      break;
+    }
+    case "skills": {
+      rejectUnknownOptions(options, ["output", "skill", "json"]);
+      const action = positional[0] ?? "list";
+      let result;
+      if (action === "list") {
+        if (oneOption(options, "output") || oneOption(options, "skill")) {
+          throw new Error("skills list does not accept --output or --skill");
+        }
+        result = await listBundledSkills();
+      } else if (action === "export") {
+        result = await exportBundledSkills(
+          oneOption(options, "output") ?? ".agents/skills",
+          { skill: oneOption(options, "skill") }
+        );
+      } else {
+        throw new Error(`Unknown skills action: ${action}`);
+      }
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatBundledSkills(result)}\n`);
+      break;
+    }
+    case "upgrade": {
+      rejectUnknownOptions(options, ["to", "write", "dry-run", "json"]);
+      if (options.has("write") && options.has("dry-run")) {
+        throw new Error("Choose either --dry-run or --write");
+      }
+      const packagePath = requirePositional(positional, 0, "package path");
+      const result = await upgradePackage(packagePath, {
+        to: oneOption(options, "to"),
+        write: options.has("write")
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatUpgrade(result)}\n`);
       break;
     }
     case "docs": {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prepare a SeedSpec release"
+  short_description: "Align, verify, and publish an exact SeedSpec release"
+  default_prompt: "Prepare the SeedSpec repository family for an exact, drift-free release."

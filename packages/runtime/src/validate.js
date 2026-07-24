@@ -17,14 +17,15 @@ import {
   compileProtocolSchema,
   formatSchemaErrors
 } from "./schema.js";
+import { protocolVersion } from "@seedspec/protocol";
 
 export async function validatePackage(inputPath, { configurationPath } = {}) {
   const { root, manifestPath } = await resolvePackageLocation(inputPath);
   const manifest = await readYamlFile(manifestPath, "SeedSpec manifest");
-  if (manifest?.protocol_version !== "0.1") {
+  if (manifest?.protocol_version !== protocolVersion) {
     throw new SeedSpecError(`Unsupported SeedSpec Protocol version: ${manifest?.protocol_version ?? "missing"}`, {
       code: "UNSUPPORTED_PROTOCOL_VERSION",
-      details: ["This runtime supports protocol_version 0.1"]
+      details: [`This runtime supports protocol_version ${protocolVersion}`]
     });
   }
   const validateManifest = await compileProtocolSchema("seedspec.schema.json");

@@ -1,0 +1,15 @@
+{
+  "release_version": "0.2.0",
+  "protocol_family": "0.2",
+  "status": "experimental",
+  "conformance_suite_version": "0.2.0",
+  "schema_urls": {
+    "exact": "https://seedspec.dev/releases/0.2.0/schemas/",
+    "family_alias": "https://seedspec.dev/schemas/v0.2/"
+  },
+  "packages": [
+    "@seedspec/protocol",
+    "@seedspec/runtime",
+    "@seedspec/cli"
+  ]
+}

@@ -449,6 +449,6 @@ export function analyzeCapabilityDeclarations(root, additions) {
   return { orderedAdditions, capabilities, requirements, reviews };
 }
 
-// Backward-compatible alpha export. The function performs declaration analysis,
+// Backward-compatible legacy export. The function performs declaration analysis,
 // not provider selection or implementation-state resolution.
 export const resolveCapabilityGraph = analyzeCapabilityDeclarations;

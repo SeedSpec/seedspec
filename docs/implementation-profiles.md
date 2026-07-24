@@ -134,7 +134,7 @@ user or organization demand. Preferences may include approved platforms,
 languages, hosting, cost boundaries, data residency, compliance requirements,
 or operating constraints.
 
-Protocol 0.1 records project-specific preferences through technical preferences
+Protocol 0.2 records project-specific preferences through technical preferences
 and implementation targets. Persistent user- or organization-level preference
 stores are tooling concerns rather than portable package state. Tooling may use
 those preferences to rank or explain profiles, but it must preserve authored

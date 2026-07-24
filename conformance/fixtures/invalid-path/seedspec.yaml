@@ -1,7 +1,7 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.example.invalid-path
 name: Invalid Path
-version: "0.1.0-alpha.1"
+version: "0.1.0"
 kind: application
 definition:
   entrypoint: ../outside.md

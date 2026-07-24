@@ -1,6 +1,6 @@
 # SeedSpec
 
-**Protocol 0.1 design alpha**
+**SeedSpec 0.2.0 — experimental**
 
 SeedSpec helps people turn product and domain expertise into portable,
 agent-ready starting points. A SeedSpec package keeps the intended outcome,
@@ -58,8 +58,8 @@ claim boundaries before the package specification supplies exact field-level
 rules.
 
 The normative SeedSpec Protocol lives in this repository as
-[`@seedspec/protocol`](packages/protocol/README.md), the [Protocol 0.1
-specification](docs/protocol.md), the [versioned schemas](packages/protocol/schemas/v0.1/),
+[`@seedspec/protocol`](packages/protocol/README.md), the [Protocol 0.2
+specification](docs/protocol.md), the [versioned schemas](packages/protocol/schemas/v0.2/),
 and the [conformance suite](conformance/cases.yaml). The former
 `SeedSpec/seedspec-protocol` preview repository is retired; this repository is
 the canonical source for both the protocol and first-party tooling.
@@ -79,14 +79,14 @@ the canonical source for both the protocol and first-party tooling.
 
 ## Use a published package
 
-Run the current design-alpha CLI without installing it globally:
+Run the current CLI without installing it globally:
 
 ```bash
-npx --yes @seedspec/cli@next --help
-npx --yes @seedspec/cli@next version
-npx --yes @seedspec/cli@next doctor
-npx --yes @seedspec/cli@next validate <package-path>
-npx --yes @seedspec/cli@next begin <package-path>
+npx --yes @seedspec/cli@0.2.0 --help
+npx --yes @seedspec/cli@0.2.0 version
+npx --yes @seedspec/cli@0.2.0 doctor
+npx --yes @seedspec/cli@0.2.0 validate <package-path>
+npx --yes @seedspec/cli@0.2.0 begin <package-path>
 ```
 
 `seedspec begin` is the read-only starting point for an agent. It validates the
@@ -94,9 +94,9 @@ package, inventories the available intent and supporting material, explains the
 trust boundary, and identifies the user choices needed before resolution or
 implementation.
 
-The `next` tag identifies the current public design-alpha CLI. Pin exact
-prerelease versions when building integrations that depend on schemas,
-conformance behavior, or runtime output.
+The default npm tag identifies the current numeric release. Pin `0.2.0` when
+building integrations that depend on exact schemas, conformance behavior, or
+runtime output.
 
 ## Author a package
 
@@ -104,20 +104,23 @@ SeedSpec authoring is intended to be guided rather than a requirement to
 hand-edit every YAML and JSON file:
 
 ```bash
-npx --yes @seedspec/cli@next init application --output <package-path>
-npx --yes @seedspec/cli@next audit <package-path>
-npx --yes @seedspec/cli@next lint <package-path>
-npx --yes @seedspec/cli@next validate <package-path>
+npx --yes @seedspec/cli@0.2.0 init application --output <package-path>
+npx --yes @seedspec/cli@0.2.0 prepare <package-path>
+npx --yes @seedspec/cli@0.2.0 lint <package-path>
+npx --yes @seedspec/cli@0.2.0 validate <package-path>
+npx --yes @seedspec/cli@0.2.0 publish-check <package-path>
+npx --yes @seedspec/cli@0.2.0 pack <package-path>
 ```
 
-The audit workflow combines deterministic protocol checks with agent-guided
+The preparation workflow combines deterministic protocol checks with agent-guided
 semantic review. It helps separate concerns, apply a kind-aware lens, identify
 material ambiguity, record decision provenance, check internal consistency,
 harden the seed progressively, and review the independent handoff. The CLI does
 not embed a model or silently rewrite package content.
 
 See [authoring guidance](docs/authoring.md), [kind-aware authoring](docs/kind-guidance.md),
-and the bundled authoring skills under [`skills/`](skills/).
+[preparing and publishing](docs/publishing.md), and the bundled authoring skills
+under [`skills/`](skills/).
 
 ## Work in this repository
 
@@ -160,12 +163,14 @@ preferences, optional artifacts, completion scope, and evidence remain explicit
 inputs or state rather than assumptions hidden in resolution. See [runtime
 behavior](docs/runtime.md) for the complete lifecycle.
 
-## What exists in v0.1 alpha
+## What exists in 0.2.0
 
 - A compact declarative package format inside a wider handoff and composition
   protocol.
 - Kind-aware authoring audits, bundled guidance, package scaffolding, linting,
   and authoring skills.
+- A resumable preparation workflow, independent-agent evaluation workspace,
+  publish gate, deterministic package archive, and digest-bound sidecars.
 - A generic CLI and JavaScript runtime for validation, inspection, authoring,
   artifact adapters, discovery, configuration, resolution, locks, and scoped
   completion checks.
@@ -185,7 +190,7 @@ The [architecture](ARCHITECTURE.md) explains how these pieces fit together. The
 [principles](docs/principles.md), [glossary](docs/glossary.md), [use
 cases](docs/use-cases.md), and [versioning guide](docs/versioning.md) explain the
 design boundaries. Normative behavior is defined only by the [protocol
-specification](docs/protocol.md), [schemas](packages/protocol/schemas/v0.1/), and
+specification](docs/protocol.md), [schemas](packages/protocol/schemas/v0.2/), and
 [conformance contract](conformance/cases.yaml).
 
 ## Repository layout

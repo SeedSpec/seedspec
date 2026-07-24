@@ -11,6 +11,7 @@ import path from "node:path";
 import {
   conformanceBundlePath,
   conformanceSuiteVersion,
+  protocolDocumentDirectory,
   protocolPackageVersion,
   protocolRelease,
   protocolReleaseDigest,
@@ -119,6 +120,20 @@ async function verifySchemas() {
   return `${expected.length} schema digests match`;
 }
 
+async function verifyDocuments() {
+  for (const entry of protocolRelease.documents) {
+    const name = path.basename(entry.path);
+    if (entry.path !== `documents/${name}`) {
+      throw new Error(`Unsafe released document path: ${entry.path}`);
+    }
+    const actual = digest(await readFile(path.join(protocolDocumentDirectory, name)));
+    if (actual !== entry.digest) {
+      throw new Error(`Document digest mismatch: ${entry.path}`);
+    }
+  }
+  return `${protocolRelease.documents.length} document digests match`;
+}
+
 async function checked(id, action) {
   try {
     return {
@@ -163,6 +178,7 @@ export async function inspectInstallation({
       return `protocol ${protocolPackageVersion}; runtime ${runtimeVersion}${cliVersion ? `; CLI ${cliVersion}` : ""}`;
     }));
     checks.push(await checked("schema-digests", verifySchemas));
+    checks.push(await checked("document-digests", verifyDocuments));
     checks.push(await checked("conformance-bundle", async () => {
       bundledIndex = await materializeConformanceBundle(temporaryRoot);
       return `${conformanceSuiteVersion} matches ${protocolRelease.conformance.bundle_digest}`;

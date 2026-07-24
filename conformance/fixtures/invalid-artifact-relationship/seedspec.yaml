@@ -1,4 +1,4 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.example.invalid-artifact-relationship
 name: Invalid Artifact Relationship
 version: "1.0.0"

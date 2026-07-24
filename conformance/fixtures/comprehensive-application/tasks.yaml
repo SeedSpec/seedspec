@@ -1,4 +1,4 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 
 tasks:
   - id: inspect-current-state

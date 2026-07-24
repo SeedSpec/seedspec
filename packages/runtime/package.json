@@ -1,6 +1,6 @@
 {
   "name": "@seedspec/runtime",
-  "version": "0.1.0-alpha.7",
+  "version": "0.2.0",
   "description": "Authoring, validation, resolution, and verification for SeedSpec packages",
   "keywords": [
     "seedspec",
@@ -26,9 +26,10 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@seedspec/protocol": "0.1.0-alpha.6",
+    "@seedspec/protocol": "0.2.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "tar": "^7.4.3",
     "yaml": "^2.8.0"
   },
   "optionalDependencies": {

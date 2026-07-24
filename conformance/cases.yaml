@@ -1,5 +1,5 @@
-suite_version: "2.2.0"
-protocol_version: "0.1"
+suite_version: "0.2.0"
+protocol_version: "0.2"
 
 cases:
   - id: validate-comprehensive-application
@@ -174,7 +174,7 @@ cases:
     package: fixtures/comprehensive-application
     expect:
       result: pass
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
 
   - id: resolve-application-with-portable-feature
     description: The comprehensive application and portable feature fixtures produce a ready project.

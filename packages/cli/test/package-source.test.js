@@ -61,7 +61,7 @@ test("materializes the requested subdirectory and removes it after the operation
       clone: async (_source, checkoutDirectory) => {
         const packageDirectory = path.join(checkoutDirectory, "solutions", "family-hub", "seedspec");
         await mkdir(packageDirectory, { recursive: true });
-        await writeFile(path.join(packageDirectory, "seedspec.yaml"), "protocol_version: \"0.1\"\n");
+        await writeFile(path.join(packageDirectory, "seedspec.yaml"), "protocol_version: \"0.2\"\n");
       }
     }
   );

@@ -83,6 +83,25 @@ export {
   runBundledConformanceSuite
 } from "./doctor.js";
 export { resolveProject } from "./resolve.js";
+export {
+  PREPARATION_FORMAT,
+  formatPreparation,
+  preparePackage
+} from "./preparation.js";
+export {
+  PACK_RECEIPT_FORMAT,
+  PUBLISH_CHECK_FORMAT,
+  formatPackResult,
+  formatPublishCheck,
+  packPackage,
+  publishCheckPackage
+} from "./publishing.js";
+export {
+  AUTHOR_EVAL_FORMAT,
+  createAuthorEvaluation,
+  formatAuthorEvaluation
+} from "./evaluation.js";
+export { formatUpgrade, upgradePackage } from "./upgrade.js";
 export { formatResolvedIntentSummary, resolveAppliedIntent } from "./intent.js";
 export { validatePackage } from "./validate.js";
 export { materializeTasks, validateTaskRunbook } from "./tasks.js";

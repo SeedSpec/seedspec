@@ -1,8 +1,8 @@
 # Portable Feature Fixture integration decisions
 
-Source: org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
+Source: org.seedspec.fixtures.portable-feature@0.1.0
 
-Digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+Digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
 
 Capability, compatibility, and conflict declarations are integration evidence, not installation gates or observations of the actual realization. Solution configuration and answered decisions are recorded in `resolved-config.yaml`.
 

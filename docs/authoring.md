@@ -28,13 +28,19 @@ artifacts. Authors should be able to produce that package through interfaces
 suited to their experience and source material rather than being required to
 construct every file by hand.
 
-The included 0.1 authoring toolset is implemented in JavaScript for Node.js and
+The included 0.2 authoring toolset is implemented in JavaScript for Node.js and
 currently provides:
 
 - `seedspec init <kind>` for kind-specific package scaffolding;
-- `seedspec audit <package-path>` for a versioned, kind-aware authoring review;
+- `seedspec prepare <package-path>` for the resumable author-to-publication
+  lifecycle;
+- `seedspec review <package-path>` (and its `audit` compatibility name) for a
+  versioned, kind-aware authoring review;
 - `seedspec validate` and `seedspec lint` for structural validation and
   deterministic authoring feedback;
+- `seedspec publish-check`, `seedspec eval`, and `seedspec pack` for a
+  digest-bound publishing surface;
+- `seedspec skills list|export` for agent guidance shipped with the CLI;
 - `seedspec docs authoring [area]` for guidance bundled with the installed
   tool version; and
 - agent-guided application and feature authoring skills under `skills/`.
@@ -69,10 +75,12 @@ and explaining its judgment.
 Start or continue the next incomplete audit area with one command:
 
 ```bash
-seedspec audit <package-path> [--target <depth>]
+seedspec prepare <package-path>
 ```
 
-The command emits a Markdown work order for the agent and initializes a
+The prepare command first reports the deterministic baseline, then delegates to
+the same review state as `seedspec review` and `seedspec audit`. It emits a
+Markdown work order for the agent and initializes a
 standardized YAML result. After the agent records a completed result, running
 the same command advances to the next incomplete area. There is deliberately no
 `next` command: progression is derived from durable pass state rather than a
@@ -82,7 +90,7 @@ would follow an accepted pass.
 Target one area for an initial or repeated review with `--area`:
 
 ```bash
-seedspec audit <package-path> --area material-ambiguity
+seedspec review <package-path> --area material-ambiguity
 ```
 
 Inspect existing state without creating or changing files with `--status`.
@@ -119,7 +127,7 @@ area has a validated review record; it does not certify that the package is
 complete, high quality, or free of open questions. `abandoned` and
 `superseded` preserve history while allowing a later pass to revisit the area.
 
-The audit command has no package-writing or `--fix` mode. Creating a pass writes
+The review command has no package-writing or `--fix` mode. Creating a pass writes
 only audit state. A capable agent may apply explicit author decisions,
 source-supported refinements, and mechanical corrections to the package, then
 must record their basis and the final package digest. Suggestions and
@@ -163,6 +171,10 @@ they do not become package authority merely because an evaluator produced them.
 Authoring state is local and is never bundled, uploaded, synchronized, or
 exported implicitly. The stable layout is intended to support manual sharing
 now and an explicit export or hosted scratch-space flow later.
+
+The complete baseline, guided-review, author-resolution, publish-check,
+optional agent-evaluation, and pack lifecycle is documented in
+[preparing and publishing](publishing.md).
 
 ## One primary intent source
 
@@ -235,7 +247,7 @@ tasks: tasks.yaml
 Then author the referenced file:
 
 ```yaml
-protocol_version: "0.1"
+protocol_version: "0.2"
 tasks:
   - id: inspect-current-state
     instruction: Inspect the existing solution before making changes.

@@ -83,7 +83,7 @@ and additional-guidance policy without fetching or consulting content.
 `resource-digest` computes the content digest authors place on a bundled
 resource directory.
 
-`resolve` accepts repeated `--add` options, with `--feature` retained as an alpha compatibility alias; one `--applied-intent` document covering every selected package; one `--configuration-selections` document covering every selected package; an optional `--completion-scope`; product-decision answers through `--decisions`; separate `--technical-preferences`; and `--artifact-selections` for selected, declined, or deferred supporting artifacts. Package kind is a hint and does not constrain root or addition position.
+`resolve` accepts repeated `--add` options, with `--feature` retained as a legacy compatibility alias; one `--applied-intent` document covering every selected package; one `--configuration-selections` document covering every selected package; an optional `--completion-scope`; product-decision answers through `--decisions`; separate `--technical-preferences`; and `--artifact-selections` for selected, declined, or deferred supporting artifacts. Package kind is a hint and does not constrain root or addition position.
 
 Applied intent is resolved before implementation-profile choice. It records
 whether the end user wants each package as authored, adapted, or partially
@@ -97,7 +97,7 @@ that an agent can help produce the missing input.
 Example applied-intent input:
 
 ```yaml
-protocol_version: "0.1"
+protocol_version: "0.2"
 packages:
   - package: com.example.sales-dashboard
     use: adapted
@@ -129,7 +129,7 @@ A configuration entry chooses the exact author example or supplies a complete cu
 An included project-local completion criterion names its proof before work:
 
 ```yaml
-protocol_version: "0.1"
+protocol_version: "0.2"
 items:
   - kind: criterion
     id: daily-summary-delivered

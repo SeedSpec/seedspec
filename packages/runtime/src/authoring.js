@@ -5,9 +5,9 @@ import { SeedSpecError } from "./errors.js";
 import { lintPackage } from "./lint.js";
 import { validatePackage } from "./validate.js";
 
-export const AUTHORING_INSTRUCTION_FORMAT = "0.1";
-export const AUTHORING_RESULT_FORMAT = "0.1";
-export const AUTHORING_STATE_FORMAT = "0.1";
+export const AUTHORING_INSTRUCTION_FORMAT = "0.2";
+export const AUTHORING_RESULT_FORMAT = "0.2";
+export const AUTHORING_STATE_FORMAT = "0.2";
 
 export const AUTHORING_AREAS = Object.freeze([
   "concern-separation",
@@ -843,9 +843,9 @@ export function formatAuthoringDocumentation(area) {
     "A SeedSpec authoring agent works beside the author on the package. The CLI supplies versioned, kind-aware audit instructions and deterministic checks; the agent interprets source material, asks material questions, edits the package, and records a standardized result.",
     "",
     "Run:",
-    "  seedspec audit <package-path>",
-    "  seedspec audit <package-path> --area <area>",
-    "  seedspec audit <package-path> --status",
+    "  seedspec prepare <package-path>",
+    "  seedspec review <package-path> --area <area>",
+    "  seedspec prepare <package-path> --status",
     "",
     "Audit areas:"
   ];
@@ -865,6 +865,7 @@ export function formatAuthoringDocumentation(area) {
   }
   lines.push(
     "",
+    "After all review areas complete, run `seedspec publish-check`, optionally create a fresh-agent workspace with `seedspec eval`, and create the distributable archive with `seedspec pack`.",
     "Authoring state is stored outside the distributable package. No authoring state is uploaded or exported implicitly."
   );
   return lines.join("\n");
