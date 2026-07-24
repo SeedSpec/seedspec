@@ -26,11 +26,11 @@ examples. Architecture decision records preserve non-normative rationale. The
 informative `docs/glossary.md` defines the terminology used across those public
 surfaces.
 
-SeedSpec also includes guided authoring, reference runtime and CLI tooling, and
-independent distribution systems. Those layers can help improve or curate a
-package, but this document governs only interoperable package and handoff
-behavior. Informative explanations of the distinction are available in
-`ARCHITECTURE.md`, `docs/semantic-structure.md`, and `docs/evaluations.md`.
+SeedSpec also includes guided authoring and reference runtime and CLI tooling.
+Those tools can help improve or use a package, but this document governs only
+interoperable package and handoff behavior. Informative explanations of the
+distinction are available in `ARCHITECTURE.md`,
+`docs/semantic-structure.md`, and `docs/evaluations.md`.
 
 Informative release guidance for the independent version domains is available
 in `docs/versioning.md`.
@@ -73,12 +73,15 @@ preserved, and handed off. It does not assess whether an author supplied enough
 substantive content for a strong seed. Authoring tools and publishers may make
 separate, evidence-scoped quality claims without changing package conformance.
 
+Portability, independent verification, and neutrality apply to every package
+regardless of how it is authored, shared, or obtained.
+
 It does not standardize programming languages, frameworks, data stores, clouds,
 repository layouts, user interfaces, deployment, external-service operation,
-marketplace policy, payment, licensing enforcement, or the substantive content
-of agent guidance. It standardizes how authors declare, version, resolve, and
-preserve optional implementation resources without granting them automatic
-authority.
+storefronts, pricing, payment, licensing enforcement, commercial policy, or the
+substantive content of agent guidance. It standardizes how authors declare,
+version, resolve, and preserve optional implementation resources without
+granting them automatic authority.
 
 ## 2. Package model
 
@@ -1001,7 +1004,7 @@ realization satisfies its core intent.
 
 ## 14. Trust and non-goals
 
-Protocol validity does not mean a package is safe, accurate, certified, legally usable, or faithfully implementable. Marketplaces may add review, certification, signatures, reputation, malware scanning, and policy, but those claims remain outside the neutral package format.
+Protocol validity does not mean a package is safe, accurate, certified, legally usable, or faithfully implementable. External services may add review, certification, signatures, reputation, malware scanning, and policy, but those claims remain outside the neutral package format.
 
 Protocol 0.2 does not define package registries, related-solution or
 realization ranking, guidance-catalog search or ranking, signing, capability

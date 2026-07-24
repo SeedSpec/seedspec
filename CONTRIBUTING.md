@@ -22,7 +22,8 @@ Before editing, identify the affected document class:
 - architecture, semantic-structure, evaluation, authoring, runtime, security,
   and topic guides are informative;
 - architecture decision records are non-normative rationale; and
-- marketplace policy and product strategy are outside the protocol contract.
+- commercial distribution policy and product strategy are outside the protocol
+  contract.
 
 An editorial change clarifies the existing contract. A semantic change alters
 what an implementation accepts, produces, preserves, rejects, or reports.

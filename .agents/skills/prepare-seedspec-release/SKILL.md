@@ -1,6 +1,6 @@
 ---
 name: prepare-seedspec-release
-description: Prepare and audit a coordinated SeedSpec release across the protocol, runtime, CLI, conformance suite, reference packages, evaluation tools, marketplace prototype, and website. Use when bumping SeedSpec versions, publishing packages or schemas, staging release URLs, checking release integrity, or diagnosing drift among SeedSpec repositories.
+description: Prepare and audit a coordinated SeedSpec release across the protocol, runtime, CLI, conformance suite, reference packages, evaluation tools, and website. Use when bumping SeedSpec versions, publishing packages or schemas, staging release URLs, checking release integrity, or diagnosing drift among SeedSpec repositories.
 ---
 
 # Prepare a SeedSpec Release

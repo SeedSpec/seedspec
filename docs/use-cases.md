@@ -97,11 +97,11 @@ realizations.
 
 ## Authoring and distribution patterns
 
-The neutral protocol makes a package identifiable and portable. It does not
-decide which package is authoritative for an organization, certify publisher
-expertise, set commercial terms, or guarantee fit for a particular adopter.
-Libraries, vendors, consultancies, and marketplaces add those policies and
-claims around ordinary SeedSpec packages.
+The neutral protocol makes every package identifiable, portable, and
+independently verifiable. Those properties do not depend on who authored the
+package or how it reaches an adopter. The protocol does not decide which
+package is authoritative for an organization, certify publisher expertise, set
+commercial terms, or guarantee fit for a particular adopter.
 
 ### Internal enterprise seed library
 
@@ -171,17 +171,13 @@ implementation resources. Capability declarations and evidence help an agent
 prioritize review, but actual compatibility still depends on the target
 project.
 
-### Independent authors and marketplaces
+### Independent authors
 
-Authors may distribute or sell packages representing valuable solution
-knowledge. Commercial terms, payments, publisher reputation, and licensing
-enforcement stay outside the neutral protocol. Buyers receive ordinary
-SeedSpec packages that remain inspectable and independently validatable.
-
-A marketplace can add discovery, curation, reviews, update policy, provenance,
-support, and evidence requirements. It may label a package recommended or
-approved under its own stated criteria. Marketplace selection is not a new
-package kind and does not change what protocol validity establishes.
+Independent authors may publish packages that represent valuable solution
+knowledge. Their packages receive the same portable identity, integrity checks,
+semantic roles, and claim boundaries as packages authored inside an
+organization. Publication does not create a new package kind or change what
+protocol validity establishes.
 
 ### Public and open-source libraries
 

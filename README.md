@@ -49,8 +49,11 @@ findings](docs/evaluations.md).
 | **SeedSpec Authoring** | Guided audits, skills, and frontends help authors capture intent, expose material ambiguity, record decision provenance, and prepare a useful handoff. |
 | **SeedSpec Protocol** | The package and handoff contract defines semantic roles, identity, configuration, composition, integrity, resolution, and scoped verification state. |
 | **SeedSpec Runtime and CLI** | Reference tools validate, inspect, author, configure, resolve, and prepare packages for an agent without executing package content implicitly. |
-| **Publishers, libraries, and marketplaces** | Independent distribution systems curate packages, versions, evidence, support, and policy without changing the neutral package contract. |
 | **Implementation environments** | User-chosen agents and tools adapt resolved intent to a real codebase, external system, workflow, or other target and record scoped evidence. |
+
+Portability, independent verification, and neutrality are baseline properties
+of every SeedSpec package. They apply regardless of who authored the package,
+how it is shared, or where it is used.
 
 Start with the [SeedSpec language definition](docs/01-language.md). It defines
 the protocol's concepts, authority model, processing lifecycle, operations, and
@@ -212,8 +215,6 @@ cycles do not become protocol requirements:
   contains complete example packages and realized outputs.
 - [SeedSpec/seedspec-evals](https://github.com/SeedSpec/seedspec-evals)
   contains evaluation cases, harnesses, methods, and evidence.
-- [SeedSpec/seedspec-marketplace](https://github.com/SeedSpec/seedspec-marketplace)
-  explores distribution without making marketplace policy part of the protocol.
 
 ## Concept flow
 

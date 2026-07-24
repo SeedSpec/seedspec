@@ -50,7 +50,7 @@ or time: recipients can discover the same semantic roles without rediscovering
 authority, examples, open decisions, applicability, and evidence boundaries.
 See [why semantic structure matters](docs/semantic-structure.md).
 
-## Five system layers
+## Four system layers
 
 1. **SeedSpec Authoring** — guided workflows help an author capture source
    material, find consequential gaps, establish semantic ownership, and produce
@@ -60,10 +60,7 @@ See [why semantic structure matters](docs/semantic-structure.md).
 3. **SeedSpec Runtime and CLI** — generic tools validate, inspect, audit,
    discover, configure, resolve, and prepare packages without implicitly
    executing package content.
-4. **Libraries, publishers, and marketplaces** — independent distributors
-   curate exact packages, versions, evidence, support, and policy outside the
-   neutral protocol.
-5. **Implementation and integration** — replaceable agents interpret the
+4. **Implementation and integration** — replaceable agents interpret the
    handoff, adapt it to the actual environment, realize the selected outcome,
    and record scoped evidence under end-user direction.
 
@@ -177,5 +174,6 @@ needed. The actual realized state and its evidence determine whether the use
 case works.
 
 The alpha intentionally excludes package registries, implementation-guidance
-catalog services and ranking, marketplaces, signing, production deployment,
-universal generation engines, agent orchestration, and migration automation.
+catalog services and ranking, commerce and distribution-service policy,
+signing, production deployment, universal generation engines, agent
+orchestration, and migration automation.

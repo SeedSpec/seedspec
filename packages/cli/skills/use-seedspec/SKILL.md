@@ -39,7 +39,9 @@ $SEEDSPEC begin <root-package-path> --json
 
 This is the versioned, read-only workflow entry point. Use its notices and next actions as the package-specific checklist. It validates the package but does not configure, resolve, execute, fetch, or activate package content.
 
-If the user arrived without an agent instruction, `$SEEDSPEC prompt` prints the short generic instruction intended for package distribution. Do not replace it with a marketplace-specific copy of this entire skill.
+If the user arrived without an agent instruction, `$SEEDSPEC prompt` prints the
+short generic instruction intended for package distribution. Do not replace it
+with a channel-specific copy of this entire skill.
 
 ### 2. Establish the starting point
 

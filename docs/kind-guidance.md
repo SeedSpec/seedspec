@@ -147,4 +147,4 @@ semantics.
 Promoting a custom hint into the core vocabulary requires demonstrated use in
 multiple packages, a distinct and reusable authoring lens, documented fallback
 behavior, and conformance and lint coverage. A label does not belong in core
-merely because it is useful for marketplace categorization.
+merely because it is useful for catalog categorization.

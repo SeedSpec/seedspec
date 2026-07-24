@@ -29,13 +29,6 @@
 - Published evidence states narrow findings and limitations; do not turn
   benchmark saturation into a broad quality claim.
 
-## Marketplace prototype
-
-- The application and its first-party dependencies use the coordinated release.
-- Package identity remains the tuple of seed ID, author version, and digest.
-- Detached marketplace claims do not mutate portable seed packages.
-- Deferred registry and acquisition work remains labeled as deferred.
-
 ## Website
 
 - Exact files exist under `public/releases/<release>/schemas/`.

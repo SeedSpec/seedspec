@@ -144,7 +144,8 @@ Repair every schema, path, configuration, and capability error. Then review the 
   package, baseline, realization, or outcome evidence?
 - Is decision latitude explicit enough that an end user and agent know which
   choices require affirmation?
-- Did marketplace policy or publisher commercial language leak into the protocol artifact?
+- Did distribution-service policy or publisher commercial language leak into
+  the protocol artifact?
 
 Continue with `seedspec prepare <package-path>` so the author and agent work
 through the versioned review areas. Before distribution, require

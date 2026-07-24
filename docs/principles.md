@@ -12,8 +12,7 @@ SeedSpec also includes authoring and runtime tools that help people produce and
 use those packages. Protocol validity, authoring quality, and realization
 success remain separate claims.
 
-These principles guide protocol, runtime, authoring, adapter, and marketplace
-decisions.
+These principles guide protocol, runtime, authoring, and adapter decisions.
 
 ## Increase fidelity without promising determinism
 
@@ -57,6 +56,18 @@ this adopter, or what constitutes evidence.
 Stable ownership is not an excuse for fragmentation. Keep human-readable intent
 coherent, use structure where it preserves a meaningful boundary, and link
 rather than duplicate authority across files.
+
+## Make portability, independent verification, and neutrality universal
+
+These are baseline properties of every conforming package, not features
+reserved for a particular author, audience, or distribution channel. A
+package's identity, meaning, and validity must not depend on a particular
+service, account, catalog, or commercial relationship.
+
+Any recipient with the package bytes and a compatible implementation should be
+able to inspect its declared identity, validate its structure and integrity,
+and interpret its semantic roles. Those properties do not establish publisher
+identity, safety, quality, legal usability, or fit for a particular adopter.
 
 ## Treat authoring quality separately from format validity
 
@@ -282,4 +293,5 @@ When considering a new field or feature, ask:
 2. Is this specific to one artifact format? It belongs in an adapter.
 3. Does this guide authoring, analysis, discovery, or implementation? It usually belongs in tooling or a skill.
 4. Does this execute code, modify a codebase or external system, or change agent behavior? It requires explicit user direction and does not activate from discovery alone.
-5. Is this registry, marketplace, payment, reputation, or publisher policy? It belongs outside the neutral protocol.
+5. Is this externally managed discovery, payment, reputation, or publisher
+   policy? It belongs outside the neutral protocol.
