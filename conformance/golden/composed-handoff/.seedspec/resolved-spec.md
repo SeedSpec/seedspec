@@ -4,11 +4,11 @@
 
 ## Project summary
 
-- Root package: org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- Root package digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+- Root package: org.seedspec.fixtures.comprehensive-application@0.1.0
+- Root package digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
 - Root kind hint: application
-- Additions: org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
-- Protocol: 0.1
+- Additions: org.seedspec.fixtures.portable-feature@0.1.0
+- Protocol: 0.2
 - Applied intent: affirmed
 
 ## Applied intent and provenance
@@ -144,9 +144,9 @@ Unless a criterion names a configuration, it applies to every implementation.
 
 ## Addition: Portable Feature Fixture
 
-Package: org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
+Package: org.seedspec.fixtures.portable-feature@0.1.0
 
-Digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+Digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
 
 ### Addition configuration (example)
 
@@ -340,16 +340,16 @@ No declared decisions were answered during resolution.
 
 ## Declared capabilities
 
-- org.seedspec.core.actors@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- org.seedspec.core.approvals@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- org.seedspec.core.assignments@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- org.seedspec.core.balances@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- org.seedspec.core.chores@1.1.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1; conformance suite: `capabilities/conformance/chores.suite.yaml`; 1 structured revision transition(s)
-- org.seedspec.core.households@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- org.seedspec.core.transactions@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0-alpha.1
-- org.seedspec.finance.goal-allocations@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
-- org.seedspec.finance.goal-progress@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
-- org.seedspec.finance.savings-goals@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
+- org.seedspec.core.actors@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
+- org.seedspec.core.approvals@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
+- org.seedspec.core.assignments@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
+- org.seedspec.core.balances@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
+- org.seedspec.core.chores@1.1.0 — org.seedspec.fixtures.comprehensive-application@0.1.0; conformance suite: `capabilities/conformance/chores.suite.yaml`; 1 structured revision transition(s)
+- org.seedspec.core.households@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
+- org.seedspec.core.transactions@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
+- org.seedspec.finance.goal-allocations@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
+- org.seedspec.finance.goal-progress@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
+- org.seedspec.finance.savings-goals@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
 
 ## Capability and composition declaration review
 

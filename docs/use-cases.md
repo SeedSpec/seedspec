@@ -11,7 +11,7 @@ material identity and stable semantic roles so it can be distributed,
 configured, and handed to different agents without requiring one implementation
 stack.
 
-The package kind hints in the 0.1 alpha help tools recognize applications,
+The package kind hints in the 0.2 release help tools recognize applications,
 features, workflows, automations, configurations, integrations, and compound
 solutions without defining separate protocols. A SeedSpec realization may create
 source code, change an authenticated external system, establish an automation,

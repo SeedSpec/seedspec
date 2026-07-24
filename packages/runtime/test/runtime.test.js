@@ -28,6 +28,7 @@ import {
   completionScopeDigest,
   conformanceSuiteVersion,
   computeDirectoryDigest,
+  createAuthorEvaluation,
   discoverFeatures,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
@@ -42,10 +43,14 @@ import {
   listPackageArtifacts,
   listPackageImplementationResources,
   lintPackage,
+  packPackage,
+  preparePackage,
+  publishCheckPackage,
   recordImplementationResourceUse,
   resolveImplementationResources,
   resolveProject,
   runConformanceSuite,
+  upgradePackage,
   validateArtifact,
   verifyProjectLock,
   validatePackage
@@ -67,11 +72,37 @@ async function temporaryDirectory(t) {
   return directory;
 }
 
+async function completeAuthoringReview(packagePath, stateDirectory) {
+  for (let index = 0; index < AUTHORING_AREAS.length; index += 1) {
+    const audit = await auditPackage(packagePath, {
+      stateDirectory,
+      target: "package",
+      toolVersion: "0.2.0"
+    });
+    const result = parseYaml(await readFile(audit.current.result, "utf8"));
+    result.outcome = "completed";
+    result.summary = `Completed ${audit.current.area} for publishing test.`;
+    result.package_digest_after = audit.package.digest;
+    result.validation.protocol_valid = true;
+    result.validation.commands = [
+      "seedspec validate package",
+      "seedspec lint package",
+      "seedspec digest package"
+    ];
+    await writeFile(audit.current.result, stringifyYaml(result), "utf8");
+  }
+  return auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0",
+    statusOnly: true
+  });
+}
+
 async function writeExampleConfigurationSelections(directory, packagePaths, name = "configuration-selections.yaml") {
   const records = await Promise.all(packagePaths.map(validatePackage));
   const selectionPath = path.join(directory, name);
   await writeFile(selectionPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: records.map((record) => ({
       package: record.manifest.id,
       selection: "example"
@@ -84,7 +115,7 @@ async function writeAffirmedAppliedIntent(directory, packagePaths, name = "appli
   const records = await Promise.all(packagePaths.map(validatePackage));
   const intentPath = path.join(directory, name);
   await writeFile(intentPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: records.map((record) => ({
       package: record.manifest.id,
       use: "as-authored"
@@ -331,9 +362,9 @@ test("completed authoring passes accept pinned npm CLI commands", async (t) => {
   result.outcome = "completed";
   result.summary = "Validated through the exact npm CLI package.";
   result.validation.commands = [
-    "npx --yes @seedspec/cli@0.1.0-alpha.3 validate package",
-    "npx --yes @seedspec/cli@0.1.0-alpha.3 lint package",
-    "npx --yes @seedspec/cli@0.1.0-alpha.3 digest package"
+    "npx --yes @seedspec/cli@0.2.0 validate package",
+    "npx --yes @seedspec/cli@0.2.0 lint package",
+    "npx --yes @seedspec/cli@0.2.0 digest package"
   ];
   await writeFile(audit.current.result, stringifyYaml(result), "utf8");
 
@@ -497,7 +528,7 @@ test("capability conformance results bind exact contract, suite, checks, and rea
 
   const resultPath = path.join(output, "capability-conformance.yaml");
   const result = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     capability: binding.capability,
     contract_digest: binding.contract_digest,
     suite_digest: binding.suite_digest,
@@ -756,7 +787,7 @@ test("author-declared implementation resources are validated, preserved, and res
 
   const fileDigest = `sha256:${createHash("sha256").update(fixture.skillSource).digest("hex")}`;
   const remoteManifest = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     id: resource.id,
     version: "0.1.0",
     kind: "skill",
@@ -892,7 +923,7 @@ test("latest resource policies reject SemVer prereleases below a stable baseline
   const projectPath = path.join(fixture.output, "project");
   await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
   const remoteManifest = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     id: "org.seedspec.guidance.authorization-decisions",
     version: "0.1.0-alpha.1",
     kind: "skill",
@@ -1163,7 +1194,7 @@ test("artifact dispositions and implementation targets survive resolution", asyn
   const selectionsPath = path.join(output, "artifact-selections.yaml");
   const preferencesPath = path.join(output, "technical-preferences.yaml");
   await writeFile(selectionsPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       id: "product-spec",
@@ -1211,7 +1242,7 @@ test("invalid artifact references fail and primary intent may guide a target wit
   const declinedPrimaryPath = path.join(output, "declined-primary.yaml");
   const preferencesPath = path.join(output, "technical-preferences.yaml");
   await writeFile(invalidSelectionsPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       id: "missing-artifact",
@@ -1230,7 +1261,7 @@ test("invalid artifact references fail and primary intent may guide a target wit
     }]
   }), "utf8");
   await writeFile(declinedPrimaryPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       id: "product-spec",
@@ -1273,7 +1304,7 @@ test("selecting execution material does not turn disposition into activation", a
   manifest.artifacts[0].concerns = ["org.seedspec.concern.execution"];
   await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
   await writeFile(selectionsPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       id: "product-spec",
@@ -1457,7 +1488,7 @@ test("configuration selections distinguish examples, complete custom values, and
 
   const customPath = path.join(output, "custom-selection.yaml");
   await writeFile(customPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: [{
       package: application.manifest.id,
       selection: "custom",
@@ -1477,7 +1508,7 @@ test("configuration selections distinguish examples, complete custom values, and
 
   const partialPath = path.join(output, "partial-selection.yaml");
   await writeFile(partialPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: [{
       package: application.manifest.id,
       selection: "custom",
@@ -1501,7 +1532,7 @@ test("configuration selections reject missing, duplicate, and unselected package
     {
       name: "missing",
       input: {
-        protocol_version: "0.1",
+        protocol_version: "0.2",
         packages: [{ package: "org.seedspec.fixtures.comprehensive-application", selection: "example" }]
       },
       code: "MISSING_CONFIGURATION_SELECTION"
@@ -1509,7 +1540,7 @@ test("configuration selections reject missing, duplicate, and unselected package
     {
       name: "duplicate",
       input: {
-        protocol_version: "0.1",
+        protocol_version: "0.2",
         packages: [
           { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
           { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
@@ -1521,7 +1552,7 @@ test("configuration selections reject missing, duplicate, and unselected package
     {
       name: "unselected",
       input: {
-        protocol_version: "0.1",
+        protocol_version: "0.2",
         packages: [
           { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
           { package: "org.example.not-selected", selection: "example" }
@@ -1563,7 +1594,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const partialCoveragePath = path.join(output, "partial-coverage.yaml");
   await writeFile(partialCoveragePath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "as-authored"
@@ -1582,7 +1613,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const proposedPath = path.join(output, "proposed-intent.yaml");
   await writeFile(proposedPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "as-authored"
@@ -1605,7 +1636,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const affirmedPath = path.join(output, "affirmed-intent.yaml");
   await writeFile(affirmedPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "adapted",
@@ -1661,7 +1692,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const invalidPath = path.join(output, "invalid-intent.yaml");
   await writeFile(invalidPath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "adapted"
@@ -1713,7 +1744,7 @@ test("completion checking derives verified-with-gaps from scoped evidence", asyn
   const appliedIntentPath = await writeAffirmedAppliedIntent(output, [allowance, savings]);
   const completionScopePath = path.join(output, "completion-input.yaml");
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     items: [
       {
         kind: "component",
@@ -1780,7 +1811,7 @@ test("completion checking rejects overlapping references and stale verification"
   const appliedIntentPath = await writeAffirmedAppliedIntent(output, [allowance]);
   const completionScopePath = path.join(output, "completion-input.yaml");
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     items: [{
       kind: "component",
       id: "allowance-acceptance",
@@ -1803,7 +1834,7 @@ test("completion checking rejects overlapping references and stale verification"
   );
 
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     items: [{
       kind: "component",
       id: "allowance-acceptance",
@@ -1822,7 +1853,7 @@ test("completion checking rejects overlapping references and stale verification"
   });
 
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     items: [{
       kind: "component",
       id: "allowance-acceptance",
@@ -1978,6 +2009,95 @@ test("init creates valid starter packages for every kind hint", async (t) => {
   }
 });
 
+test("preparation, author evaluation, publish checking, and packing form one headless lifecycle", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+
+  const preparation = await preparePackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0"
+  });
+  assert.equal(preparation.preparation_version, "1");
+  assert.equal(preparation.phase, "guided-review");
+  assert.equal(preparation.review.current.area, "concern-separation");
+
+  const blocked = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0"
+  });
+  assert.equal(blocked.ready, false);
+  assert.equal(
+    blocked.checks.find(({ id }) => id === "authoring-review").status,
+    "failed"
+  );
+
+  const evaluation = await createAuthorEvaluation(packagePath, {
+    outputDirectory: path.join(output, "evaluations", "first"),
+    toolVersion: "0.2.0"
+  });
+  assert.equal(evaluation.eval_harness_version, "1");
+  assert.equal(evaluation.package.digest, preparation.package.digest);
+  assert.match(await readFile(evaluation.paths.instructions, "utf8"), /fresh target workspace/u);
+
+  const completed = await completeAuthoringReview(packagePath, stateDirectory);
+  assert.equal(completed.complete, true);
+  const ready = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0"
+  });
+  assert.equal(ready.ready, true);
+  assert.equal(ready.inspection.inspection_version, "1");
+
+  const first = await packPackage(packagePath, {
+    outputDirectory: path.join(output, "release-one"),
+    stateDirectory,
+    toolVersion: "0.2.0"
+  });
+  const second = await packPackage(packagePath, {
+    outputDirectory: path.join(output, "release-two"),
+    stateDirectory,
+    toolVersion: "0.2.0"
+  });
+  assert.equal(first.pack_receipt_version, "1");
+  assert.equal(first.archive.digest, second.archive.digest);
+  assert.equal(
+    JSON.parse(await readFile(first.paths.receipt, "utf8")).package.digest,
+    ready.package.digest
+  );
+  await assert.rejects(
+    packPackage(packagePath, {
+      outputDirectory: path.join(output, "release-one"),
+      stateDirectory,
+      toolVersion: "0.2.0"
+    }),
+    (error) => error.code === "PACK_OUTPUT_EXISTS"
+  );
+});
+
+test("0.1 package migration is dry-run first and preserves author package version", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "old-package");
+  await cp(savings, packagePath, { recursive: true });
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const document = parseYaml(await readFile(manifestPath, "utf8"));
+  const authorVersion = document.version;
+  document.protocol_version = "0.1";
+  await writeFile(manifestPath, stringifyYaml(document), "utf8");
+
+  const planned = await upgradePackage(packagePath);
+  assert.equal(planned.written, false);
+  assert.equal(planned.changes[0].from, "0.1");
+  assert.equal(parseYaml(await readFile(manifestPath, "utf8")).protocol_version, "0.1");
+
+  const migrated = await upgradePackage(packagePath, { write: true });
+  assert.equal(migrated.written, true);
+  const record = await validatePackage(packagePath);
+  assert.equal(record.manifest.protocol_version, "0.2");
+  assert.equal(record.manifest.version, authorVersion);
+});
+
 test("CLI validates and inspects the comprehensive application fixture", async () => {
   const cli = path.join(root, "packages/cli/bin/seedspec.js");
   const version = await execFileAsync(process.execPath, [cli, "version", "--json"]);
@@ -2011,9 +2131,9 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   ]);
 
   const versionInfo = JSON.parse(version.stdout);
-  assert.equal(versionInfo.protocol_version, "0.1");
-  assert.equal(versionInfo.conformance_suite_version, "2.2.0");
-  assert.equal(versionInfo.cli_version, "0.1.0-alpha.9");
+  assert.equal(versionInfo.protocol_version, "0.2");
+  assert.equal(versionInfo.conformance_suite_version, "0.2.0");
+  assert.equal(versionInfo.cli_version, "0.2.0");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.equal(JSON.parse(doctor.stdout).status, "healthy");
   assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
@@ -2037,10 +2157,10 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
 test("installation doctor verifies the exact release and bundled suite", async () => {
   const result = await inspectInstallation({
-    cliVersion: "0.1.0-alpha.9"
+    cliVersion: "0.2.0"
   });
   assert.equal(result.status, "healthy");
-  assert.equal(result.protocol_release.id, "0.1.0-alpha.6");
+  assert.equal(result.protocol_release.id, "0.2.0");
   assert.ok(result.checks.every((check) => check.status === "passed"));
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
@@ -2075,12 +2195,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.9`/);
+  assert.match(audit.stdout, /Tool version: `0\.2\.0`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.9/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.0/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
@@ -2240,7 +2360,7 @@ test("a dependency lock verifies exact package bytes and declaration analysis", 
   );
 });
 
-test("alpha format suite passes every declared case", async () => {
+test("0.2 conformance suite passes every declared case", async () => {
   const result = await runConformanceSuite(path.join(root, "conformance/cases.yaml"));
   assert.equal(result.suite.version, conformanceSuiteVersion);
   assert.equal(result.status, "conformant");
@@ -2256,8 +2376,8 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "2.2.0",
-    protocol_version: "0.1",
+    suite_version: "0.2.0",
+    protocol_version: "0.2",
     cases: [{
       id: "outside-fixture",
       operation: "validate",

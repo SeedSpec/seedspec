@@ -1,7 +1,7 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.seedspec.fixtures.portable-feature
 name: Portable Feature Fixture
-version: "0.1.0-alpha.1"
+version: "0.1.0"
 kind: feature
 description: Exercise a portable feature with required and provided capability contracts.
 

@@ -128,7 +128,7 @@ may include:
 - `eval-suite` bundles interpreted by a named runner.
 
 ```yaml
-protocol_version: "0.1"
+protocol_version: "0.2"
 capability:
   id: org.example.product.transactions
   version: "1.2.0"

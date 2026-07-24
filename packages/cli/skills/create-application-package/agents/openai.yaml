@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create SeedSpec application package"
+  short_description: "Turn a product idea into a valid SeedSpec package"
+  default_prompt: "Use $create-application-package to turn my application idea into a validated SeedSpec package."

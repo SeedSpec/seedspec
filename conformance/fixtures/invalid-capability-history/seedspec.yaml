@@ -1,4 +1,4 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.example.invalid-capability-history
 name: Invalid Capability History
 version: "0.1.0"

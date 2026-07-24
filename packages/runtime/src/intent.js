@@ -93,7 +93,7 @@ export async function resolveAppliedIntent(inputPath, records) {
   }
 
   const resolved = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     status: unresolved.length > 0 ? "review" : "affirmed",
     packages: records.map((record) => packageIntentSource(
       record,

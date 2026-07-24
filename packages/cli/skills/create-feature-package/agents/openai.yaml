@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create SeedSpec feature package"
+  short_description: "Define a portable SeedSpec feature package from an idea"
+  default_prompt: "Use $create-feature-package to define and validate a feature for my SeedSpec project."

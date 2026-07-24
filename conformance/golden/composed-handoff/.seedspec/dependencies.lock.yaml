@@ -1,51 +1,51 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 resolution_algorithm: declaration-review-v1
 root:
   id: org.seedspec.fixtures.comprehensive-application
-  version: 0.1.0-alpha.1
+  version: 0.1.0
   kind: application
-  digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
 additions:
   - id: org.seedspec.fixtures.portable-feature
-    version: 0.1.0-alpha.1
+    version: 0.1.0
     kind: feature
-    digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+    digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
 capabilities:
   - id: org.seedspec.core.actors
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
   - id: org.seedspec.core.approvals
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
   - id: org.seedspec.core.assignments
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
   - id: org.seedspec.core.balances
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
   - id: org.seedspec.core.chores
     version: 1.1.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
     change_history:
       - from: 1.0.0
         to: 1.1.0
@@ -62,37 +62,37 @@ capabilities:
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
   - id: org.seedspec.core.transactions
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.comprehensive-application
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: application
-      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
   - id: org.seedspec.finance.goal-allocations
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.portable-feature
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: feature
-      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+      digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
   - id: org.seedspec.finance.goal-progress
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.portable-feature
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: feature
-      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+      digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
   - id: org.seedspec.finance.savings-goals
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.portable-feature
-      version: 0.1.0-alpha.1
+      version: 0.1.0
       kind: feature
-      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+      digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
 requirements:
   - consumer: org.seedspec.fixtures.portable-feature
     capability: org.seedspec.core.actors
@@ -100,9 +100,9 @@ requirements:
     providers:
       - provider:
           id: org.seedspec.fixtures.comprehensive-application
-          version: 0.1.0-alpha.1
+          version: 0.1.0
           kind: application
-          digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+          digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
         provided_version: 1.0.0
         revision_status: tested-revision
         revision_direction: exact
@@ -118,9 +118,9 @@ requirements:
     providers:
       - provider:
           id: org.seedspec.fixtures.comprehensive-application
-          version: 0.1.0-alpha.1
+          version: 0.1.0
           kind: application
-          digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+          digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
         provided_version: 1.0.0
         revision_status: tested-revision
         revision_direction: exact
@@ -136,9 +136,9 @@ requirements:
     providers:
       - provider:
           id: org.seedspec.fixtures.comprehensive-application
-          version: 0.1.0-alpha.1
+          version: 0.1.0
           kind: application
-          digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+          digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
         provided_version: 1.0.0
         revision_status: tested-revision
         revision_direction: exact

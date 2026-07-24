@@ -5,6 +5,7 @@ export async function inspectPackage(inputPath) {
   const { manifest } = record;
 
   return {
+    inspection_version: "1",
     id: manifest.id,
     name: manifest.name,
     version: manifest.version,

@@ -147,7 +147,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         configurationSelectionsPath = path.join(outputDirectory, "configuration-selections.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(configurationSelectionsPath, stringifyYaml({
-          protocol_version: "0.1",
+          protocol_version: "0.2",
           packages: records.map((record) => ({
             package: record.manifest.id,
             selection: "example"
@@ -161,7 +161,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         appliedIntentPath = path.join(outputDirectory, "applied-intent.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(appliedIntentPath, stringifyYaml({
-          protocol_version: "0.1",
+          protocol_version: "0.2",
           packages: records.map((record) => ({
             package: record.manifest.id,
             use: "as-authored"

@@ -88,6 +88,31 @@ audit increased cost without improving the result and sometimes reduced
 coverage. Tooling should select and sequence relevant guidance rather than
 stack every available workflow.
 
+### Skills amplify capability; they do not replace judgment
+
+A separate implementation matrix held one authored package and comparison axes
+constant while varying the implementing model and procedural skill. For the
+lower-cost model, stronger guidance increased covered shared obligations from
+**9 to 16 of 24**, increased aligned shared decisions from **8 to 12 of 18**,
+and reduced deviations from **7 to 5**.
+
+The improvement did not make that model equivalent to the stronger model. All
+six lower-cost-model runs retained a critical forgeable-identity deviation,
+including the skill-guided runs whose self-review declared the authority
+boundary clear.
+
+The responsible conclusion is that skill quality and model capability both
+matter. A strong procedure can make a model more systematic and improve
+evidence coverage, but independent evaluation remains necessary.
+
+### A saturated benchmark is an integrity gate, not proof of quality
+
+All twelve implementations in that matrix received 9 of 10 from the legacy
+deterministic contract score even though the independent evaluator found the
+critical identity defect in half of them. SeedSpec now labels that result a
+contract/integrity gate. It is useful, but it does not measure security,
+reliability, maintainability, flexibility, test depth, or evidence quality.
+
 ## Evidence table
 
 | Current finding | Evidence strength | Appropriate interpretation |
@@ -97,6 +122,8 @@ stack every available workflow.
 | A valid SeedSpec can still have material gaps. | Observed directly in the minimal treatment. | Protocol validity and seed quality must remain separate claims. |
 | Guided semantic authoring improves explicit uncertainty and ownership. | Observed in the guided and restructured treatments. | The authoring system is a first-class part of SeedSpec's value. |
 | Specialized packaged guidance can materially improve obligation coverage. | Repeated three times per treatment in one synthetic specialized domain. | SeedSpec can carry expertise that a general model cannot reliably infer, but broader replication is still needed. |
+| Stronger procedural guidance can help a less-capable model. | Observed across three repetitions per cell in one implementation matrix. | Skills amplify capability but did not eliminate a repeated critical authority defect. |
+| A near-max deterministic score proves implementation quality. | Contradicted by the same twelve-run matrix. | Treat the score as a contract/integrity gate and retain independent technical evaluation. |
 | Authorship gains produce stronger implementations. | Not yet established by the cited authorship experiments. | Implementation congruency across agents, models, and environments is the next evidence boundary. |
 
 ## Evaluation program
@@ -128,6 +155,8 @@ The results support these public statements:
   uncertainty, and evidence across reuse and handoff.
 - Package-scoped domain knowledge can improve coverage when the model could not
   otherwise infer that knowledge.
+- Strong procedural skills can materially improve a model's coverage without
+  substituting for model judgment or independent evaluation.
 - A valid package is not automatically a strong specification, and a strong
   specification does not guarantee a correct implementation.
 

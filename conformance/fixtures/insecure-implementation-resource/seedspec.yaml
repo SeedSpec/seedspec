@@ -1,4 +1,4 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.example.insecure-implementation-resource
 name: Insecure Implementation Resource
 version: "0.1.0"
