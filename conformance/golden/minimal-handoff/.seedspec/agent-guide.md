@@ -41,7 +41,7 @@ This project contains SeedSpec packages: structured solution intent and verifica
 
 ## Selected intent
 
-- Root package: org.seedspec.fixtures.portable-feature@0.1.0-alpha.1 (kind hint: feature)
+- Root package: org.seedspec.fixtures.portable-feature@0.1.0 (kind hint: feature)
 - Additions: none
 - Implementation profiles: not-declared
 - Applied intent: affirmed

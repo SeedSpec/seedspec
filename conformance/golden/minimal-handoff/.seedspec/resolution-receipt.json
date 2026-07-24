@@ -1,31 +1,31 @@
 {
   "receipt_version": "1",
-  "receipt_id": "sha256:f5186dbec48b755602fa899cdd1f27063a80b6b8a14d50141ea92a952ee036d5",
+  "receipt_id": "sha256:f5c125141ade27c879532dbf85ca569219289009b47a77344fb0cfd07aa653e0",
   "subject": {
     "operation": "resolve",
     "protocol_release": {
-      "id": "0.1.0-alpha.6",
-      "digest": "sha256:63efacf2499426913edf1633a09b62cb7161138c209fc2822c720f70bcea97d3"
+      "id": "0.2.0",
+      "digest": "sha256:4f0b97684b50b7994bd2d73dfcd401d5f97476c23d70ce8ee5c7986f82754047"
     },
     "packages": {
       "root": {
         "id": "org.seedspec.fixtures.portable-feature",
-        "version": "0.1.0-alpha.1",
-        "digest": "sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6"
+        "version": "0.1.0",
+        "digest": "sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c"
       },
       "additions": []
     },
     "inputs": {
-      "configuration_selections": "sha256:3264b785b1712a27e4c4389457531521ae4092e7af4b055833300d6f0f212978",
-      "applied_intent": "sha256:7608db4a155965a81317815a8239e1f2da9dc1b3c397989a588b30c50074067a"
+      "configuration_selections": "sha256:e96561d7013f1624659d6803704dc0ef52a89a711d7a1299ec19bed0c2b47736",
+      "applied_intent": "sha256:f12895dacb0e1523c79142db45c188fade2c0342d7b328665927c9a2094fc0d7"
     },
     "result": {
       "status": "ready",
-      "output_digest": "sha256:7c5c6b8d7f9e42f805c9e015b3ad347a2b47d62163c82285ddd30201963594c7"
+      "output_digest": "sha256:faf98a2b7dc0dc3208148a8a8562e3d07b1c061a6ae0eec924274837dcf8ec78"
     }
   },
   "producer": {
     "name": "@seedspec/runtime",
-    "version": "0.1.0-alpha.7"
+    "version": "0.2.0"
   }
 }

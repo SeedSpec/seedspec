@@ -1,6 +1,6 @@
 {
   "name": "seedspec",
-  "version": "0.1.0-alpha.9",
+  "version": "0.2.0",
   "private": true,
   "description": "Authoring tools, package protocol, runtime, and CLI for portable agent-ready seeds",
   "type": "module",
@@ -10,10 +10,12 @@
   "scripts": {
     "test": "npm run test --workspace @seedspec/runtime",
     "conformance:goldens": "node ./scripts/generate-conformance-goldens.mjs",
-    "release:protocol": "node ./scripts/generate-protocol-release.mjs",
+    "release:protocol": "node ./scripts/generate-protocol-release.mjs && node ./scripts/generate-conformance-goldens.mjs && node ./scripts/generate-protocol-release.mjs",
+    "release:verify": "node ./scripts/verify-release.mjs",
+    "release:pack": "npm pack --workspace @seedspec/protocol --dry-run && npm pack --workspace @seedspec/runtime --dry-run && npm pack --workspace @seedspec/cli --dry-run",
     "check:names": "node ./scripts/check-clean-names.mjs",
     "validate:fixtures": "node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/comprehensive-application && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/portable-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/revision-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/profiled-workflow",
-    "check": "npm run check:names && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures",
+    "check": "npm run release:verify && npm run check:names && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures",
     "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/cases.yaml"
   },
   "engines": {

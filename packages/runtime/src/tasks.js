@@ -64,7 +64,7 @@ export async function materializeTasks(records, workspace) {
   await mkdir(referenceRoot, { recursive: true });
 
   const index = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     packages: []
   };
 

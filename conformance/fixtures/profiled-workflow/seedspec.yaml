@@ -1,7 +1,7 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.seedspec.fixtures.profiled-workflow
 name: Profiled Workflow Fixture
-version: 0.1.0-alpha.1
+version: 0.1.0
 kind: workflow
 description: Exercise a workflow package with several conditional implementation profiles.
 definition:

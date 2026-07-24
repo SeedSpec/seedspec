@@ -1,7 +1,7 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.example.conflicting-feature
 name: Conflicting Feature
-version: "0.1.0-alpha.1"
+version: "0.1.0"
 kind: feature
 definition:
   entrypoint: definition/feature.md

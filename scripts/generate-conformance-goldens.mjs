@@ -53,14 +53,14 @@ for (const scenario of scenarios) {
     );
     const appliedIntentPath = path.join(temporaryRoot, "applied-intent.yaml");
     await writeFile(configurationSelectionsPath, stringifyYaml({
-      protocol_version: "0.1",
+      protocol_version: "0.2",
       packages: records.map((record) => ({
         package: record.manifest.id,
         selection: "example"
       }))
     }), "utf8");
     await writeFile(appliedIntentPath, stringifyYaml({
-      protocol_version: "0.1",
+      protocol_version: "0.2",
       packages: records.map((record) => ({
         package: record.manifest.id,
         use: "as-authored"

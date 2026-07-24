@@ -30,7 +30,7 @@ Select the author example exactly:
 
 ```yaml
 # configuration-selections.yaml
-protocol_version: "0.1"
+protocol_version: "0.2"
 packages:
   - package: org.example.package
     selection: example
@@ -40,7 +40,7 @@ Affirm how package intent applies:
 
 ```yaml
 # applied-intent.yaml
-protocol_version: "0.1"
+protocol_version: "0.2"
 packages:
   - package: org.example.package
     use: as-authored

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shape Solution Intent"
+  short_description: "Clarify intent without inventing authority"
+  default_prompt: "Use $shape-solution-intent to turn this rough idea into explicit, evidence-ready solution intent."

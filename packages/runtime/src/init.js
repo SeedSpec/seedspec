@@ -104,10 +104,10 @@ export async function initPackage(kind, outputDirectory) {
   const root = path.resolve(outputDirectory);
   const title = titleFromDirectory(root);
   const manifest = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     id: idFromDirectory(root),
     name: title,
-    version: "0.1.0-alpha.1",
+    version: "0.1.0",
     kind,
     description: `Describe the ${kind}'s intended outcome.`,
     definition: {

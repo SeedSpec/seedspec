@@ -243,7 +243,7 @@ async function materializeArtifacts(records, workspace, selections) {
   await mkdir(artifactDirectory, { recursive: true });
 
   const artifactIndex = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     artifacts: [],
     relationships: []
   };
@@ -311,7 +311,7 @@ async function materializeComponents(records, workspace) {
   await mkdir(componentDirectory, { recursive: true });
 
   const componentIndex = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     components: []
   };
 
@@ -471,7 +471,7 @@ async function materializeImplementationProfileState(records, selections, worksp
   }
 
   const state = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     scope: "project",
     status: packages.some((item) => item.selection === "review")
       ? "review"
@@ -1458,7 +1458,7 @@ async function resolveProjectInStaging(rootPath, {
   );
 
   const project = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     status,
     configuration_status: configurationState.status,
     intent_status: resolvedIntent.status,
@@ -1490,7 +1490,7 @@ async function resolveProjectInStaging(rootPath, {
     unresolved_decisions: decisionState.unresolved
   };
   const lock = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     resolution_algorithm: "declaration-review-v1",
     root: lockedPackage(application),
     additions: selectedFeatures.map(({ record }) => lockedPackage(record)),
@@ -1499,7 +1499,7 @@ async function resolveProjectInStaging(rootPath, {
     reviews
   };
   const resolvedConfiguration = {
-    protocol_version: "0.1",
+    protocol_version: "0.2",
     root: {
       package: application.manifest.id,
       selection: applicationSelection.selection,

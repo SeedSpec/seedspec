@@ -1,4 +1,4 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 capability:
   id: org.seedspec.core.chores
   version: "1.1.0"

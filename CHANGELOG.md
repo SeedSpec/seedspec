@@ -1,23 +1,24 @@
 # SeedSpec changelog
 
 This changelog records public protocol-bundle and first-party tooling changes.
-The protocol family, schema package, conformance suite, runtime, and CLI are
-versioned independently; see [versioning](docs/versioning.md).
+The protocol family, schema package, conformance suite, runtime, and CLI retain
+distinct identities but use one coordinated first-party release version; see
+[versioning](docs/versioning.md).
 
-## Unreleased design-alpha work
+## 0.2.0
 
 | Surface | Version |
 | --- | --- |
-| Protocol family | `0.1` |
-| Exact protocol release / `@seedspec/protocol` | `0.1.0-alpha.6` |
-| Conformance suite | `2.2.0` |
-| `@seedspec/runtime` | `0.1.0-alpha.7` |
-| `@seedspec/cli` | `0.1.0-alpha.9` |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.0` |
+| Conformance suite | `0.2.0` |
+| `@seedspec/runtime` | `0.2.0` |
+| `@seedspec/cli` | `0.2.0` |
 
 ### Protocol and conformance
 
 - Add one normative language definition for SeedSpec concepts, authority,
-  processing, operations, claims, and alpha boundaries.
+  processing, operations, claims, and release boundaries.
 - Bind normative schemas, documents, the complete conformance corpus,
   first-party implementation versions, and predecessor compatibility in
   `protocol-release.json`.
@@ -52,6 +53,16 @@ versioned independently; see [versioning](docs/versioning.md).
 
 ### Reference tooling
 
+- Add `seedspec prepare` as the resumable author entry point across baseline
+  validation, guided review, author resolution, publish checking, optional
+  independent evaluation, and packing.
+- Add the `review` author-facing alias, a versioned `publish-check`, a
+  digest-bound `eval` workspace for an author's fresh agent, and deterministic
+  `pack` archives with inspection and receipt sidecars.
+- Bundle version-matched authoring and adoption skills in the CLI and add
+  explicit, collision-safe `seedspec skills list|export` commands.
+- Add `seedspec upgrade` with dry-run-first migration from protocol `0.1` to
+  `0.2` while preserving the author-owned package version.
 - Make resolution atomic and emit one content-addressed,
   privacy-preserving `resolution-receipt.json`.
 - Add `seedspec doctor`, including offline smoke verification and a `--full`
@@ -74,6 +85,15 @@ versioned independently; see [versioning](docs/versioning.md).
 
 ### Documentation and package presentation
 
+- Coordinate all first-party packages and the conformance suite on numeric
+  release `0.2.0`, publish exact schemas under
+  `/releases/0.2.0/schemas/`, and reserve the `v0.2` path as a family alias.
+- Ship the normative protocol documents inside `@seedspec/protocol`, bind them
+  by digest, and add reproducible cross-repository release checks plus a
+  maintainer release skill.
+- Publish narrowly scoped “skills help” evidence while explicitly treating
+  saturated deterministic benchmarks as integrity gates rather than general
+  implementation proof.
 - Present SeedSpec as a broader authoring-and-distribution system built around
   the SeedSpec Protocol rather than treating the protocol as the entire product.
 - Explain the stable semantic roles for product intent, adopter configuration,

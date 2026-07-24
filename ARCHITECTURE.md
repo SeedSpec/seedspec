@@ -157,7 +157,7 @@ machine-operable capability evidence in [ADR
 runbooks in [ADR 0012](docs/decisions/0012-ordered-agent-task-runbooks.md), and
 examples in [docs/use-cases.md](docs/use-cases.md).
 
-## v0.1 alpha boundary
+## 0.2 experimental boundary
 
 This repository tests the protocol with conformance fixtures for a software
 application root, a profiled workflow root, and feature additions; authoring

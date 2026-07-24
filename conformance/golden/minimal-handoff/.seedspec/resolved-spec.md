@@ -4,11 +4,11 @@
 
 ## Project summary
 
-- Root package: org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
-- Root package digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+- Root package: org.seedspec.fixtures.portable-feature@0.1.0
+- Root package digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
 - Root kind hint: feature
 - Additions: none
-- Protocol: 0.1
+- Protocol: 0.2
 - Applied intent: affirmed
 
 ## Applied intent and provenance
@@ -177,9 +177,9 @@ No declared decisions were answered during resolution.
 
 ## Declared capabilities
 
-- org.seedspec.finance.goal-allocations@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
-- org.seedspec.finance.goal-progress@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
-- org.seedspec.finance.savings-goals@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0-alpha.1
+- org.seedspec.finance.goal-allocations@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
+- org.seedspec.finance.goal-progress@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
+- org.seedspec.finance.savings-goals@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
 
 ## Capability and composition declaration review
 

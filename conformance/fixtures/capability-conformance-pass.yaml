@@ -1,9 +1,9 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 capability:
   id: org.seedspec.core.chores
   version: "1.1.0"
 contract_digest: sha256:860900621d4a0f2073527f450e84336d0d12c5dfbb4b68e7726279c70b796d7b
-suite_digest: sha256:2693fb97b0dc27e84dedae8cf0d0a450eef309959da804d88db020ee8788de32
+suite_digest: sha256:449398535f5bb1573b02a820fcf91888955320a044ac69743d224ca6bf1d0087
 realization:
   reference: conformance-fixture://chores-provider
   digest: sha256:1111111111111111111111111111111111111111111111111111111111111111

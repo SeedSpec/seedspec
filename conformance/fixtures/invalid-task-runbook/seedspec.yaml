@@ -1,4 +1,4 @@
-protocol_version: "0.1"
+protocol_version: "0.2"
 id: org.seedspec.fixtures.invalid-task-runbook
 name: Invalid Task Runbook Fixture
 version: "0.1.0"
