@@ -1,0 +1,19 @@
+protocol_version: "0.1"
+artifacts:
+  - package: org.seedspec.fixtures.comprehensive-application
+    id: product-spec
+    type: org.seedspec.artifact.product-spec
+    review: before-planning
+    disposition: selected
+    intent_role: primary
+    label: Allowance Tracker ProductSpec
+    description: The package author's primary expression of the application's
+      product intent.
+    media_type: text/markdown
+    format_version: "0.1"
+    conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/SPEC.md
+    concerns:
+      - org.seedspec.concern.intent
+    path: artifacts/org.seedspec.fixtures.comprehensive-application/product-spec/allowance-tracker.product-spec.md
+    source_path: intent/allowance-tracker.product-spec.md
+relationships: []

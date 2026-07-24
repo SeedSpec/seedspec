@@ -52,6 +52,11 @@ findings](docs/evaluations.md).
 | **Publishers, libraries, and marketplaces** | Independent distribution systems curate packages, versions, evidence, support, and policy without changing the neutral package contract. |
 | **Implementation environments** | User-chosen agents and tools adapt resolved intent to a real codebase, external system, workflow, or other target and record scoped evidence. |
 
+Start with the [SeedSpec language definition](docs/01-language.md). It defines
+the protocol's concepts, authority model, processing lifecycle, operations, and
+claim boundaries before the package specification supplies exact field-level
+rules.
+
 The normative SeedSpec Protocol lives in this repository as
 [`@seedspec/protocol`](packages/protocol/README.md), the [Protocol 0.1
 specification](docs/protocol.md), the [versioned schemas](packages/protocol/schemas/v0.1/),
@@ -79,6 +84,7 @@ Run the current design-alpha CLI without installing it globally:
 ```bash
 npx --yes @seedspec/cli@next --help
 npx --yes @seedspec/cli@next version
+npx --yes @seedspec/cli@next doctor
 npx --yes @seedspec/cli@next validate <package-path>
 npx --yes @seedspec/cli@next begin <package-path>
 ```
@@ -119,6 +125,15 @@ and the bundled authoring skills under [`skills/`](skills/).
 npm install
 npm test
 npm run conformance
+```
+
+Produce a release-bound machine-readable report or verify the installed
+toolchain:
+
+```bash
+npx seedspec conformance --json --output conformance-report.json
+npx seedspec doctor --full
+npx seedspec docs implementing
 ```
 
 Inspect representative conformance fixtures:

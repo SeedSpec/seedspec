@@ -1,0 +1,22 @@
+protocol_version: "0.1"
+components:
+  - package: org.seedspec.fixtures.comprehensive-application
+    name: acceptance
+    source_path: acceptance/
+    path: components/org.seedspec.fixtures.comprehensive-application/acceptance/
+    review: before-completion-claim
+  - package: org.seedspec.fixtures.comprehensive-application
+    name: reference
+    source_path: reference/
+    path: components/org.seedspec.fixtures.comprehensive-application/reference/
+    review: before-planning
+  - package: org.seedspec.fixtures.portable-feature
+    name: acceptance
+    source_path: acceptance/
+    path: components/org.seedspec.fixtures.portable-feature/acceptance/
+    review: before-completion-claim
+  - package: org.seedspec.fixtures.portable-feature
+    name: integration
+    source_path: integration/
+    path: components/org.seedspec.fixtures.portable-feature/integration/
+    review: before-integration

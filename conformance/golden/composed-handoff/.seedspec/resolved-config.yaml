@@ -1,0 +1,38 @@
+protocol_version: "0.1"
+root:
+  package: org.seedspec.fixtures.comprehensive-application
+  selection: example
+  values:
+    household_mode: multiple-guardians
+    child_access: child-sign-in
+    approval_required: true
+    currency:
+      code: USD
+      display_name: dollars
+      decimal_places: 2
+    recurring_allowance:
+      enabled: true
+      cadence: weekly
+      weekday: friday
+    chore_rewards:
+      allow_zero_value: true
+      allow_negative_adjustments: true
+      allow_negative_balances: false
+    overdue_policy: remain-available
+    balance_visibility: child-own-balance
+    transaction_corrections: append-only-adjustments
+additions:
+  org.seedspec.fixtures.portable-feature:
+    package: org.seedspec.fixtures.portable-feature
+    selection: example
+    values:
+      allocation_mode: reserved
+      allocation_approval: owner
+      withdrawal_approval: authority-required
+      max_active_goals: 5
+      allow_overfunding: false
+      completion_behavior: mark-reached
+      completion_funds: keep-reserved
+      deletion_funds: return-available
+decisions: {}
+technical_preferences: {}

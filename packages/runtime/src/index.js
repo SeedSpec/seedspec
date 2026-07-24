@@ -6,6 +6,8 @@ export const runtimeVersion = JSON.parse(
 export {
   conformanceSuiteVersion,
   protocolPackageVersion,
+  protocolRelease,
+  protocolReleaseDigest,
   protocolVersion
 } from "@seedspec/protocol";
 export { SeedSpecError, formatError } from "./errors.js";
@@ -32,7 +34,16 @@ export {
   formatAuthoringAudit,
   formatAuthoringDocumentation
 } from "./authoring.js";
-export { computeDirectoryDigest, computePackageDigest } from "./integrity.js";
+export {
+  computeDirectoryDigest,
+  computeFileDigest,
+  computePackageDigest,
+  computeSelectedDirectoryDigest
+} from "./integrity.js";
+export {
+  createResolutionReceipt,
+  PROTOCOL_OWNED_RESOLUTION_PATHS
+} from "./receipts.js";
 export {
   createInitialImplementationResourceState,
   formatImplementationResourceListing,
@@ -66,6 +77,11 @@ export {
   validateCapabilityConformanceDeclarations
 } from "./capability-conformance.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
+export {
+  formatInstallationInspection,
+  inspectInstallation,
+  runBundledConformanceSuite
+} from "./doctor.js";
 export { resolveProject } from "./resolve.js";
 export { formatResolvedIntentSummary, resolveAppliedIntent } from "./intent.js";
 export { validatePackage } from "./validate.js";

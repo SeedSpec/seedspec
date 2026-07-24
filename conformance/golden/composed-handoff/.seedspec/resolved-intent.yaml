@@ -1,0 +1,24 @@
+protocol_version: "0.1"
+status: affirmed
+packages:
+  - package: org.seedspec.fixtures.comprehensive-application
+    version: 0.1.0-alpha.1
+    digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+    entrypoint: intent/allowance-tracker.product-spec.md
+    provenance: package-author
+    format:
+      type: org.seedspec.artifact.product-spec
+      artifact: product-spec
+      format_version: "0.1"
+      conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/SPEC.md
+    use: as-authored
+  - package: org.seedspec.fixtures.portable-feature
+    version: 0.1.0-alpha.1
+    digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+    entrypoint: definition/feature.md
+    provenance: package-author
+    format:
+      type: org.seedspec.intent.native
+    use: as-authored
+contributions: []
+unresolved: []

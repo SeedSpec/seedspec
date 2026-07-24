@@ -1,6 +1,6 @@
 {
   "name": "seedspec",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0-alpha.9",
   "private": true,
   "description": "Authoring tools, package protocol, runtime, and CLI for portable agent-ready seeds",
   "type": "module",
@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "test": "npm run test --workspace @seedspec/runtime",
+    "conformance:goldens": "node ./scripts/generate-conformance-goldens.mjs",
+    "release:protocol": "node ./scripts/generate-protocol-release.mjs",
     "check:names": "node ./scripts/check-clean-names.mjs",
     "validate:fixtures": "node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/comprehensive-application && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/portable-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/revision-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/profiled-workflow",
     "check": "npm run check:names && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures",

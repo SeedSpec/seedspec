@@ -1,0 +1,12 @@
+protocol_version: "0.1"
+scope: project
+status: not-declared
+packages:
+  - package: org.seedspec.fixtures.comprehensive-application
+    kind: application
+    selection: none
+    profiles: []
+  - package: org.seedspec.fixtures.portable-feature
+    kind: feature
+    selection: none
+    profiles: []

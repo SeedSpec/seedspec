@@ -1,0 +1,8 @@
+protocol_version: "0.1"
+scope: project
+status: not-declared
+packages:
+  - package: org.seedspec.fixtures.portable-feature
+    kind: feature
+    selection: none
+    profiles: []

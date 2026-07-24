@@ -9,13 +9,24 @@ versioned independently; see [versioning](docs/versioning.md).
 | Surface | Version |
 | --- | --- |
 | Protocol family | `0.1` |
-| `@seedspec/protocol` | `0.1.0-alpha.5` |
-| Conformance suite | `2.1.0` |
-| `@seedspec/runtime` | `0.1.0-alpha.6` |
-| `@seedspec/cli` | `0.1.0-alpha.8` |
+| Exact protocol release / `@seedspec/protocol` | `0.1.0-alpha.6` |
+| Conformance suite | `2.2.0` |
+| `@seedspec/runtime` | `0.1.0-alpha.7` |
+| `@seedspec/cli` | `0.1.0-alpha.9` |
 
 ### Protocol and conformance
 
+- Add one normative language definition for SeedSpec concepts, authority,
+  processing, operations, claims, and alpha boundaries.
+- Bind normative schemas, documents, the complete conformance corpus,
+  first-party implementation versions, and predecessor compatibility in
+  `protocol-release.json`.
+- Define five small protocol operations: validate, digest, resolve,
+  resolve-resources, and capability-conformance.
+- Add schema-valid release-bound conformance reports and two complete golden
+  resolved handoffs.
+- Define exact-release compatibility and the dry-run-first contract that the
+  first real source migration must follow.
 - Distinguish the package-author primary intent source from end-user applied
   intent and agent proposals.
 - Allow a declared external intent format, including ProductSpec, to serve as
@@ -41,6 +52,12 @@ versioned independently; see [versioning](docs/versioning.md).
 
 ### Reference tooling
 
+- Make resolution atomic and emit one content-addressed,
+  privacy-preserving `resolution-receipt.json`.
+- Add `seedspec doctor`, including offline smoke verification and a `--full`
+  mode backed by the conformance corpus bundled in `@seedspec/protocol`.
+- Add `seedspec docs implementing` with three version-bound end-to-end examples.
+- Add JSON and file output for `seedspec conformance`.
 - Allow `seedspec begin` and the root package input to `seedspec resolve` to
   acquire a public GitHub repository or `/tree/<ref>/<package-path>` URL without
   running package scripts, submodules, or package-provided tooling.

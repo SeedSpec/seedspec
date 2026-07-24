@@ -1,0 +1,9 @@
+protocol_version: "0.1"
+policies:
+  - package: org.seedspec.fixtures.comprehensive-application
+    additional_guidance: unspecified
+    catalogs: []
+  - package: org.seedspec.fixtures.portable-feature
+    additional_guidance: unspecified
+    catalogs: []
+resources: []

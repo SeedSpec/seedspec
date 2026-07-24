@@ -5,15 +5,21 @@
 | Release identifier | Value |
 | --- | --- |
 | Protocol family | `0.1` |
-| Schema package | `@seedspec/protocol@0.1.0-alpha.5` |
-| Conformance suite | `2.1.0` |
+| Schema package / exact release | `@seedspec/protocol@0.1.0-alpha.6` |
+| Conformance suite | `2.2.0` |
 
-This document defines the normative SeedSpec package and handoff format for
-Protocol 0.1. The normative release bundle consists of this specification, the
-JSON Schemas in `packages/protocol/schemas/v0.1/`, and the conformance contract
-indexed by `conformance/cases.yaml`. These surfaces are coequal parts of the
-contract. A contradiction among them is a protocol defect; an implementation
-MUST NOT silently choose a preferred source and claim conformance.
+The normative `docs/01-language.md` definition is the first reference for
+SeedSpec concepts, authority, processing, operations, and claims. This document
+defines their exact package and handoff behavior for Protocol 0.1. The
+normative release bundle consists of the language definition, this
+specification, the JSON Schemas in `packages/protocol/schemas/v0.1/`, the
+operation contracts in `docs/operations.md`, and the conformance contract
+indexed by `conformance/cases.yaml`. `protocol-release.json` binds their exact
+revisions.
+
+These surfaces are parts of one contract. A contradiction among them is a
+protocol defect; an implementation MUST NOT silently choose a preferred source
+and claim conformance.
 
 Documents marked informative explain authoring, runtime use, security, and
 examples. Architecture decision records preserve non-normative rationale. The
@@ -861,6 +867,7 @@ Resolution writes a `.seedspec/` workspace without modifying source packages:
 ├── verification-report.md
 ├── completion-scope.yaml
 ├── verification-state.yaml
+├── resolution-receipt.json
 ├── resolved-spec.md
 ├── resolved-config.yaml
 ├── dependencies.lock.yaml
@@ -948,6 +955,14 @@ does not erase implementation evidence. Every evidence reference identifies the
 realization or outcome subject it proves. `verification-report.md` remains the
 human-readable detailed evidence companion.
 
+`resolution-receipt.json` conforms to
+`resolution-receipt.schema.json`. Its content-addressed subject binds the exact
+protocol release, selected package identities and digests, supplied
+resolution-input digests, project status, and aggregate digest of
+protocol-owned output. Producer metadata is outside the subject digest. The
+receipt contains no package prose, absolute paths, credentials, or arbitrary
+project content and is not transmitted by the protocol.
+
 `resolved-spec.md` is human- and agent-readable solution intent.
 `agent-guide.md` explains how to interpret it. `implementation-notes.md`,
 `verification-report.md`, and `verification-state.yaml` are created only when
@@ -958,9 +973,9 @@ verification state stale until an agent reconciles it.
 
 ## 13. Conformance
 
-An implementation conforms to Protocol 0.1 when it:
+An implementation conforms to one exact Protocol 0.1 release when it:
 
-1. passes every applicable case in `conformance/cases.yaml`;
+1. passes every case in the conformance corpus bound by that release;
 2. produces schema-valid project and lock documents;
 3. calculates identical package digests;
 4. produces the declared deterministic addition order; and
@@ -968,6 +983,13 @@ An implementation conforms to Protocol 0.1 when it:
 
 Human-readable error wording MAY vary. Stable error codes are interoperability
 outputs asserted by the conformance suite.
+
+The run MUST produce a schema-valid `conformance-report.schema.json` document
+whose release-manifest digest, index digest, bundle digest, suite version,
+runtime identity, environment, totals, and case results describe the exact run.
+Only a complete bound suite with no failed or skipped case is `conformant`.
+Passing another subset is an `incomplete` coverage report, not a conformance
+claim.
 
 Schema validation alone is insufficient because content safety, digests,
 deterministic declaration analysis, review records, reference integrity, and

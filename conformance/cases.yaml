@@ -1,4 +1,4 @@
-suite_version: "2.1.0"
+suite_version: "2.2.0"
 protocol_version: "0.1"
 
 cases:
@@ -184,6 +184,7 @@ cases:
       - fixtures/portable-feature
     configuration_selection: examples
     intent_selection: affirmed
+    golden: golden/composed-handoff/.seedspec
     expect:
       result: pass
       project_status: ready
@@ -191,6 +192,22 @@ cases:
       completion_scope_status: review
       addition_order:
         - org.seedspec.fixtures.portable-feature
+
+  - id: resolve-minimal-golden-handoff
+    description: A single portable package produces the complete deterministic golden handoff and release-bound receipt.
+    operation: resolve
+    root: fixtures/portable-feature
+    additions: []
+    configuration_selection: examples
+    intent_selection: affirmed
+    golden: golden/minimal-handoff/.seedspec
+    expect:
+      result: pass
+      project_status: ready
+      configuration_status: selected
+      intent_status: affirmed
+      completion_scope_status: review
+      addition_order: []
 
   - id: resolve-configured-system-and-automation-root
     description: A provider-specific non-code-first root resolves through the same configuration, decision, handoff, and verification model.

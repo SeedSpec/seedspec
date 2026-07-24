@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { readFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import process from "node:process";
 import { withPackageSource } from "../src/package-source.js";
 import {
@@ -23,10 +25,12 @@ import {
   formatPackageBeginning,
   formatImplementationResourceListing,
   formatImplementationResourceResolution,
+  formatInstallationInspection,
   formatProjectCompletion,
   initPackage,
   inspectPackage,
   inspectCapabilityConformance,
+  inspectInstallation,
   lintPackage,
   inspectProjectCompletion,
   listArtifactAdapters,
@@ -36,9 +40,12 @@ import {
   resolveImplementationResources,
   resolveProject,
   runtimeVersion,
+  runBundledConformanceSuite,
   runConformanceSuite,
   conformanceSuiteVersion,
   protocolPackageVersion,
+  protocolRelease,
+  protocolReleaseDigest,
   protocolVersion,
   verifyProjectLock,
   validateArtifact,
@@ -46,13 +53,18 @@ import {
 } from "@seedspec/runtime";
 
 const CLI_VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+const IMPLEMENTING_GUIDE = readFileSync(
+  new URL("../docs/implementing.md", import.meta.url),
+  "utf8"
+);
 
 const HELP = `SeedSpec CLI v0.1 alpha
 
 Usage:
   seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
-  seedspec docs authoring [area]
+  seedspec docs <authoring [area]|implementing>
   seedspec version [--json]
+  seedspec doctor [--full] [--json]
   seedspec prompt
   seedspec begin <root-package-path-or-github-url> [--json]
   seedspec validate <path>
@@ -67,7 +79,7 @@ Usage:
   seedspec adapters [--json]
   seedspec validate-artifact <path> <artifact-id> [--json]
   seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
-  seedspec conformance [cases.yaml]
+  seedspec conformance [cases.yaml] [--json] [--output <report.json>]
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
   seedspec completion <project-path> [--json]
   seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
@@ -107,7 +119,7 @@ function parseArguments(args) {
       continue;
     }
 
-    if (value === "--json" || value === "--help" || value === "--status") {
+    if (value === "--json" || value === "--help" || value === "--status" || value === "--full") {
       options.set(value.slice(2), [true]);
       continue;
     }
@@ -165,6 +177,8 @@ async function run() {
       rejectUnknownOptions(options, ["json"]);
       const versions = {
         protocol_version: protocolVersion,
+        protocol_release: protocolRelease.release_id,
+        protocol_release_digest: protocolReleaseDigest,
         protocol_package_version: protocolPackageVersion,
         conformance_suite_version: conformanceSuiteVersion,
         runtime_version: runtimeVersion,
@@ -176,9 +190,23 @@ async function run() {
             `SeedSpec CLI: ${versions.cli_version}`,
             `Runtime: ${versions.runtime_version}`,
             `Protocol family: ${versions.protocol_version}`,
+            `Exact protocol release: ${versions.protocol_release}`,
+            `Protocol release digest: ${versions.protocol_release_digest}`,
             `Protocol schema package: ${versions.protocol_package_version}`,
             `Conformance suite: ${versions.conformance_suite_version}`
           ].join("\n") + "\n");
+      break;
+    }
+    case "doctor": {
+      rejectUnknownOptions(options, ["full", "json"]);
+      const result = await inspectInstallation({
+        cliVersion: CLI_VERSION,
+        full: options.has("full")
+      });
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(result, null, 2)}\n`
+        : `${formatInstallationInspection(result)}\n`);
+      if (result.status !== "healthy") process.exitCode = 1;
       break;
     }
     case "audit": {
@@ -200,8 +228,14 @@ async function run() {
     case "docs": {
       rejectUnknownOptions(options, []);
       const topic = positional[0] ?? "authoring";
-      if (topic !== "authoring") throw new Error(`Unknown documentation topic: ${topic}`);
-      process.stdout.write(`SeedSpec CLI: ${CLI_VERSION}\n${formatAuthoringDocumentation(positional[1])}\n`);
+      if (topic === "authoring") {
+        process.stdout.write(`SeedSpec CLI: ${CLI_VERSION}\n${formatAuthoringDocumentation(positional[1])}\n`);
+      } else if (topic === "implementing") {
+        if (positional[1]) throw new Error("Implementing documentation does not accept a subsection");
+        process.stdout.write(`SeedSpec CLI: ${CLI_VERSION}\n${IMPLEMENTING_GUIDE.trim()}\n`);
+      } else {
+        throw new Error(`Unknown documentation topic: ${topic}`);
+      }
       break;
     }
     case "prompt": {
@@ -393,10 +427,19 @@ async function run() {
       break;
     }
     case "conformance": {
-      const indexPath = positional[0] ?? "conformance/cases.yaml";
-      const result = await runConformanceSuite(indexPath);
-      process.stdout.write(`${formatConformanceResult(result)}\n`);
-      if (result.failed > 0) process.exitCode = 1;
+      rejectUnknownOptions(options, ["json", "output"]);
+      const result = positional[0]
+        ? await runConformanceSuite(positional[0])
+        : await runBundledConformanceSuite();
+      const reportJson = `${JSON.stringify(result, null, 2)}\n`;
+      const outputPath = oneOption(options, "output");
+      if (outputPath) {
+        await writeFile(path.resolve(outputPath), reportJson, "utf8");
+      }
+      process.stdout.write(options.has("json")
+        ? reportJson
+        : `${formatConformanceResult(result)}${outputPath ? `\nReport: ${path.resolve(outputPath)}` : ""}\n`);
+      if (result.status !== "conformant") process.exitCode = 1;
       break;
     }
     case "verify-lock": {

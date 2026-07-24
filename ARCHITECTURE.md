@@ -1,8 +1,9 @@
 # SeedSpec architecture
 
 > **Informative architecture.** This document explains the SeedSpec system and
-> the protocol's place within it. The normative contract is defined by the
-> versioned protocol specification, schemas, and conformance suite.
+> the protocol's place within it. The normative contract begins with the
+> language definition and is bound by the exact protocol release across the
+> package specification, operation contracts, schemas, and conformance corpus.
 
 SeedSpec helps people turn product and domain expertise into reusable,
 agent-ready starting points. The system combines guided authoring, a portable
