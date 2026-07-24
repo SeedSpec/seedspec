@@ -24,8 +24,8 @@ lexicon, claim boundaries, and publication checklist.
 4. If wording changes what a conforming implementation accepts, produces, or
    guarantees, treat it as semantic: update schemas, runtime behavior,
    conformance cases, version notes, and tests together.
-5. Keep marketplace policy, product strategy, commercial plans, and exploratory
-   reasoning outside normative protocol material.
+5. Keep distribution-service policy, product strategy, commercial plans, and
+   exploratory reasoning outside normative protocol material.
 
 ## Audit from authority to presentation
 

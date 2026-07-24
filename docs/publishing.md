@@ -124,6 +124,7 @@ receipt binds:
 - archive name, format, root, and digest; and
 - the accompanying versioned inspection and publish-check records.
 
-Registry and marketplace policy remains separate. A registry can ingest these
-artifacts while identifying the seed by `(id, author version, package digest)`
-and attaching its own publisher, moderation, reputation, or commercial claims.
+`pack` prepares artifacts only. It does not register or upload a package, set
+commercial terms, or create third-party trust claims. The resulting archive can
+be copied, stored, or shared through any channel without changing package
+identity or conformance.

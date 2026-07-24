@@ -101,13 +101,12 @@ Authors and tools should distinguish at least:
 A useful package may be strong on some dimensions and intentionally narrow on
 others.
 
-## Registries
+## External catalogs
 
-Registries, marketplaces, and catalogs remain outside the neutral protocol.
-They may index related packages, features, realizations, implementation
-resources, tested environments, evidence, and known limitations. Registry
-discovery or ranking does not activate content, prove compatibility, or
-override user choice.
+External catalogs remain outside the neutral protocol. They may index related
+packages, features, realizations, implementation resources, tested
+environments, evidence, and known limitations. Discovery or ranking does not
+activate content, prove compatibility, or override user choice.
 
 This separation allows the protocol to provide stable identity, relationships,
 configuration, integrity, and handoff semantics while independent services

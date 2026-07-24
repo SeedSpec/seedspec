@@ -11,7 +11,7 @@ reference runtime that implements them.
 The runtime is the first-party CLI and JavaScript library behind SeedSpec
 authoring, validation, inspection, resolution, and verification. It combines
 strict protocol-aware operations with informative authoring workflows while
-keeping their results distinct. It does not depend on marketplace product
+keeping their results distinct. It does not depend on distribution-service
 policy or any particular agent prompt format.
 
 ## Commands

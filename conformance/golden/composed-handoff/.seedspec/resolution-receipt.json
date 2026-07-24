@@ -1,11 +1,11 @@
 {
   "receipt_version": "1",
-  "receipt_id": "sha256:c49a67b1bc010b73c51516108d8fbc7f6cafe688e1d94e812b8cc5a46e1aba20",
+  "receipt_id": "sha256:f3c3905a21cee3c185b4e96d2c04c5a70b9e972b7d7d6a69c34765fbc3556445",
   "subject": {
     "operation": "resolve",
     "protocol_release": {
       "id": "0.2.0",
-      "digest": "sha256:4f0b97684b50b7994bd2d73dfcd401d5f97476c23d70ce8ee5c7986f82754047"
+      "digest": "sha256:1c8088326e2225c9bea5efb11af38c6252494e263d8625fb15fe89b58ddb73b1"
     },
     "packages": {
       "root": {

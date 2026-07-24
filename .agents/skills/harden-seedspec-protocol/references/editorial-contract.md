@@ -70,9 +70,9 @@ high-risk distinctions below aligned with it.
   **registry**: name the actor rather than using ambiguous `we`, `you`, or
   `system` when responsibility matters.
 
-Use `buyer` only in marketplace-specific material. Use `application` or
-`software` only when the statement does not also apply to configured systems,
-workflows, integrations, or other solution kinds.
+Use `buyer` only when a document genuinely describes a commercial transaction.
+Use `application` or `software` only when the statement does not also apply to
+configured systems, workflows, integrations, or other solution kinds.
 
 ## Claim boundaries
 
@@ -104,7 +104,7 @@ Flag and evaluate:
 - conversation residue such as `for now`, `maybe`, `eventually`, or unexplained
   future promises;
 - commercial language such as `buyer`, `paid`, `commercial product`, or
-  marketplace positioning outside marketplace documents;
+  storefront positioning outside documents that genuinely concern commerce;
 - audience judgments such as `beginner-facing` when a functional description is
   clearer;
 - claims that a package makes an agent obey, guarantees an implementation, or

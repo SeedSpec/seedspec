@@ -99,7 +99,7 @@ distinct identities but use one coordinated first-party release version; see
 - Explain the stable semantic roles for product intent, adopter configuration,
   decision provenance, acceptance, implementation guidance, and evidence.
 - Add an evidence-scoped evaluation summary and expand internal-enterprise,
-  vendor, consultancy, ecosystem, and marketplace distribution use cases.
+  vendor, consultancy, ecosystem, and public-library distribution use cases.
 - Update npm package descriptions and READMEs to give authoring, adoption, and
   package distribution first-class status without changing conformance claims.
 
