@@ -51,7 +51,22 @@ async function collectFiles(root, current, files, seenFoldedPaths) {
   }
 }
 
-export async function computeDirectoryDigest(root) {
+function digestCollectedFiles(files) {
+  files.sort((left, right) => lexicalCompare(left.relativePath, right.relativePath));
+
+  const packageHash = createHash("sha256");
+  for (const file of files) {
+    const fileDigest = createHash("sha256").update(file.content).digest("hex");
+    packageHash.update(file.relativePath, "utf8");
+    packageHash.update("\0", "utf8");
+    packageHash.update(fileDigest, "ascii");
+    packageHash.update("\n", "utf8");
+  }
+
+  return `sha256:${packageHash.digest("hex")}`;
+}
+
+async function collectedDirectoryFiles(root) {
   const rootInfo = await lstat(root);
   if (rootInfo.isSymbolicLink()) {
     throw new SeedSpecError("A SeedSpec package root must not be a symbolic link", {
@@ -61,19 +76,37 @@ export async function computeDirectoryDigest(root) {
 
   const files = [];
   await collectFiles(root, root, files, new Map());
-  files.sort((left, right) => lexicalCompare(left.relativePath, right.relativePath));
+  return Promise.all(files.map(async (file) => ({
+    relativePath: file.relativePath,
+    content: await readFile(file.absolutePath)
+  })));
+}
 
-  const packageHash = createHash("sha256");
-  for (const file of files) {
-    const content = await readFile(file.absolutePath);
-    const fileDigest = createHash("sha256").update(content).digest("hex");
-    packageHash.update(file.relativePath, "utf8");
-    packageHash.update("\0", "utf8");
-    packageHash.update(fileDigest, "ascii");
-    packageHash.update("\n", "utf8");
-  }
+export async function computeFileDigest(filePath) {
+  const content = await readFile(filePath);
+  return `sha256:${createHash("sha256").update(content).digest("hex")}`;
+}
 
-  return `sha256:${packageHash.digest("hex")}`;
+export async function computeDirectoryDigest(root, { excludePaths = [] } = {}) {
+  const excluded = new Set(excludePaths);
+  const files = (await collectedDirectoryFiles(root)).filter((file) => (
+    ![...excluded].some((excludedPath) => (
+      file.relativePath === excludedPath
+      || file.relativePath.startsWith(`${excludedPath}/`)
+    ))
+  ));
+  return digestCollectedFiles(files);
+}
+
+export async function computeSelectedDirectoryDigest(root, selectedPaths) {
+  const selected = new Set(selectedPaths);
+  const files = (await collectedDirectoryFiles(root)).filter((file) => (
+    [...selected].some((selectedPath) => (
+      file.relativePath === selectedPath
+      || file.relativePath.startsWith(`${selectedPath}/`)
+    ))
+  ));
+  return digestCollectedFiles(files);
 }
 
 export async function computePackageDigest(root) {

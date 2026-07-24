@@ -30,6 +30,7 @@
     "verification_report",
     "completion_scope",
     "verification_state",
+    "resolution_receipt",
     "resolved_decisions",
     "unresolved_decisions"
   ],
@@ -62,6 +63,7 @@
     "verification_report": { "const": "verification-report.md" },
     "completion_scope": { "const": "completion-scope.yaml" },
     "verification_state": { "const": "verification-state.yaml" },
+    "resolution_receipt": { "const": "resolution-receipt.json" },
     "resolved_decisions": {
       "type": "array",
       "items": { "$ref": "#/$defs/resolvedDecision" }

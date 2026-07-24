@@ -1,0 +1,37 @@
+{
+  "receipt_version": "1",
+  "receipt_id": "sha256:facf654d6724613f6f8c1fe5d701a682358b960cc16c61c17360c335cb7e673a",
+  "subject": {
+    "operation": "resolve",
+    "protocol_release": {
+      "id": "0.1.0-alpha.6",
+      "digest": "sha256:63efacf2499426913edf1633a09b62cb7161138c209fc2822c720f70bcea97d3"
+    },
+    "packages": {
+      "root": {
+        "id": "org.seedspec.fixtures.comprehensive-application",
+        "version": "0.1.0-alpha.1",
+        "digest": "sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90"
+      },
+      "additions": [
+        {
+          "id": "org.seedspec.fixtures.portable-feature",
+          "version": "0.1.0-alpha.1",
+          "digest": "sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6"
+        }
+      ]
+    },
+    "inputs": {
+      "configuration_selections": "sha256:7097e2a82331cfa371547280cac67fa85e78fd4341fd9d23668cad54a45926dc",
+      "applied_intent": "sha256:882f949a45d130a0de56aad15e0635f03f335c926b50e9bcdaabd5a2c4081cf9"
+    },
+    "result": {
+      "status": "ready",
+      "output_digest": "sha256:2d4c1fe966c75916f5be3296e5e3cf46e6a96f8a150d40329b3498791171f0ce"
+    }
+  },
+  "producer": {
+    "name": "@seedspec/runtime",
+    "version": "0.1.0-alpha.7"
+  }
+}

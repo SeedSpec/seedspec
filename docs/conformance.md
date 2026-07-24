@@ -6,12 +6,19 @@
 
 The suite is indexed by `conformance/cases.yaml`, validated by
 `packages/protocol/schemas/v0.1/conformance.schema.json`, and bound to the
-declared `protocol_version` and `suite_version`.
+declared `protocol_version` and `suite_version`. The exact protocol release
+records both the index-file digest and the canonical aggregate digest of the
+complete conformance directory, including fixtures and golden handoffs.
+Golden `resolution-receipt.json` envelopes are excluded from the bundle digest
+because each receipt binds the digest of the release manifest that binds the
+suite. The suite still compares those complete receipt bytes during its golden
+resolution cases.
 
 Run the reference implementation:
 
 ```bash
 npm run conformance
+seedspec conformance --json --output conformance-report.json
 ```
 
 The index and fixtures are self-contained and runtime-neutral. Paths are
@@ -27,7 +34,7 @@ Core SeedSpec conformance and adapter conformance are separate. The core suite v
 
 ## What to record
 
-A runtime experiment should record:
+A schema-valid conformance report records:
 
 - runtime name and version;
 - protocol version;
@@ -36,6 +43,17 @@ A runtime experiment should record:
 - passed, failed, and skipped cases;
 - package digests produced for digest cases;
 - any extension semantics enabled during the run.
+
+The overall status is:
+
+- `conformant` only when the complete suite bound by the exact release ran and
+  every case passed;
+- `nonconformant` when the bound suite ran and any case failed; or
+- `incomplete` when the suite is not the exact release-bound corpus or any
+  required case was skipped.
+
+Passing an unbound subset is useful coverage information but is not a SeedSpec
+conformance claim.
 
 The suite tests protocol interoperability. It is not a public certification, a
 claim that agent execution is deterministic, or evidence that a realization
@@ -52,7 +70,7 @@ A behavioral correction that changes whether an artifact passes, its error class
 
 Fixtures should isolate one rule where practical. Negative cases assert stable error codes rather than implementation-specific prose.
 
-## Operations in suite 2.1.0
+## Operations in suite 2.2.0
 
 - `validate` checks structural, referenced-file, configuration, task-runbook,
   artifact-reference, relationship, semantic, and content-safety behavior

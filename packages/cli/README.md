@@ -27,6 +27,7 @@ Common entry points:
 ```bash
 seedspec validate <package-path>
 seedspec version --json
+seedspec doctor [--full] [--json]
 seedspec audit <package-path>
 seedspec audit <package-path> --area material-ambiguity
 seedspec audit <package-path> --status
@@ -35,6 +36,8 @@ seedspec inspect <package-path> --json
 seedspec begin <package-path-or-github-url>
 seedspec digest <package-path>
 seedspec capability-conformance <package-path> <capability-id> [--result <yaml>]
+seedspec conformance [cases.yaml] [--json] [--output <report.json>]
+seedspec docs implementing
 ```
 
 `seedspec begin` is the read-only agent handoff. It validates the package and
@@ -62,6 +65,11 @@ agent. The same command advances after a completed pass; `--area` targets one
 of the seven review areas and `--status` is read-only. The CLI does not embed a
 model or modify package content. See `seedspec docs authoring` for guidance
 bundled with the installed version.
+
+`seedspec doctor` verifies that the installed CLI, runtime, exact protocol
+release, schemas, and bundled conformance corpus agree. `--full` runs every
+release-bound conformance case. `seedspec docs implementing` prints the
+version-matched package-to-handoff workflow bundled with the CLI.
 
 Protocol `0.1` is a design alpha. Discovery or validation never authorizes
 package activation or execution.

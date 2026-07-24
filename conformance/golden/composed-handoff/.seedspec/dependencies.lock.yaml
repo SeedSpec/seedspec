@@ -1,0 +1,151 @@
+protocol_version: "0.1"
+resolution_algorithm: declaration-review-v1
+root:
+  id: org.seedspec.fixtures.comprehensive-application
+  version: 0.1.0-alpha.1
+  kind: application
+  digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+additions:
+  - id: org.seedspec.fixtures.portable-feature
+    version: 0.1.0-alpha.1
+    kind: feature
+    digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+capabilities:
+  - id: org.seedspec.core.actors
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  - id: org.seedspec.core.approvals
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  - id: org.seedspec.core.assignments
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  - id: org.seedspec.core.balances
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  - id: org.seedspec.core.chores
+    version: 1.1.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+    change_history:
+      - from: 1.0.0
+        to: 1.1.0
+        changes:
+          - id: local-terminology
+            type: additive
+            summary: Consumers may map the lineage term chore to equivalent local product
+              language.
+          - id: suggested-reward
+            type: additive
+            summary: Work descriptions may expose an optional non-negative suggested reward.
+    conformance_suite: capabilities/conformance/chores.suite.yaml
+  - id: org.seedspec.core.households
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  - id: org.seedspec.core.transactions
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.comprehensive-application
+      version: 0.1.0-alpha.1
+      kind: application
+      digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+  - id: org.seedspec.finance.goal-allocations
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.portable-feature
+      version: 0.1.0-alpha.1
+      kind: feature
+      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+  - id: org.seedspec.finance.goal-progress
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.portable-feature
+      version: 0.1.0-alpha.1
+      kind: feature
+      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+  - id: org.seedspec.finance.savings-goals
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.portable-feature
+      version: 0.1.0-alpha.1
+      kind: feature
+      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+requirements:
+  - consumer: org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.actors
+    tested_against: 1.0.0
+    providers:
+      - provider:
+          id: org.seedspec.fixtures.comprehensive-application
+          version: 0.1.0-alpha.1
+          kind: application
+          digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+        provided_version: 1.0.0
+        revision_status: tested-revision
+        revision_direction: exact
+        revision_difference: none
+        review_severity: none
+        change_evidence: not-needed
+        declared_changes: []
+    issues: []
+    status: declared-aligned
+  - consumer: org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.balances
+    tested_against: 1.0.0
+    providers:
+      - provider:
+          id: org.seedspec.fixtures.comprehensive-application
+          version: 0.1.0-alpha.1
+          kind: application
+          digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+        provided_version: 1.0.0
+        revision_status: tested-revision
+        revision_direction: exact
+        revision_difference: none
+        review_severity: none
+        change_evidence: not-needed
+        declared_changes: []
+    issues: []
+    status: declared-aligned
+  - consumer: org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.transactions
+    tested_against: 1.0.0
+    providers:
+      - provider:
+          id: org.seedspec.fixtures.comprehensive-application
+          version: 0.1.0-alpha.1
+          kind: application
+          digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+        provided_version: 1.0.0
+        revision_status: tested-revision
+        revision_direction: exact
+        revision_difference: none
+        review_severity: none
+        change_evidence: not-needed
+        declared_changes: []
+    issues: []
+    status: declared-aligned
+reviews: []

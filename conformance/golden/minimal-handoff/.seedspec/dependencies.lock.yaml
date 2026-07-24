@@ -1,0 +1,68 @@
+protocol_version: "0.1"
+resolution_algorithm: declaration-review-v1
+root:
+  id: org.seedspec.fixtures.portable-feature
+  version: 0.1.0-alpha.1
+  kind: feature
+  digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+additions: []
+capabilities:
+  - id: org.seedspec.finance.goal-allocations
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.portable-feature
+      version: 0.1.0-alpha.1
+      kind: feature
+      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+  - id: org.seedspec.finance.goal-progress
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.portable-feature
+      version: 0.1.0-alpha.1
+      kind: feature
+      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+  - id: org.seedspec.finance.savings-goals
+    version: 1.0.0
+    provider:
+      id: org.seedspec.fixtures.portable-feature
+      version: 0.1.0-alpha.1
+      kind: feature
+      digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+requirements:
+  - consumer: org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.actors
+    tested_against: 1.0.0
+    providers: []
+    issues:
+      - no-declared-provider
+    status: review
+  - consumer: org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.balances
+    tested_against: 1.0.0
+    providers: []
+    issues:
+      - no-declared-provider
+    status: review
+  - consumer: org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.transactions
+    tested_against: 1.0.0
+    providers: []
+    issues:
+      - no-declared-provider
+    status: review
+reviews:
+  - code: no-declared-provider
+    severity: high
+    packages:
+      - org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.actors
+  - code: no-declared-provider
+    severity: high
+    packages:
+      - org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.balances
+  - code: no-declared-provider
+    severity: high
+    packages:
+      - org.seedspec.fixtures.portable-feature
+    capability: org.seedspec.core.transactions

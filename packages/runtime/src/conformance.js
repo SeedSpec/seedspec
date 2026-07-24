@@ -1,13 +1,88 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { lstatSync, readFileSync } from "node:fs";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile
+} from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
+import {
+  protocolRelease,
+  protocolReleaseDigest
+} from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
 import { readYamlFile } from "./files.js";
+import {
+  computeDirectoryDigest,
+  computeSelectedDirectoryDigest
+} from "./integrity.js";
+import { PROTOCOL_OWNED_RESOLUTION_PATHS } from "./receipts.js";
 import { resolveProject } from "./resolve.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { validatePackage } from "./validate.js";
 import { inspectCapabilityConformance } from "./capability-conformance.js";
+
+const require = createRequire(import.meta.url);
+const yamlVersion = JSON.parse(
+  readFileSync(require.resolve("yaml/package.json"), "utf8")
+).version;
+const runtimeVersion = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+).version;
+
+function contentDigest(bytes) {
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+function lexicalCompare(left, right) {
+  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
+}
+
+async function computeConformanceBundleDigest(root) {
+  const files = [];
+  async function collect(current) {
+    const entries = (await readdir(current, { withFileTypes: true }))
+      .sort((left, right) => lexicalCompare(left.name, right.name));
+    for (const entry of entries) {
+      const absolutePath = path.join(current, entry.name);
+      const relativePath = path.relative(root, absolutePath).split(path.sep).join("/");
+      const info = lstatSync(absolutePath);
+      if (info.isSymbolicLink()) {
+        throw new SeedSpecError(`Conformance suites must not contain symbolic links: ${relativePath}`, {
+          code: "INVALID_CONFORMANCE_SUITE"
+        });
+      }
+      if (info.isDirectory()) {
+        await collect(absolutePath);
+      } else if (
+        info.isFile()
+        && !(relativePath.startsWith("golden/")
+          && relativePath.endsWith("/resolution-receipt.json"))
+      ) {
+        files.push({ absolutePath, relativePath });
+      }
+    }
+  }
+  await collect(root);
+  files.sort((left, right) => lexicalCompare(left.relativePath, right.relativePath));
+  const aggregate = createHash("sha256");
+  for (const file of files) {
+    const fileHash = createHash("sha256")
+      .update(await readFile(file.absolutePath))
+      .digest("hex");
+    aggregate.update(file.relativePath, "utf8");
+    aggregate.update("\0", "utf8");
+    aggregate.update(fileHash, "ascii");
+    aggregate.update("\n", "utf8");
+  }
+  return `sha256:${aggregate.digest("hex")}`;
+}
 
 function resolveFixture(indexDirectory, relativePath) {
   const resolved = path.resolve(indexDirectory, relativePath);
@@ -28,6 +103,7 @@ function validateFixturePaths(suite, indexDirectory) {
       testCase.decisions,
       testCase.applied_intent,
       testCase.result_file,
+      testCase.golden,
       ...(testCase.additions ?? [])
     ].filter(Boolean);
     for (const fixturePath of paths) resolveFixture(indexDirectory, fixturePath);
@@ -162,6 +238,11 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       );
       const validateCompletionScope = await compileProtocolSchema("completion-scope.schema.json");
       const validateVerificationState = await compileProtocolSchema("verification-state.schema.json");
+      const validateResolutionReceipt = await compileProtocolSchema("resolution-receipt.schema.json");
+      const resolutionReceipt = JSON.parse(await readFile(
+        path.join(result.workspace, "resolution-receipt.json"),
+        "utf8"
+      ));
       if (!validateProject(project)
         || !validateLock(lock)
         || !validateResolvedConfiguration(resolvedConfiguration)
@@ -171,7 +252,8 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         || !validateImplementationResourceState(implementationResourceState)
         || !validateImplementationProfileState(implementationProfileState)
         || !validateCompletionScope(completionScope)
-        || !validateVerificationState(verificationState)) {
+        || !validateVerificationState(verificationState)
+        || !validateResolutionReceipt(resolutionReceipt)) {
         throw new SeedSpecError("Resolution produced non-conforming structured state", {
           code: "CONFORMANCE_ASSERTION_FAILED",
           details: [
@@ -184,9 +266,25 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
             ...formatSchemaErrors(validateImplementationResourceState.errors),
             ...formatSchemaErrors(validateImplementationProfileState.errors),
             ...formatSchemaErrors(validateCompletionScope.errors),
-            ...formatSchemaErrors(validateVerificationState.errors)
+            ...formatSchemaErrors(validateVerificationState.errors),
+            ...formatSchemaErrors(validateResolutionReceipt.errors)
           ]
         });
+      }
+      let goldenDigest;
+      if (testCase.golden) {
+        const goldenPath = resolveFixture(indexDirectory, testCase.golden);
+        const actualDigest = await computeSelectedDirectoryDigest(
+          result.workspace,
+          [...PROTOCOL_OWNED_RESOLUTION_PATHS, "resolution-receipt.json"]
+        );
+        goldenDigest = await computeDirectoryDigest(goldenPath);
+        if (actualDigest !== goldenDigest) {
+          throw new SeedSpecError("Resolution does not match its complete golden handoff", {
+            code: "CONFORMANCE_ASSERTION_FAILED",
+            details: [`expected ${goldenDigest}`, `received ${actualDigest}`]
+          });
+        }
       }
       const sourceExtensions = {};
       for (const additionId of result.additions) {
@@ -203,6 +301,9 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         intentStatus: result.project.intent_status,
         implementationProfileStatus: result.project.implementation_profile_status,
         completionScopeStatus: result.project.completion_scope_status,
+        receiptId: resolutionReceipt.receipt_id,
+        outputDigest: resolutionReceipt.subject.result.output_digest,
+        ...(goldenDigest ? { goldenDigest } : {}),
         reviewCount: result.lock.reviews.length,
         sourceExtensions
       };
@@ -291,6 +392,9 @@ function assertExpectedOutput(testCase, output) {
 export async function runConformanceSuite(indexPath) {
   const absoluteIndex = path.resolve(indexPath);
   const indexDirectory = path.dirname(absoluteIndex);
+  const suiteBytes = await readFile(absoluteIndex);
+  const indexDigest = contentDigest(suiteBytes);
+  const bundleDigest = await computeConformanceBundleDigest(indexDirectory);
   const suite = await readYamlFile(absoluteIndex, "Conformance suite index");
   const validateSuite = await compileProtocolSchema("conformance.schema.json");
   if (!validateSuite(suite)) {
@@ -312,22 +416,35 @@ export async function runConformanceSuite(indexPath) {
         if (testCase.expect.result === "fail") {
           results.push({
             id: testCase.id,
-            passed: false,
+            operation: testCase.operation,
+            status: "failed",
+            error_code: "CONFORMANCE_ASSERTION_FAILED",
             message: `expected ${testCase.expect.code} but operation succeeded`
           });
           continue;
         }
         assertExpectedOutput(testCase, output);
-        results.push({ id: testCase.id, passed: true, output });
+        results.push({
+          id: testCase.id,
+          operation: testCase.operation,
+          status: "passed",
+          ...(Object.keys(output).length > 0 ? { output } : {})
+        });
       } catch (error) {
         if (testCase.expect.result === "fail" && error.code === testCase.expect.code) {
-          results.push({ id: testCase.id, passed: true, errorCode: error.code });
+          results.push({
+            id: testCase.id,
+            operation: testCase.operation,
+            status: "passed",
+            output: { expected_error_code: error.code }
+          });
         } else {
           results.push({
             id: testCase.id,
-            passed: false,
+            operation: testCase.operation,
+            status: "failed",
             message: error.message,
-            errorCode: error.code ?? "UNEXPECTED_ERROR"
+            error_code: error.code ?? "UNEXPECTED_ERROR"
           });
         }
       }
@@ -336,24 +453,79 @@ export async function runConformanceSuite(indexPath) {
     await rm(temporaryRoot, { recursive: true, force: true });
   }
 
-  return {
-    suiteVersion: suite.suite_version,
-    protocolVersion: suite.protocol_version,
-    total: results.length,
-    passed: results.filter((result) => result.passed).length,
-    failed: results.filter((result) => !result.passed).length,
+  const passed = results.filter((result) => result.status === "passed").length;
+  const failed = results.filter((result) => result.status === "failed").length;
+  const skipped = results.filter((result) => result.status === "skipped").length;
+  const releaseBound = suite.suite_version === protocolRelease.conformance.suite_version
+    && suite.protocol_version === protocolRelease.protocol_family
+    && indexDigest === protocolRelease.conformance.index_digest
+    && bundleDigest === protocolRelease.conformance.bundle_digest;
+  const report = {
+    report_version: "1",
+    status: releaseBound
+      ? failed === 0 && skipped === 0 ? "conformant" : "nonconformant"
+      : "incomplete",
+    protocol_release: {
+      id: protocolRelease.release_id,
+      digest: protocolReleaseDigest
+    },
+    protocol_family: suite.protocol_version,
+    suite: {
+      version: suite.suite_version,
+      source: releaseBound
+        ? protocolRelease.conformance.index
+        : path.basename(absoluteIndex),
+      index_digest: indexDigest,
+      bundle_digest: bundleDigest,
+      release_bound: releaseBound
+    },
+    runtime: {
+      name: "@seedspec/runtime",
+      version: runtimeVersion
+    },
+    environment: {
+      platform: process.platform,
+      architecture: process.arch,
+      node: process.version,
+      yaml_parser: `yaml@${yamlVersion}`,
+      json_parser: `JSON.parse@node-${process.versions.node}`
+    },
+    extensions: [],
+    totals: {
+      total: results.length,
+      passed,
+      failed,
+      skipped
+    },
+    package_digests: results
+      .filter((result) => result.output?.digest)
+      .map((result) => ({
+        case: result.id,
+        digest: result.output.digest
+      })),
     results
   };
+
+  const validateReport = await compileProtocolSchema("conformance-report.schema.json");
+  if (!validateReport(report)) {
+    throw new SeedSpecError("Conformance run produced an invalid report", {
+      code: "INVALID_CONFORMANCE_REPORT",
+      details: formatSchemaErrors(validateReport.errors)
+    });
+  }
+
+  return report;
 }
 
 export function formatConformanceResult(result) {
   const lines = result.results.map((testCase) => (
-    `${testCase.passed ? "PASS" : "FAIL"} ${testCase.id}`
-    + `${testCase.passed ? "" : ` — ${testCase.errorCode}: ${testCase.message}`}`
+    `${testCase.status === "passed" ? "PASS" : testCase.status === "skipped" ? "SKIP" : "FAIL"} ${testCase.id}`
+    + `${testCase.status === "failed" ? ` — ${testCase.error_code}: ${testCase.message}` : ""}`
   ));
   lines.push(
     "",
-    `${result.passed}/${result.total} cases passed for SeedSpec Protocol ${result.protocolVersion} (suite ${result.suiteVersion})`
+    `${result.totals.passed}/${result.totals.total} cases passed for SeedSpec Protocol ${result.protocol_family} (suite ${result.suite.version})`,
+    `Conformance status: ${result.status}`
   );
   return lines.join("\n");
 }

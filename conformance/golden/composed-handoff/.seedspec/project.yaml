@@ -1,0 +1,34 @@
+protocol_version: "0.1"
+status: ready
+configuration_status: selected
+intent_status: affirmed
+completion_scope_status: review
+declaration_status: no-declared-concerns
+artifact_status: recorded
+implementation_profile_status: not-declared
+root:
+  id: org.seedspec.fixtures.comprehensive-application
+  version: 0.1.0-alpha.1
+  digest: sha256:9823e5f458876963b118263ac55871bb43680ca93da8a3a75d047ef1f8f4af90
+additions:
+  - id: org.seedspec.fixtures.portable-feature
+    version: 0.1.0-alpha.1
+    digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+configuration: resolved-config.yaml
+resolved_intent: resolved-intent.yaml
+task_index: tasks.yaml
+component_index: components.yaml
+artifact_index: artifacts.yaml
+implementation_resource_index: implementation-resources.yaml
+implementation_resource_state: implementation-resource-state.yaml
+implementation_profile_state: implementation-profile-state.yaml
+lockfile: dependencies.lock.yaml
+resolved_spec: resolved-spec.md
+agent_guide: agent-guide.md
+implementation_notes: implementation-notes.md
+verification_report: verification-report.md
+completion_scope: completion-scope.yaml
+verification_state: verification-state.yaml
+resolution_receipt: resolution-receipt.json
+resolved_decisions: []
+unresolved_decisions: []

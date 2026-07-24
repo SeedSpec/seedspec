@@ -1,0 +1,34 @@
+protocol_version: "0.1"
+packages:
+  - package: org.seedspec.fixtures.comprehensive-application
+    source_path: tasks.yaml
+    tasks:
+      - id: inspect-current-state
+        instruction: Inspect the existing solution and identify the local concepts,
+          behavior, and constraints that overlap this package before making
+          changes.
+        references:
+          - source_path: intent/allowance-tracker.product-spec.md
+            path: task-references/org.seedspec.fixtures.comprehensive-application/intent/allowance-tracker.product-spec.md
+      - id: review-author-context
+        instruction: Review the supplied reference context and note where the existing
+          solution requires an adaptation rather than a direct translation.
+        references:
+          - source_path: reference/capabilities/chores-1.0.0.md
+            path: task-references/org.seedspec.fixtures.comprehensive-application/reference/capabilities/chores-1.0.0.md
+      - id: realize-package
+        instruction: Realize the affirmed package intent using the existing architecture
+          and record material deviations or terminology mappings.
+        references: []
+      - id: verify-realization
+        instruction: Run the applicable package verification and investigate every
+          failure before claiming completion.
+        references:
+          - source_path: acceptance/criteria.md
+            path: task-references/org.seedspec.fixtures.comprehensive-application/acceptance/criteria.md
+          - source_path: capabilities/conformance/chores.suite.yaml
+            path: task-references/org.seedspec.fixtures.comprehensive-application/capabilities/conformance/chores.suite.yaml
+          - source_path: capabilities/conformance/chores.schema.json
+            path: task-references/org.seedspec.fixtures.comprehensive-application/capabilities/conformance/chores.schema.json
+          - source_path: capabilities/conformance/chores.scenarios.yaml
+            path: task-references/org.seedspec.fixtures.comprehensive-application/capabilities/conformance/chores.scenarios.yaml

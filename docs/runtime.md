@@ -4,6 +4,10 @@
 > first-party CLI and JavaScript runtime, not requirements for every conforming
 > implementation.
 
+The normative language and operation boundaries are defined in
+`docs/01-language.md` and `docs/operations.md`. This document explains the
+reference runtime that implements them.
+
 The runtime is the first-party CLI and JavaScript library behind SeedSpec
 authoring, validation, inspection, resolution, and verification. It combines
 strict protocol-aware operations with informative authoring workflows while
@@ -14,6 +18,8 @@ policy or any particular agent prompt format.
 
 ```text
 seedspec version [--json]
+seedspec doctor [--full] [--json]
+seedspec docs <authoring [area]|implementing>
 seedspec prompt
 seedspec begin <root-package-path> [--json]
 seedspec validate <path>
@@ -29,7 +35,7 @@ seedspec validate-artifact <path> <artifact-id> [--json]
 seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
 seedspec resolve <root-package-path> [--add <package-path>] [--applied-intent <yaml>] [-i <profile>] [--configuration-selections <yaml>] [--completion-scope <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
 seedspec init <solution|application|feature|workflow|automation|configuration|integration> [--output <path>]
-seedspec conformance [cases.yaml]
+seedspec conformance [cases.yaml] [--json] [--output <report.json>]
 seedspec verify-lock <project-path> --package <path> [--package <path>]
 seedspec completion <project-path> [--json]
 seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
@@ -40,9 +46,16 @@ user can give to an implementing agent. It delegates the detailed workflow to
 version-compatible official tooling rather than embedding a separately
 maintained distributor prompt.
 
-`version` reports the CLI, runtime, protocol-schema-package, conformance-suite, and
-protocol-family versions. Integrations should use `--json` and record all five
-values with interoperability results.
+`version` reports the exact protocol release and digest alongside the CLI,
+runtime, schema-package, conformance-suite, and protocol-family versions.
+Integrations should use `--json` and record the complete result with
+interoperability evidence.
+
+`doctor` verifies release-manifest validity, installed version coherence,
+schema digests, the bundled conformance corpus, and an offline validation and
+digest smoke test. `doctor --full` runs the complete release-bound conformance
+suite. `docs implementing` prints the implementation workflow bundled with the
+installed CLI version.
 
 The CLI ships a compatible local copy of the operational instructions needed to
 use SeedSpec. An environment that supports independently versioned online core

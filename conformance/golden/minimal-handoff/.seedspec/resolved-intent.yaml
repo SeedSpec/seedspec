@@ -1,0 +1,13 @@
+protocol_version: "0.1"
+status: affirmed
+packages:
+  - package: org.seedspec.fixtures.portable-feature
+    version: 0.1.0-alpha.1
+    digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+    entrypoint: definition/feature.md
+    provenance: package-author
+    format:
+      type: org.seedspec.intent.native
+    use: as-authored
+contributions: []
+unresolved: []

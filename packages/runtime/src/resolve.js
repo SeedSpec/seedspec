@@ -1,4 +1,5 @@
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { cp, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 import { analyzeCapabilityDeclarations } from "./capabilities.js";
@@ -8,6 +9,7 @@ import { pathExists, readMarkdownComponent, readYamlFile, resolvePackagePath } f
 import { compileConfigurationSchema, compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { artifactReview, componentReview } from "./guidance.js";
 import { resolveAppliedIntent } from "./intent.js";
+import { createResolutionReceipt } from "./receipts.js";
 import {
   materializeImplementationResources,
   reconcileImplementationResourceState
@@ -1349,7 +1351,7 @@ async function buildResolvedSpecification({
   return `${lines.join("\n").trim()}\n`;
 }
 
-export async function resolveProject(rootPath, {
+async function resolveProjectInStaging(rootPath, {
   additionPaths = [],
   featurePaths = [],
   implementationProfiles = [],
@@ -1483,6 +1485,7 @@ export async function resolveProject(rootPath, {
     verification_report: "verification-report.md",
     completion_scope: "completion-scope.yaml",
     verification_state: "verification-state.yaml",
+    resolution_receipt: "resolution-receipt.json",
     resolved_decisions: decisionState.resolved,
     unresolved_decisions: decisionState.unresolved
   };
@@ -1674,6 +1677,22 @@ export async function resolveProject(rootPath, {
     ]);
   }
 
+  const resolutionReceipt = await createResolutionReceipt({
+    workspace,
+    root: application,
+    additions: orderedFeatures,
+    projectStatus: status,
+    implementationProfiles,
+    inputs: {
+      configurationSelectionsPath,
+      appliedIntentPath,
+      completionScopePath,
+      technicalPreferencesPath,
+      artifactSelectionsPath,
+      decisionsPath
+    }
+  });
+
   return {
     workspace,
     project,
@@ -1686,7 +1705,72 @@ export async function resolveProject(rootPath, {
     implementationResourceIndex,
     completionScope,
     implementationProfileState,
+    resolutionReceipt,
     additions: selectedFeatures.map(({ record }) => record.manifest.id),
     features: selectedFeatures.map(({ record }) => record.manifest.id)
   };
+}
+
+export async function resolveProject(rootPath, options = {}) {
+  const outputRoot = path.resolve(options.outputDirectory ?? process.cwd());
+  await mkdir(outputRoot, { recursive: true });
+
+  const workspace = path.join(outputRoot, ".seedspec");
+  const transactionRoot = await mkdtemp(
+    path.join(outputRoot, ".seedspec-transaction-")
+  );
+  const stagedWorkspace = path.join(transactionRoot, ".seedspec");
+  const previousWorkspace = await pathExists(workspace);
+
+  try {
+    if (previousWorkspace) {
+      if (!previousWorkspace.isDirectory()) {
+        throw new SeedSpecError("Resolved workspace path is not a directory", {
+          code: "INVALID_PROJECT_WORKSPACE"
+        });
+      }
+      await cp(workspace, stagedWorkspace, { recursive: true });
+    }
+
+    const result = await resolveProjectInStaging(rootPath, {
+      ...options,
+      outputDirectory: transactionRoot
+    });
+
+    const stagedAgentInstructions = path.join(transactionRoot, "AGENTS.md");
+    const projectAgentInstructions = path.join(outputRoot, "AGENTS.md");
+    if (!await pathExists(projectAgentInstructions)
+      && await pathExists(stagedAgentInstructions)) {
+      await cp(stagedAgentInstructions, projectAgentInstructions);
+    }
+
+    let backupWorkspace;
+    if (previousWorkspace) {
+      backupWorkspace = path.join(
+        outputRoot,
+        `.seedspec-previous-${randomUUID()}`
+      );
+      await rename(workspace, backupWorkspace);
+    }
+
+    try {
+      await rename(stagedWorkspace, workspace);
+    } catch (error) {
+      if (backupWorkspace && !await pathExists(workspace)) {
+        await rename(backupWorkspace, workspace);
+      }
+      throw error;
+    }
+
+    if (backupWorkspace) {
+      await rm(backupWorkspace, { recursive: true, force: true }).catch(() => {});
+    }
+
+    return {
+      ...result,
+      workspace
+    };
+  } finally {
+    await rm(transactionRoot, { recursive: true, force: true });
+  }
 }

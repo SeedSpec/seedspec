@@ -1,0 +1,6 @@
+protocol_version: "0.1"
+status: review
+items: []
+uncovered_packages:
+  - org.seedspec.fixtures.comprehensive-application
+  - org.seedspec.fixtures.portable-feature

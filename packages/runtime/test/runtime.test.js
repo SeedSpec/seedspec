@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  access,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  symlink,
+  writeFile
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -25,6 +35,7 @@ import {
   formatPackageBeginning,
   inspectPackage,
   inspectCapabilityConformance,
+  inspectInstallation,
   inspectProjectCompletion,
   initPackage,
   listArtifactAdapters,
@@ -569,6 +580,36 @@ test("resolution preserves implementation notes and verification evidence", asyn
   await resolveProject(allowance, { outputDirectory: output });
   assert.equal(await readFile(notesPath, "utf8"), "# Local implementation notes\n\nKeep me.\n");
   assert.equal(await readFile(reportPath, "utf8"), "# Local verification\n\nEvidence stays.\n");
+});
+
+test("resolution commits atomically and removes failed staging state", async (t) => {
+  const output = await temporaryDirectory(t);
+  const first = await resolveProject(allowance, { outputDirectory: output });
+  const beforeFailure = await computeDirectoryDigest(first.workspace);
+
+  await assert.rejects(
+    resolveProject(allowance, {
+      implementationProfiles: ["missing-profile"],
+      outputDirectory: output
+    }),
+    (error) => error.code === "INVALID_IMPLEMENTATION_PROFILE"
+  );
+
+  assert.equal(await computeDirectoryDigest(first.workspace), beforeFailure);
+  assert.deepEqual(
+    (await readdir(output)).filter((name) => name.startsWith(".seedspec-transaction-")),
+    []
+  );
+
+  const emptyOutput = path.join(output, "no-previous-workspace");
+  await assert.rejects(
+    resolveProject(allowance, {
+      implementationProfiles: ["missing-profile"],
+      outputDirectory: emptyOutput
+    }),
+    (error) => error.code === "INVALID_IMPLEMENTATION_PROFILE"
+  );
+  await assert.rejects(access(path.join(emptyOutput, ".seedspec")));
 });
 
 test("kind-specific manifest schemas accept their matching examples", async () => {
@@ -1261,11 +1302,13 @@ test("the comprehensive application composes with a portable feature into a stab
   const firstProject = await readFile(path.join(first.workspace, "project.yaml"), "utf8");
   const firstSpec = await readFile(path.join(first.workspace, "resolved-spec.md"), "utf8");
   const firstLock = await readFile(path.join(first.workspace, "dependencies.lock.yaml"), "utf8");
+  const firstReceipt = await readFile(path.join(first.workspace, "resolution-receipt.json"), "utf8");
 
   const second = await resolveProject(allowance, options);
   assert.equal(await readFile(path.join(second.workspace, "project.yaml"), "utf8"), firstProject);
   assert.equal(await readFile(path.join(second.workspace, "resolved-spec.md"), "utf8"), firstSpec);
   assert.equal(await readFile(path.join(second.workspace, "dependencies.lock.yaml"), "utf8"), firstLock);
+  assert.equal(await readFile(path.join(second.workspace, "resolution-receipt.json"), "utf8"), firstReceipt);
 
   assert.match(firstSpec, /Addition: Portable Feature Fixture/);
   assert.match(firstSpec, /allocation_mode: reserved/);
@@ -1285,6 +1328,7 @@ test("the comprehensive application composes with a portable feature into a stab
     "artifacts.yaml",
     "implementation-resources.yaml",
     "implementation-resource-state.yaml",
+    "resolution-receipt.json",
     "dependencies.lock.yaml",
     "additions/org.seedspec.fixtures.portable-feature/source.yaml",
     "additions/org.seedspec.fixtures.portable-feature/resolved-config.yaml",
@@ -1938,6 +1982,8 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   const cli = path.join(root, "packages/cli/bin/seedspec.js");
   const version = await execFileAsync(process.execPath, [cli, "version", "--json"]);
   const shortVersion = await execFileAsync(process.execPath, [cli, "--version"]);
+  const doctor = await execFileAsync(process.execPath, [cli, "doctor", "--json"]);
+  const implementingDocs = await execFileAsync(process.execPath, [cli, "docs", "implementing"]);
   const validation = await execFileAsync(process.execPath, [cli, "validate", allowance]);
   const prompt = await execFileAsync(process.execPath, [cli, "prompt"]);
   const beginning = await execFileAsync(process.execPath, [cli, "begin", allowance]);
@@ -1966,9 +2012,11 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.1");
-  assert.equal(versionInfo.conformance_suite_version, "2.1.0");
-  assert.equal(versionInfo.cli_version, "0.1.0-alpha.8");
+  assert.equal(versionInfo.conformance_suite_version, "2.2.0");
+  assert.equal(versionInfo.cli_version, "0.1.0-alpha.9");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
+  assert.equal(JSON.parse(doctor.stdout).status, "healthy");
+  assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
   assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
   assert.match(prompt.stdout, /Use this SeedSpec package/);
@@ -1985,6 +2033,16 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.match(capabilityConformance.stdout, /Declared suite coverage: partial/);
   assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
   assert.match(discovery.stdout, /Portable Feature Fixture.*candidate/);
+});
+
+test("installation doctor verifies the exact release and bundled suite", async () => {
+  const result = await inspectInstallation({
+    cliVersion: "0.1.0-alpha.9"
+  });
+  assert.equal(result.status, "healthy");
+  assert.equal(result.protocol_release.id, "0.1.0-alpha.6");
+  assert.ok(result.checks.every((check) => check.status === "passed"));
+  assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
 
 test("CLI audit emits agent instructions, status, and bundled documentation", async (t) => {
@@ -2017,12 +2075,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.8`/);
+  assert.match(audit.stdout, /Tool version: `0\.1\.0-alpha\.9`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.8/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.1\.0-alpha\.9/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
@@ -2184,9 +2242,10 @@ test("a dependency lock verifies exact package bytes and declaration analysis", 
 
 test("alpha format suite passes every declared case", async () => {
   const result = await runConformanceSuite(path.join(root, "conformance/cases.yaml"));
-  assert.equal(result.suiteVersion, conformanceSuiteVersion);
-  assert.equal(result.failed, 0, JSON.stringify(result.results.filter((item) => !item.passed), null, 2));
-  assert.ok(result.total >= 15);
+  assert.equal(result.suite.version, conformanceSuiteVersion);
+  assert.equal(result.status, "conformant");
+  assert.equal(result.totals.failed, 0, JSON.stringify(result.results.filter((item) => item.status === "failed"), null, 2));
+  assert.ok(result.totals.total >= 15);
 });
 
 test("conformance suites cannot reference fixtures outside their directory", async (t) => {
@@ -2197,7 +2256,7 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "2.1.0",
+    suite_version: "2.2.0",
     protocol_version: "0.1",
     cases: [{
       id: "outside-fixture",

@@ -75,6 +75,7 @@
         "applied_intent": { "type": "string", "minLength": 1 },
         "capability": { "type": "string", "minLength": 5 },
         "result_file": { "type": "string", "minLength": 1 },
+        "golden": { "type": "string", "minLength": 1 },
         "expect": { "$ref": "#/$defs/expectation" }
       },
       "allOf": [

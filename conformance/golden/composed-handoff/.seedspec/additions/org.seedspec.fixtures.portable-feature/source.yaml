@@ -1,0 +1,34 @@
+id: org.seedspec.fixtures.portable-feature
+name: Portable Feature Fixture
+version: 0.1.0-alpha.1
+kind: feature
+digest: sha256:8bff1cef80420badeb8fb7ab144c3ffa235c10fc62f58e37487f9af2268a82f6
+requires:
+  capabilities:
+    - id: org.seedspec.core.actors
+      tested_against: 1.0.0
+    - id: org.seedspec.core.balances
+      tested_against: 1.0.0
+    - id: org.seedspec.core.transactions
+      tested_against: 1.0.0
+provides:
+  capabilities:
+    - id: org.seedspec.finance.savings-goals
+      version: 1.0.0
+      contract: capabilities/savings-goals.md
+    - id: org.seedspec.finance.goal-allocations
+      version: 1.0.0
+      contract: capabilities/goal-allocations.md
+    - id: org.seedspec.finance.goal-progress
+      version: 1.0.0
+      contract: capabilities/goal-progress.md
+compatibility:
+  scope: generic
+conflicts: {}
+decisions: []
+implementation_profiles: []
+artifacts: []
+relationships: []
+tasks: null
+implementation_resources: null
+extensions: {}

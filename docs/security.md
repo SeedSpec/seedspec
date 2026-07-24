@@ -70,6 +70,13 @@ The canonical digest detects byte changes and supports reproducible locks. It do
 - whether a definition is correct;
 - whether a package has been reviewed.
 
+The resolution receipt applies the same boundary. It binds package and input
+digests to deterministic resolved output, but it is not a signature or proof of
+publisher identity. The protocol does not transmit receipts. Any future
+telemetry transport must be separately opt-in and must not add package prose,
+absolute paths, credentials, or arbitrary project content to the receipt
+subject.
+
 Registries or publishers may attach signatures, transparency-log entries, or review attestations to a digest. Those claims must remain external until a future protocol version defines their verification semantics.
 
 ## Generated specifications
