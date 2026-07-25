@@ -5,6 +5,34 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.2.1
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.1` |
+| Conformance suite | `0.2.1` |
+| `@seedspec/runtime` | `0.2.1` |
+| `@seedspec/cli` | `0.2.1` |
+
+### Authoring
+
+- Add a path-independent, revisioned authoring-workspace snapshot that remains
+  readable while a draft is invalid.
+- Allow authoring workspaces to begin before a valid package exists and assign
+  opaque workspace identity independently from package identity.
+- Add automatic discovery for `workspace.yaml`, `seedspec.yaml`, and the
+  conventional sibling `seedspec/` and `authoring/` layout.
+- Make `npx @seedspec/cli author` the human front door and group status,
+  review, questions, checks, history, evaluation, and packing beneath the
+  author namespace.
+- Keep exact versions, noninteractive npm confirmation, explicit paths,
+  revisions, digests, and JSON as automation controls rather than beginner
+  requirements.
+- Record the shared headless-engine contract for CLI and web authoring,
+  artifact-level portability, explicit acceptance of agent-proposed document
+  changes, and agent-session model consent.
+
 ## 0.2.0
 
 | Surface | Version |

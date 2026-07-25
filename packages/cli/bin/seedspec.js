@@ -14,7 +14,9 @@ import {
   auditPackage,
   beginPackage,
   computeDirectoryDigest,
+  createAuthoringWorkspace,
   createAuthorEvaluation,
+  discoverAuthoringWorkspace,
   discoverFeatures,
   formatError,
   formatAdapterListing,
@@ -22,6 +24,8 @@ import {
   formatArtifactValidation,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatAuthoringWorkspaceCreation,
+  formatAuthoringWorkspaceSnapshot,
   formatAuthorEvaluation,
   formatCapabilityConformance,
   formatConformanceResult,
@@ -42,6 +46,7 @@ import {
   inspectPackage,
   inspectCapabilityConformance,
   inspectInstallation,
+  inspectAuthoringWorkspace,
   lintPackage,
   inspectProjectCompletion,
   listArtifactAdapters,
@@ -76,6 +81,16 @@ const IMPLEMENTING_GUIDE = readFileSync(
 const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experimental)
 
 Usage:
+  seedspec author
+  seedspec author status [package-path] [--json]
+  seedspec author review [package-path] [--area <area>]
+  seedspec author questions [package-path]
+  seedspec author check [package-path]
+  seedspec author history [package-path]
+  seedspec author evaluate [package-path] [--output <directory>]
+  seedspec author pack [package-path] [--output <directory>]
+  seedspec author create <package-path> [--target <depth>]
+  seedspec author help
   seedspec prepare <package-path> [--state <directory>] [--status] [--json]
   seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
   seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
@@ -119,6 +134,25 @@ Resolve options:
   --technical-preferences <yaml>   Record implementation preferences separately
   --artifact-selections <yaml>     Record selected, declined, or deferred artifacts
   --decisions <yaml>               Answer package-declared product decisions
+`;
+
+const AUTHOR_HELP = `SeedSpec authoring
+
+Run this inside a SeedSpec project:
+  npx @seedspec/cli author
+
+Commands:
+  author              Find or resume the local authoring workspace
+  author status       Show the draft and current review
+  author review       Start or continue the current review
+  author questions    Show author decisions and unresolved questions
+  author check        Check structure, guidance, and publication readiness
+  author history      Show completed and current review passes
+  author evaluate     Create an independent handoff evaluation
+  author pack         Create the distributable SeedSpec archive
+  author help         Show this guide
+
+Paths are optional when the command runs inside a SeedSpec project.
 `;
 
 function parseArguments(args) {
@@ -184,6 +218,63 @@ function requirePositional(positional, index, label) {
   return positional[index];
 }
 
+async function resolveAuthoringContext(explicitPackagePath, stateDirectory) {
+  if (explicitPackagePath && stateDirectory) {
+    return {
+      packageRoot: path.resolve(explicitPackagePath),
+      stateRoot: path.resolve(stateDirectory),
+      stateExists: true
+    };
+  }
+  const discovered = await discoverAuthoringWorkspace(explicitPackagePath ?? process.cwd());
+  return {
+    packageRoot: path.resolve(explicitPackagePath ?? discovered.packageRoot),
+    stateRoot: stateDirectory ? path.resolve(stateDirectory) : discovered.stateRoot,
+    stateExists: stateDirectory ? true : discovered.stateExists
+  };
+}
+
+function authorNextCommand(snapshot) {
+  if (snapshot.package.status !== "valid") {
+    return "Next: update the draft, then run `npx @seedspec/cli author check`.";
+  }
+  if (snapshot.review.questions.open > 0) {
+    return "Next: `npx @seedspec/cli author questions`";
+  }
+  if (!snapshot.review.complete) {
+    return "Next: `npx @seedspec/cli author review`";
+  }
+  return "Next: `npx @seedspec/cli author check`";
+}
+
+function formatAuthoringQuestions(snapshot) {
+  const questions = snapshot.review.questions.items;
+  const lines = [
+    "SeedSpec authoring questions",
+    `${snapshot.review.questions.open} open, ${snapshot.review.questions.resolved} resolved`
+  ];
+  if (questions.length === 0) return [...lines, "", "No authoring questions recorded."].join("\n");
+  lines.push("");
+  for (const question of questions) {
+    lines.push(`- ${question.id} — ${question.status ?? "open"}`);
+    lines.push(`  ${question.question ?? "No question text recorded."}`);
+    if (question.resolution) lines.push(`  Resolution: ${question.resolution}`);
+  }
+  return lines.join("\n");
+}
+
+function formatAuthoringHistory(snapshot) {
+  const lines = ["SeedSpec authoring history"];
+  if (snapshot.review.passes.length === 0) {
+    return [...lines, "", "No review passes recorded."].join("\n");
+  }
+  lines.push("");
+  for (const pass of snapshot.review.passes) {
+    lines.push(`- ${pass.id}: ${pass.area} — ${pass.outcome}`);
+  }
+  return lines.join("\n");
+}
+
 async function run() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === "help" || command === "--help") {
@@ -202,6 +293,132 @@ async function run() {
   }
 
   switch (command) {
+    case "author": {
+      const supportedActions = new Set([
+        "open",
+        "create",
+        "status",
+        "review",
+        "questions",
+        "check",
+        "history",
+        "evaluate",
+        "pack",
+        "help"
+      ]);
+      const action = supportedActions.has(positional[0]) ? positional[0] : "open";
+      const packagePath = action === "open" ? positional[0] : positional[1];
+      if (action === "create") {
+        rejectUnknownOptions(options, ["target", "state", "json"]);
+        const requiredPackagePath = requirePositional(positional, 1, "package path");
+        const result = await createAuthoringWorkspace(requiredPackagePath, {
+          stateDirectory: oneOption(options, "state"),
+          target: oneOption(options, "target"),
+          toolVersion: CLI_VERSION
+        });
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${formatAuthoringWorkspaceCreation(result)}\n`);
+      } else if (action === "help") {
+        rejectUnknownOptions(options, []);
+        process.stdout.write(AUTHOR_HELP);
+      } else {
+        const allowedOptions = {
+          open: ["state", "json"],
+          status: ["state", "json"],
+          review: ["area", "target", "state", "status", "json"],
+          questions: ["state", "json"],
+          check: ["state", "json"],
+          history: ["state", "json"],
+          evaluate: ["state", "output", "json"],
+          pack: ["state", "output", "json"]
+        };
+        rejectUnknownOptions(options, allowedOptions[action]);
+        const context = await resolveAuthoringContext(packagePath, oneOption(options, "state"));
+        if (action === "open" && !context.stateExists) {
+          await createAuthoringWorkspace(context.packageRoot, {
+            stateDirectory: context.stateRoot,
+            toolVersion: CLI_VERSION
+          });
+        }
+
+        if (action === "open" || action === "status") {
+          const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
+            stateDirectory: context.stateRoot,
+            toolVersion: CLI_VERSION
+          });
+          process.stdout.write(options.has("json")
+            ? `${JSON.stringify(snapshot, null, 2)}\n`
+            : `${formatAuthoringWorkspaceSnapshot(snapshot)}\n\n${authorNextCommand(snapshot)}\n`);
+        } else if (action === "review") {
+          const result = await auditPackage(context.packageRoot, {
+            area: oneOption(options, "area"),
+            target: oneOption(options, "target"),
+            stateDirectory: context.stateRoot,
+            toolVersion: CLI_VERSION,
+            statusOnly: options.has("status")
+          });
+          process.stdout.write(options.has("json")
+            ? `${JSON.stringify(result, null, 2)}\n`
+            : `${formatAuthoringAudit(result, { statusOnly: options.has("status") })}\n`);
+        } else if (action === "questions" || action === "history") {
+          const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
+            stateDirectory: context.stateRoot,
+            toolVersion: CLI_VERSION
+          });
+          process.stdout.write(options.has("json")
+            ? `${JSON.stringify(
+              action === "questions" ? snapshot.review.questions : snapshot.review.passes,
+              null,
+              2
+            )}\n`
+            : `${action === "questions"
+              ? formatAuthoringQuestions(snapshot)
+              : formatAuthoringHistory(snapshot)}\n`);
+        } else if (action === "check") {
+          const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
+            stateDirectory: context.stateRoot,
+            toolVersion: CLI_VERSION
+          });
+          if (snapshot.package.status !== "valid") {
+            process.stdout.write(options.has("json")
+              ? `${JSON.stringify(snapshot, null, 2)}\n`
+              : `${formatAuthoringWorkspaceSnapshot(snapshot)}\n`);
+            process.exitCode = 1;
+          } else {
+            const result = await preparePackage(context.packageRoot, {
+              stateDirectory: context.stateRoot,
+              toolVersion: CLI_VERSION,
+              statusOnly: true
+            });
+            process.stdout.write(options.has("json")
+              ? `${JSON.stringify(result, null, 2)}\n`
+              : `${formatPreparation(result, {
+                statusOnly: true,
+                authorCommand: true
+              })}\n`);
+          }
+        } else if (action === "evaluate") {
+          const result = await createAuthorEvaluation(context.packageRoot, {
+            outputDirectory: oneOption(options, "output"),
+            toolVersion: CLI_VERSION
+          });
+          process.stdout.write(options.has("json")
+            ? `${JSON.stringify(result, null, 2)}\n`
+            : `${formatAuthorEvaluation(result)}\n`);
+        } else if (action === "pack") {
+          const result = await packPackage(context.packageRoot, {
+            outputDirectory: oneOption(options, "output"),
+            stateDirectory: context.stateRoot,
+            toolVersion: CLI_VERSION
+          });
+          process.stdout.write(options.has("json")
+            ? `${JSON.stringify(result, null, 2)}\n`
+            : `${formatPackResult(result)}\n`);
+        }
+      }
+      break;
+    }
     case "version": {
       rejectUnknownOptions(options, ["json"]);
       const versions = {

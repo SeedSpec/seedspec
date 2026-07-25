@@ -1,6 +1,6 @@
 # SeedSpec
 
-**SeedSpec 0.2.0 — experimental**
+**SeedSpec 0.2.1 — experimental**
 
 SeedSpec helps people turn product and domain expertise into portable,
 agent-ready starting points. A SeedSpec package keeps the intended outcome,
@@ -85,11 +85,9 @@ the canonical source for both the protocol and first-party tooling.
 Run the current CLI without installing it globally:
 
 ```bash
-npx --yes @seedspec/cli@0.2.0 --help
-npx --yes @seedspec/cli@0.2.0 version
-npx --yes @seedspec/cli@0.2.0 doctor
-npx --yes @seedspec/cli@0.2.0 validate <package-path>
-npx --yes @seedspec/cli@0.2.0 begin <package-path>
+npx @seedspec/cli --help
+npx @seedspec/cli version
+npx @seedspec/cli begin <package-path>
 ```
 
 `seedspec begin` is the read-only starting point for an agent. It validates the
@@ -97,9 +95,9 @@ package, inventories the available intent and supporting material, explains the
 trust boundary, and identifies the user choices needed before resolution or
 implementation.
 
-The default npm tag identifies the current numeric release. Pin `0.2.0` when
-building integrations that depend on exact schemas, conformance behavior, or
-runtime output.
+The default npm tag identifies the current release. Human-facing examples use
+that friendly default. Tests, automation, and reproducible integrations should
+pin an exact version and may add `--yes` to avoid npm's first-run confirmation.
 
 ## Author a package
 
@@ -107,19 +105,17 @@ SeedSpec authoring is intended to be guided rather than a requirement to
 hand-edit every YAML and JSON file:
 
 ```bash
-npx --yes @seedspec/cli@0.2.0 init application --output <package-path>
-npx --yes @seedspec/cli@0.2.0 prepare <package-path>
-npx --yes @seedspec/cli@0.2.0 lint <package-path>
-npx --yes @seedspec/cli@0.2.0 validate <package-path>
-npx --yes @seedspec/cli@0.2.0 publish-check <package-path>
-npx --yes @seedspec/cli@0.2.0 pack <package-path>
+npx @seedspec/cli author
 ```
 
-The preparation workflow combines deterministic protocol checks with agent-guided
-semantic review. It helps separate concerns, apply a kind-aware lens, identify
-material ambiguity, record decision provenance, check internal consistency,
-harden the seed progressively, and review the independent handoff. The CLI does
-not embed a model or silently rewrite package content.
+Run it inside a project containing `seedspec.yaml`, a conventional
+`seedspec/` package, or an existing authoring workspace. It discovers the local
+draft and review state, reports the current work, and suggests the next command.
+Explicit paths remain available for automation and unusual layouts.
+
+The authoring workflow combines deterministic protocol checks with agent-guided
+semantic review. The CLI does not embed a model or silently rewrite package
+content.
 
 See [authoring guidance](docs/authoring.md), [kind-aware authoring](docs/kind-guidance.md),
 [preparing and publishing](docs/publishing.md), and the bundled authoring skills
@@ -166,7 +162,7 @@ preferences, optional artifacts, completion scope, and evidence remain explicit
 inputs or state rather than assumptions hidden in resolution. See [runtime
 behavior](docs/runtime.md) for the complete lifecycle.
 
-## What exists in 0.2.0
+## What exists in 0.2.1
 
 - A compact declarative package format inside a wider handoff and composition
   protocol.

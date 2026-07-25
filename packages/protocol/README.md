@@ -33,7 +33,7 @@ introducing dependencies, branches, or package-owned progress state.
 ## Install
 
 ```bash
-npm install @seedspec/protocol@0.2.0
+npm install @seedspec/protocol@0.2.1
 ```
 
 ## Use
@@ -66,6 +66,6 @@ tools.
 - Language definition: [SeedSpec language](https://github.com/SeedSpec/seedspec/blob/main/docs/01-language.md)
 - Why semantic structure matters: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/semantic-structure.md)
 - Specification: [Protocol 0.2](https://github.com/SeedSpec/seedspec/blob/main/docs/protocol.md)
-- Exact schemas: [seedspec.dev/releases/0.2.0/schemas](https://seedspec.dev/releases/0.2.0/schemas/seedspec.schema.json)
+- Exact schemas: [seedspec.dev/releases/0.2.1/schemas](https://seedspec.dev/releases/0.2.1/schemas/seedspec.schema.json)
 - Conformance suite: [cases.yaml](https://github.com/SeedSpec/seedspec/blob/main/conformance/cases.yaml)
 - Source: [SeedSpec/seedspec](https://github.com/SeedSpec/seedspec)

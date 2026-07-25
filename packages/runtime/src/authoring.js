@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
@@ -19,7 +20,7 @@ export const AUTHORING_AREAS = Object.freeze([
   "agent-ready-handoff"
 ]);
 
-const AUTHORING_TARGETS = Object.freeze([
+export const AUTHORING_TARGETS = Object.freeze([
   "capture",
   "shape",
   "harden",
@@ -106,7 +107,7 @@ function defaultStateDirectory(packageRoot) {
   return `${packageRoot}.seedspec-authoring`;
 }
 
-function resolveStateDirectory(packageRoot, requested) {
+export function resolveAuthoringStateDirectory(packageRoot, requested) {
   const stateRoot = path.resolve(requested ?? defaultStateDirectory(packageRoot));
   if (isWithin(packageRoot, stateRoot)) {
     throw new SeedSpecError("Authoring state must remain outside the distributable SeedSpec package", {
@@ -507,6 +508,7 @@ async function initializeWorkspace(stateRoot, record, packageRoot, target, toolV
   if (existing) assertWorkspaceMatches(existing, workspacePath, record, packageRoot);
   const workspace = existing ?? {
     authoring_state_version: AUTHORING_STATE_FORMAT,
+    workspace_id: randomUUID(),
     package: {
       path: path.relative(stateRoot, packageRoot) || ".",
       id: record.manifest.id,
@@ -517,7 +519,9 @@ async function initializeWorkspace(stateRoot, record, packageRoot, target, toolV
     target,
     created_with: toolVersion
   };
+  workspace.workspace_id ??= randomUUID();
   workspace.package.path = path.relative(stateRoot, packageRoot) || ".";
+  workspace.package.id = record.manifest.id;
   workspace.package.version = record.manifest.version;
   workspace.package.kind = record.manifest.kind;
   workspace.protocol_version = record.manifest.protocol_version;
@@ -541,7 +545,7 @@ function assertWorkspaceMatches(workspace, workspacePath, record, packageRoot) {
     ? path.resolve(recordedPath)
     : path.resolve(path.dirname(workspacePath), recordedPath ?? "");
   if (workspace.authoring_state_version !== AUTHORING_STATE_FORMAT
-    || workspace.package?.id !== record.manifest.id
+    || (workspace.package?.id && workspace.package.id !== record.manifest.id)
     || resolvedPath !== packageRoot) {
     throw new SeedSpecError("Authoring workspace does not match this package", {
       code: "AUTHORING_WORKSPACE_MISMATCH",
@@ -667,7 +671,7 @@ export async function auditPackage(inputPath, {
   if (target) assertTarget(target);
   const record = await validatePackage(inputPath);
   const packageRoot = record.root;
-  const stateRoot = resolveStateDirectory(packageRoot, stateDirectory);
+  const stateRoot = resolveAuthoringStateDirectory(packageRoot, stateDirectory);
   const existingWorkspace = await readYaml(path.join(stateRoot, "workspace.yaml"), "authoring workspace");
   const selectedTarget = target ?? existingWorkspace?.target ?? "shape";
   assertTarget(selectedTarget);
@@ -843,9 +847,11 @@ export function formatAuthoringDocumentation(area) {
     "A SeedSpec authoring agent works beside the author on the package. The CLI supplies versioned, kind-aware audit instructions and deterministic checks; the agent interprets source material, asks material questions, edits the package, and records a standardized result.",
     "",
     "Run:",
-    "  seedspec prepare <package-path>",
-    "  seedspec review <package-path> --area <area>",
-    "  seedspec prepare <package-path> --status",
+    "  npx @seedspec/cli author",
+    "  npx @seedspec/cli author status",
+    "  npx @seedspec/cli author review",
+    "  npx @seedspec/cli author questions",
+    "  npx @seedspec/cli author check",
     "",
     "Audit areas:"
   ];

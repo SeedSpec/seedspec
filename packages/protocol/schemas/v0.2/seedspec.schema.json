@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.0/schemas/seedspec.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.1/schemas/seedspec.schema.json",
   "title": "SeedSpec package Manifest 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,

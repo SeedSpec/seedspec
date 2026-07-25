@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.0/schemas/capability-conformance-result.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.1/schemas/capability-conformance-result.schema.json",
   "title": "SeedSpec Capability Conformance Result 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,

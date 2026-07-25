@@ -101,7 +101,10 @@ export async function preparePackage(inputPath, {
   };
 }
 
-export function formatPreparation(result, { statusOnly = false } = {}) {
+export function formatPreparation(result, {
+  statusOnly = false,
+  authorCommand = false
+} = {}) {
   const lines = [
     `SeedSpec preparation: ${result.package.id}@${result.package.version}`,
     `Current phase: ${result.phase}`,
@@ -119,6 +122,13 @@ export function formatPreparation(result, { statusOnly = false } = {}) {
   } else {
     lines.push(formatAuthoringAudit(result.review, { statusOnly }));
   }
-  lines.push("", `Next: ${result.next_command}`);
+  const nextCommand = authorCommand
+    ? result.phase === "ready-to-pack"
+      ? "npx @seedspec/cli author pack"
+      : result.phase === "final-check"
+        ? "npx @seedspec/cli author check"
+        : "npx @seedspec/cli author review"
+    : result.next_command;
+  lines.push("", `Next: ${nextCommand}`);
   return lines.join("\n");
 }

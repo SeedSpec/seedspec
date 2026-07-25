@@ -30,10 +30,21 @@ export {
   AUTHORING_INSTRUCTION_FORMAT,
   AUTHORING_RESULT_FORMAT,
   AUTHORING_STATE_FORMAT,
+  AUTHORING_TARGETS,
   auditPackage,
   formatAuthoringAudit,
   formatAuthoringDocumentation
 } from "./authoring.js";
+export {
+  AUTHORING_WORKSPACE_OPERATION_FORMAT,
+  AUTHORING_WORKSPACE_REVISION_ALGORITHM,
+  AUTHORING_WORKSPACE_SNAPSHOT_FORMAT,
+  createAuthoringWorkspace,
+  discoverAuthoringWorkspace,
+  formatAuthoringWorkspaceCreation,
+  formatAuthoringWorkspaceSnapshot,
+  inspectAuthoringWorkspace
+} from "./authoring-workspace.js";
 export {
   computeDirectoryDigest,
   computeFileDigest,

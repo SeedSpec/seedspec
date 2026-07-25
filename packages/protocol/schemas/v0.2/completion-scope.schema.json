@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.0/schemas/completion-scope.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.1/schemas/completion-scope.schema.json",
   "title": "Resolved SeedSpec Completion Scope 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,
@@ -11,7 +11,7 @@
     "items": {
       "type": "array",
       "items": {
-        "$ref": "https://seedspec.dev/releases/0.2.0/schemas/completion-scope-input.schema.json#/$defs/scopeItem"
+        "$ref": "https://seedspec.dev/releases/0.2.1/schemas/completion-scope-input.schema.json#/$defs/scopeItem"
       }
     },
     "uncovered_packages": {

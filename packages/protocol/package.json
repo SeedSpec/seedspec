@@ -1,6 +1,6 @@
 {
   "name": "@seedspec/protocol",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Schemas and metadata for portable, agent-ready SeedSpec packages",
   "keywords": [
     "seedspec",

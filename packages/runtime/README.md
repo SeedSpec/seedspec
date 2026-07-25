@@ -11,7 +11,7 @@ as protocol conformance.
 ## Install
 
 ```bash
-npm install @seedspec/runtime@0.2.0
+npm install @seedspec/runtime@0.2.1
 ```
 
 ## Example
@@ -19,7 +19,9 @@ npm install @seedspec/runtime@0.2.0
 ```js
 import {
   auditPackage,
+  createAuthoringWorkspace,
   createAuthorEvaluation,
+  inspectAuthoringWorkspace,
   inspectCapabilityConformance,
   inspectPackage,
   packPackage,
@@ -30,8 +32,13 @@ import {
 
 const record = await validatePackage("./my-seedspec-package");
 const inspection = await inspectPackage(record.root);
+const authoring = await inspectAuthoringWorkspace(record.root);
 
 console.log(inspection.id, inspection.version, inspection.digest);
+console.log(authoring.workspace.revision, authoring.package.status);
+
+const emptyDraft = await createAuthoringWorkspace("./new-draft");
+console.log(emptyDraft.snapshot.workspace.id);
 
 const audit = await auditPackage("./my-seedspec-package", {
   toolVersion: "my-authoring-tool@1.0.0"
@@ -50,6 +57,12 @@ The preparation, publish-check, evaluation, and pack functions are headless
 operations used by the CLI and suitable for a future web authoring interface.
 Their JSON results are versioned, while semantic agent work remains explicit
 and outside the runtime.
+
+`inspectAuthoringWorkspace` returns a path-independent, versioned snapshot with
+an opaque workspace identity, a content-derived revision, draft document
+inventory, deterministic package status, questions, and review passes. It
+continues to work while ordinary draft content is invalid so a frontend can
+recover and edit the workspace.
 
 Validation establishes package structure and content identity. It does not
 establish authorship, publisher identity, compatibility with an unseen
