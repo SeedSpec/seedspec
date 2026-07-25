@@ -385,6 +385,23 @@ function revisionDigest(packageDigest, stateDigest) {
   return `sha256:${hash.digest("hex")}`;
 }
 
+/**
+ * The one place a workspace revision is computed.
+ *
+ * Mutating operations compare against this value, and `author status` reports
+ * it, so the two must agree exactly. Computing it a second way anywhere else
+ * silently breaks optimistic concurrency: a caller would send back the revision
+ * it was given and always be told the workspace had changed.
+ */
+export async function computeWorkspaceRevision(packageRoot, stateRoot) {
+  const [draftDigest, stateInfo] = await Promise.all([
+    computeDirectoryDigest(packageRoot),
+    pathStatus(stateRoot)
+  ]);
+  const stateDigest = stateInfo ? await computeDirectoryDigest(stateRoot) : null;
+  return revisionDigest(draftDigest, stateDigest);
+}
+
 function bestEffortManifest(source) {
   try {
     const manifest = parseYaml(source);

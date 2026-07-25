@@ -25,9 +25,13 @@ import {
   formatAuthoringAudit,
   formatAuthoringDocumentation,
   formatAuthoringStarterPrompt,
+  answerQuestion,
+  attachSource,
   formatAuthoringGuidance,
   listAuthoringGuidanceTopics,
   listAuthoringSchemas,
+  recordObservations,
+  reviewArea,
   readAuthoringSchema,
   formatAuthoringWorkspaceCreation,
   formatAuthoringWorkspaceSnapshot,
@@ -98,6 +102,10 @@ Usage:
   seedspec author create <package-path> [--target <depth>]
   seedspec author schema [result]
   seedspec author guidance [--topic <topic>]
+  seedspec author record [package-path] --json -
+  seedspec author answer [package-path] --json -
+  seedspec author attach-source [package-path] --json -
+  seedspec author reviewed [package-path] --json -
   seedspec author help
   seedspec prepare <package-path> [--state <directory>] [--status] [--json]
   seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status|--summary] [--json]
@@ -167,6 +175,16 @@ Commands:
   author evaluate     Create an independent handoff evaluation
   author pack         Create the distributable SeedSpec archive
   author help         Show this guide
+
+Recording work. Each takes one JSON payload on stdin, so multi-sentence prose
+never has to survive shell quoting:
+  author record         Record findings, questions, inventory, contradictions
+  author answer         Record the author's answer, or decline a question
+  author attach-source  Attach source material the review may draw findings from
+  author reviewed       Close the current thread with a disposition
+
+  echo '{"entries":[{"type":"question","question":"..."}]}' \\
+    | npx @seedspec/cli author record --json -
 
 Paths are optional when the command runs inside a SeedSpec project.
 
@@ -256,6 +274,32 @@ async function resolveAuthoringContext(explicitPackagePath, stateDirectory) {
   };
 }
 
+// Write operations take one JSON payload rather than a flag per field.
+// Shell-quoting multi-sentence prose into repeated --flags is exactly where
+// agents fail, so `--json -` reads the whole record from stdin.
+async function readOperationInput(options) {
+  const inline = oneOption(options, "json");
+  // `--json -` and a bare `--json` both mean "read stdin"; only a string value
+  // is treated as an inline payload.
+  const source = typeof inline === "string" && inline !== "-"
+    ? inline
+    : await new Promise((resolve, reject) => {
+      let buffer = "";
+      process.stdin.setEncoding("utf8");
+      process.stdin.on("data", (chunk) => { buffer += chunk; });
+      process.stdin.on("end", () => resolve(buffer));
+      process.stdin.on("error", reject);
+    });
+  if (!source.trim()) {
+    throw new Error("Provide the operation payload as JSON on stdin, or --json '<payload>'");
+  }
+  try {
+    return JSON.parse(source);
+  } catch (error) {
+    throw new Error(`Operation payload is not valid JSON: ${error.message}`);
+  }
+}
+
 function authorNextCommand(snapshot) {
   if (snapshot.package.status !== "valid") {
     return "Next: update the draft, then run `npx @seedspec/cli author check`.";
@@ -336,6 +380,10 @@ async function run() {
         "prompt",
         "schema",
         "guidance",
+        "record",
+        "answer",
+        "attach-source",
+        "reviewed",
         "status",
         "review",
         "questions",
@@ -364,6 +412,34 @@ async function run() {
       } else if (action === "prompt") {
         rejectUnknownOptions(options, []);
         process.stdout.write(`${formatAuthoringStarterPrompt()}\n`);
+      } else if (["record", "answer", "attach-source", "reviewed"].includes(action)) {
+        rejectUnknownOptions(options, ["state", "json", "pass", "revision"]);
+        const context = await resolveAuthoringContext(positional[1], oneOption(options, "state"));
+        const input = await readOperationInput(options);
+        const shared = {
+          stateRoot: context.stateRoot,
+          expectedRevision: oneOption(options, "revision") ?? input.expected_revision ?? null
+        };
+        const pass = oneOption(options, "pass") ?? input.pass;
+        const operation = action === "record"
+          ? recordObservations(context.packageRoot, { ...shared, pass, entries: input.entries })
+          : action === "answer"
+            ? answerQuestion(context.packageRoot, {
+              ...shared,
+              questionId: input.question_id ?? input.questionId,
+              answer: input.answer,
+              resolution: input.resolution ?? "resolved"
+            })
+            : action === "attach-source"
+              ? attachSource(context.packageRoot, { ...shared, source: input.source ?? input })
+              : reviewArea(context.packageRoot, {
+                ...shared,
+                pass,
+                summary: input.summary,
+                disposition: input.disposition,
+                outcome: input.outcome ?? "reviewed"
+              });
+        process.stdout.write(`${JSON.stringify(await operation, null, 2)}\n`);
       } else if (action === "guidance") {
         rejectUnknownOptions(options, ["topic"]);
         const topic = oneOption(options, "topic") ?? positional[1];

@@ -39,6 +39,13 @@ export {
   listAuthoringGuidanceTopics
 } from "./authoring.js";
 export {
+  AUTHORING_OPERATION_FORMAT,
+  answerQuestion,
+  attachSource,
+  recordObservations,
+  reviewArea
+} from "./authoring/operations.js";
+export {
   AUTHORING_SCHEMA_FORMAT,
   listAuthoringSchemas,
   readAuthoringSchema

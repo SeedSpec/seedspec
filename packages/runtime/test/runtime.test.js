@@ -20,6 +20,10 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
+  answerQuestion,
+  attachSource,
+  recordObservations,
+  reviewArea,
   formatAuthoringGuidance,
   readAuthoringSchema,
   AUTHORING_INSTRUCTION_FORMAT,
@@ -506,14 +510,20 @@ test("an active source-bound pass receives the latest conversation and record br
   );
   assert.match(refreshed.current.instructions, /How to talk to the author/);
   assert.match(refreshed.current.instructions, /record terms/);
-  assert.match(refreshed.current.instructions, /It is substance, not a transcript/);
-  assert.match(refreshed.current.instructions, /stays exactly empty while `disposition` is `pending`/);
+  assert.match(refreshed.current.instructions, /substance for a future co-author, not a transcript/);
   assert.match(refreshed.current.instructions, /states the product direction, clarification, or authored choice/);
-  // The record section names the real package path rather than a placeholder
-  // the agent has to resolve from a different section.
-  assert.doesNotMatch(refreshed.current.instructions, /seedspec validate <package-path>/);
-  assert.match(refreshed.current.instructions, new RegExp(`seedspec validate ${allowance}`));
   assert.match(refreshed.current.instructions, /seedspec author schema result/);
+
+  // The record section hands the agent runnable commands against the real
+  // package path, rather than an unpublished YAML contract it has to guess at.
+  for (const operation of ["record", "answer", "attach-source", "reviewed"]) {
+    assert.match(
+      refreshed.current.instructions,
+      new RegExp(`seedspec author ${operation} ${allowance} --json -`),
+      `${operation} must be offered as a runnable command`
+    );
+  }
+  assert.doesNotMatch(refreshed.current.instructions, /<package-path>/);
   const preserved = parseYaml(await readFile(resultPath, "utf8"));
   assert.equal(preserved.outcome, "needs-author");
   assert.equal(
@@ -2828,5 +2838,165 @@ test("the authoring result contract is published rather than implied", async () 
   await assert.rejects(
     readAuthoringSchema("nope"),
     (error) => error.code === "UNKNOWN_AUTHORING_SCHEMA"
+  );
+});
+
+test("recorded questions reach every surface that reads them", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  const recorded = await recordObservations(packagePath, {
+    stateRoot: stateDirectory,
+    entries: [
+      { type: "question", question: "Should a closed goal be reopenable?", source: "definition/feature.md" },
+      { type: "finding", source: "definition/feature.md", assessment: "Completion funds appear twice." }
+    ]
+  });
+  assert.equal(recorded.recorded.length, 2);
+  assert.ok(recorded.recorded.every(({ id }) => typeof id === "string" && id.length > 0));
+
+  // The brief used to direct questions into the pass result while every read
+  // surface looked at open-questions.yaml, so questions were never visible.
+  const snapshot = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(snapshot.review.questions.open, 1);
+  const audit = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0",
+    statusOnly: true
+  });
+  assert.equal(audit.questions.open, 1);
+
+  const questionId = recorded.recorded.find(({ type }) => type === "question").id;
+  const answered = await answerQuestion(packagePath, {
+    stateRoot: stateDirectory,
+    questionId,
+    answer: "No. A closed goal stays closed."
+  });
+  assert.equal(answered.question.status, "resolved");
+  const afterAnswer = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(afterAnswer.review.questions.open, 0);
+  assert.equal(afterAnswer.review.questions.resolved, 1);
+});
+
+test("a question the author does not own closes without misreporting authority", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  const recorded = await recordObservations(packagePath, {
+    stateRoot: stateDirectory,
+    entries: [{ type: "question", question: "Which engine operation may be mechanical?" }]
+  });
+  const questionId = recorded.recorded[0].id;
+  const routed = await answerQuestion(packagePath, {
+    stateRoot: stateDirectory,
+    questionId,
+    answer: "The engine has no contract for this yet.",
+    resolution: "routed-to-platform"
+  });
+  assert.equal(routed.question.status, "routed-to-platform");
+  assert.ok(routed.changed.some(({ kind }) => kind === "platform-feedback"));
+
+  const feedback = parseYaml(
+    await readFile(path.join(stateDirectory, "platform-feedback.yaml"), "utf8")
+  );
+  assert.equal(feedback.feedback.length, 1);
+  assert.equal(feedback.feedback[0].status, "open");
+});
+
+test("closing a thread records evidence the engine produced itself", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  const opened = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  const closed = await reviewArea(packagePath, {
+    stateRoot: stateDirectory,
+    summary: "Author confirmed closed goals are final.",
+    disposition: "improved"
+  });
+  assert.equal(closed.reviewed.pass, opened.current.id);
+  assert.equal(closed.reviewed.disposition, "improved");
+
+  // The digest is computed, never transcribed by the agent.
+  const result = parseYaml(await readFile(opened.current.result, "utf8"));
+  assert.match(result.package_digest_after, /^sha256:[0-9a-f]{64}$/);
+  assert.equal(result.package_digest_after, closed.reviewed.package.digest);
+  for (const operation of ["validate", "lint", "digest"]) {
+    assert.ok(
+      result.validation.commands.some((command) => command.includes(`seedspec ${operation} `)),
+      `${operation} must be recorded`
+    );
+  }
+
+  // And the thread actually advances.
+  const next = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+  assert.notEqual(next.current.area, "seed");
+});
+
+test("attached sources become review context instead of an unwritable file", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  const attached = await attachSource(packagePath, {
+    stateRoot: stateDirectory,
+    source: {
+      kind: "document",
+      authority: "author",
+      location: "notes/allocation-policy.md",
+      summary: "How the finance team describes reserved balances"
+    }
+  });
+  assert.ok(attached.source.id);
+
+  // sources.yaml has been read by the brief since the beginning and written by
+  // nothing; the attached source must now appear in the review context.
+  const refreshed = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+  assert.match(refreshed.current.instructions, /notes\/allocation-policy\.md/);
+  assert.doesNotMatch(refreshed.current.instructions, /Active attached sources: none/);
+
+  await assert.rejects(
+    attachSource(packagePath, {
+      stateRoot: stateDirectory,
+      source: { kind: "document", authority: "author" }
+    }),
+    (error) => error.code === "INVALID_AUTHORING_INPUT"
+  );
+});
+
+test("a mutation rejects a revision that no longer describes the workspace", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  // The revision reported by status must be the one operations accept, or
+  // optimistic concurrency fails closed on every honest caller.
+  const before = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const applied = await recordObservations(packagePath, {
+    stateRoot: stateDirectory,
+    entries: [{ type: "inventory", item: "definition/feature.md" }],
+    expectedRevision: before.workspace.revision
+  });
+  assert.equal(applied.revision_checked, true);
+  assert.notEqual(applied.workspace.revision, before.workspace.revision);
+
+  await assert.rejects(
+    recordObservations(packagePath, {
+      stateRoot: stateDirectory,
+      entries: [{ type: "inventory", item: "acceptance/criteria.md" }],
+      expectedRevision: before.workspace.revision
+    }),
+    (error) => error.code === "AUTHORING_REVISION_CONFLICT"
   );
 });

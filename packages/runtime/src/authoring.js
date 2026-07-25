@@ -534,16 +534,44 @@ function authorResponseContract(area) {
 }
 
 function recordInstructions(pass, packageRoot) {
+  const target = packageRoot ? ` ${packageRoot}` : "";
   return [
-    `Maintain \`passes/${pass}/result.yaml\` as durable state for a future co-author. It is substance, not a transcript.`,
-    "Run `seedspec author schema result` for the exact field contract. Do not guess at it.",
-    "Where each thing goes: package contents in `inventory`, source-cited concerns in `findings`, incompatible authored claims in `contradictions`, author-requested expansion in `suggestions`, SeedSpec product defects in `tooling_feedback`.",
-    "Questions awaiting the author go in `questions.asked`; their substantive answers go in `questions.answered`. Declining one creates no package content and no future work.",
-    "Record every applied, proposed, or rejected change with its path, basis, and concise reason.",
-    "`summary` stays exactly empty while `disposition` is `pending`, then states the product direction, clarification, or authored choice the author confirmed. It never describes your activity.",
-    "Use `outcome: needs-author` while awaiting a current author decision, and `outcome: reviewed` with `disposition: improved`, `good-enough`, or `not-relevant` once the author accepts an improvement, calls the material good enough, or calls it irrelevant.",
-    `Before marking the thread reviewed, run \`seedspec validate ${packageRoot}\`, \`seedspec lint ${packageRoot}\`, and \`seedspec digest ${packageRoot}\`. Record those exact commands and the digest they report.`
+    "Record through these commands. Each takes one JSON payload on stdin and reports the new state, so you never hand-edit workspace files or transcribe a digest.",
+    "",
+    `\`\`\`sh`,
+    `seedspec author record${target} --json -`,
+    `  {"entries": [{"type": "question", "question": "..."},`,
+    `               {"type": "finding", "source": "<path>", "assessment": "..."}]}`,
+    `  types: finding, inventory, contradiction, suggestion, question, tooling-feedback`,
+    ``,
+    `seedspec author answer${target} --json -`,
+    `  {"question_id": "...", "answer": "...", "resolution": "resolved"}`,
+    `  resolution: resolved | closed | rejected | not-package-decision | routed-to-platform`,
+    ``,
+    `seedspec author attach-source${target} --json -`,
+    `  {"source": {"kind": "document", "authority": "author", "location": "...", "summary": "..."}}`,
+    ``,
+    `seedspec author reviewed${target} --json -`,
+    `  {"summary": "what the author confirmed", "disposition": "improved"}`,
+    `  disposition: improved | good-enough | not-relevant`,
+    `\`\`\``,
+    "",
+    "The record is substance for a future co-author, not a transcript. A finding cites what triggered it; `summary` states the product direction, clarification, or authored choice the author confirmed, never your activity.",
+    "`author reviewed` runs validation, linting, and the digest itself and closes the thread. Declining a suggestion creates no package content and no future work.",
+    `Run \`seedspec author schema result\` to inspect the durable shape these commands write. Pass \`--pass ${pass}\` only when acting on a thread other than the open one.`
   ];
+}
+
+function renderRecordSection(lines) {
+  let fenced = false;
+  return lines.map((item) => {
+    if (item.startsWith("```")) {
+      fenced = !fenced;
+      return item;
+    }
+    if (fenced || item === "") return item;
+    return `- ${item}`;
+  });
 }
 
 function formatInstructionsDocument({ request, record, lint, sources, stateRoot }) {
@@ -593,7 +621,8 @@ function formatInstructionsDocument({ request, record, lint, sources, stateRoot 
     "",
     "## Durable record",
     "",
-    ...recordInstructions(request.pass, record.root).map((item) => `- ${item}`),
+    // Command blocks render verbatim; only prose lines become bullets.
+    ...renderRecordSection(recordInstructions(request.pass, record.root)),
     "",
     "## More depth when you need it",
     "",
