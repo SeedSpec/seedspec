@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.2/schemas/resolution-receipt.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.3/schemas/resolution-receipt.schema.json",
   "title": "SeedSpec Resolution Receipt",
   "type": "object",
   "additionalProperties": false,

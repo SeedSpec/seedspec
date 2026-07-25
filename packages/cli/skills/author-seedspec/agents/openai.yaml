@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author a SeedSpec"
+  short_description: "Guide collaborative SeedSpec authoring"
+  default_prompt: "Use $author-seedspec to co-author this SeedSpec with me."

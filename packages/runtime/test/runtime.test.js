@@ -299,6 +299,11 @@ test("authoring audit emits a versioned agent pass and advances without a next c
   assert.match(first.current.instructions, /no `next` command is required/);
   assert.match(formatAuthoringAudit(first), /1\. Concern separation — in-progress/);
   assert.match(formatAuthoringAudit(first), /After this pass is completed: 2 of 7 — Kind-aware discovery/);
+  assert.match(
+    formatAuthoringAudit(first, { summary: true }),
+    /Review progress: 0 of 7 areas completed/
+  );
+  assert.doesNotMatch(formatAuthoringAudit(first, { summary: true }), /## Area objective/);
 
   const result = parseYaml(await readFile(first.current.result, "utf8"));
   result.outcome = "completed";
@@ -882,11 +887,22 @@ test("begin reports when a package has no author acceptance material", async (t)
 
 test("the package prompt delegates the detailed workflow to versioned tooling", () => {
   const prompt = formatPackageAgentPrompt();
-  assert.match(prompt, /seedspec begin <package-path>/);
+  assert.match(prompt, /npx @seedspec\/cli begin "<package-path-or-github-url>"/);
   assert.match(prompt, /before planning/i);
+  assert.match(prompt, /do not need an installed SeedSpec skill/i);
+  assert.match(prompt, /complete output as your version-matched work order/i);
+  assert.match(prompt, /rendered SeedSpec handoff instead of guessing/i);
   assert.match(prompt, /Do not execute package-provided scripts/);
   assert.match(prompt, /bundled compatible workflow instructions.*fallback reason/i);
-  assert.doesNotMatch(prompt, /npx|npm install/);
+  assert.doesNotMatch(prompt, /--yes|@\d+\.\d+\.\d+|npm install/u);
+
+  const remote = formatPackageAgentPrompt(
+    "https://github.com/SeedSpec/reference-solutions/tree/main/solutions/family-hub/seedspec"
+  );
+  assert.match(
+    remote,
+    /npx @seedspec\/cli begin "https:\/\/github\.com\/SeedSpec\/reference-solutions\/tree\/main\/solutions\/family-hub\/seedspec"/u
+  );
 });
 
 test("author-declared implementation resources are validated, preserved, and resolved online", async (t) => {
@@ -2297,14 +2313,14 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.2");
-  assert.equal(versionInfo.conformance_suite_version, "0.2.2");
-  assert.equal(versionInfo.cli_version, "0.2.2");
+  assert.equal(versionInfo.conformance_suite_version, "0.2.3");
+  assert.equal(versionInfo.cli_version, "0.2.3");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.equal(JSON.parse(doctor.stdout).status, "healthy");
   assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
   assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
-  assert.match(prompt.stdout, /Use this SeedSpec package/);
+  assert.match(prompt.stdout, /Implement this SeedSpec with me/);
   assert.match(beginning.stdout, /Do not begin implementation yet/);
   assert.match(beginning.stdout, /CONFIGURATION_EXAMPLE_REQUIRES_REVIEW/);
   assert.match(beginning.stdout, /Discovery does not activate supporting material/);
@@ -2327,10 +2343,10 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
 test("installation doctor verifies the exact release and bundled suite", async () => {
   const result = await inspectInstallation({
-    cliVersion: "0.2.2"
+    cliVersion: "0.2.3"
   });
   assert.equal(result.status, "healthy");
-  assert.equal(result.protocol_release.id, "0.2.2");
+  assert.equal(result.protocol_release.id, "0.2.3");
   assert.ok(result.checks.every((check) => check.status === "passed"));
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
@@ -2365,12 +2381,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.2\.2`/);
+  assert.match(audit.stdout, /Tool version: `0\.2\.3`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.2/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.3/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
@@ -2570,7 +2586,7 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "0.2.2",
+    suite_version: "0.2.3",
     protocol_version: "0.2",
     cases: [{
       id: "outside-fixture",

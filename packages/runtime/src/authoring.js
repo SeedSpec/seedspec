@@ -781,7 +781,28 @@ export async function auditPackage(inputPath, {
   });
 }
 
-export function formatAuthoringAudit(result, { statusOnly = false } = {}) {
+export function formatAuthoringAudit(result, { statusOnly = false, summary = false } = {}) {
+  if (summary) {
+    const completed = result.areas.filter((area) => area.status === "completed").length;
+    const lines = [
+      "SeedSpec authoring summary",
+      `Package: ${result.package.id}@${result.package.version}`,
+      `Review progress: ${completed} of ${result.areas.length} areas completed`,
+      `Authoring questions: ${result.questions.open} open, ${result.questions.resolved} resolved`
+    ];
+    if (result.current) {
+      const currentArea = result.areas.find((area) => area.id === result.current.area);
+      lines.push(
+        `Current area: ${currentArea?.index ?? "?"} of ${result.areas.length} — ${currentArea?.name ?? result.current.area}`,
+        `Current outcome: ${result.current.outcome}`
+      );
+    } else if (result.complete) {
+      lines.push("Current area: review complete");
+    }
+    lines.push("", "For the complete agent work order, rerun this review without `--summary`.");
+    return lines.join("\n");
+  }
+
   const lines = [
     "SeedSpec authoring audit",
     `Instruction format: ${result.instruction_format}`,

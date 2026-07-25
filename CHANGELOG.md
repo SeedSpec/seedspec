@@ -5,6 +5,26 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.2.3
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.3` |
+| Conformance suite | `0.2.3` |
+| `@seedspec/runtime` | `0.2.3` |
+| `@seedspec/cli` | `0.2.3` |
+
+### Authoring and handoff ergonomics
+
+- Show the complete version-matched authoring work order by default and add
+  `author review --summary` as the shorter human-facing view.
+- Bundle an optional `author-seedspec` skill and require explicit author consent
+  before exporting it into a project.
+- Let `seedspec prompt` accept a local package path or GitHub URL and produce a
+  self-bootstrapping `npx @seedspec/cli begin ...` handoff that requires no
+  global install or SeedSpec skill.
+
 ## 0.2.2
 
 | Surface | Version |

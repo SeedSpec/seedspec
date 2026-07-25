@@ -17,11 +17,11 @@ when a user interface presents a simpler compatibility summary.
 | Version | Identifies | Current value |
 | --- | --- | --- |
 | Protocol family | The package and handoff vocabulary declared in protocol documents | `0.2` |
-| Exact protocol release | The release manifest binding language, schemas, operations, conformance, and compatibility | `0.2.2` |
-| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.2.2` |
-| Conformance suite | The exact indexed cases, fixtures, and expected results | `0.2.2` |
-| Runtime | One release of the reference JavaScript implementation | `0.2.2` |
-| CLI | One release of the public command-line interface | `0.2.2` |
+| Exact protocol release | The release manifest binding language, schemas, operations, conformance, and compatibility | `0.2.3` |
+| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.2.3` |
+| Conformance suite | The exact indexed cases, fixtures, and expected results | `0.2.3` |
+| Runtime | One release of the reference JavaScript implementation | `0.2.3` |
+| CLI | One release of the public command-line interface | `0.2.3` |
 | SeedSpec package | One author-controlled version of a portable solution package | Declared in `seedspec.yaml` |
 
 `protocol_version: "0.2"` states that a package uses the Protocol 0.2 family.
@@ -34,7 +34,7 @@ predecessor compatibility in one identity.
 Run the first-party CLI to obtain the complete implementation version record:
 
 ```bash
-npx --yes @seedspec/cli@0.2.2 version --json
+npx --yes @seedspec/cli@0.2.3 version --json
 ```
 
 Numeric releases use npm's default `latest` distribution tag. Integrations

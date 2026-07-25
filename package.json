@@ -1,6 +1,6 @@
 {
   "name": "seedspec",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "description": "Authoring tools, package protocol, runtime, and CLI for portable agent-ready seeds",
   "type": "module",

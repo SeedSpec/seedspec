@@ -9,16 +9,14 @@ package or choose an implementation architecture for you.
 ## Example 1: inspect safely before making choices
 
 ```bash
-seedspec doctor
-seedspec begin <package-path-or-github-url>
+npx @seedspec/cli begin <package-path-or-github-url>
 ```
-
-`doctor` verifies the installed release, schemas, bundled conformance corpus,
-and an offline validation-and-digest smoke test.
 
 `begin` validates the package and explains the package-author intent source,
 configuration that still requires selection, consequential decisions,
 supporting material, trust boundaries, and the inputs needed for resolution.
+Its complete output is the version-matched work order. No global install or
+SeedSpec skill is required.
 
 Read the primary definition and relevant early-review material. Do not execute
 artifacts, install resources, or start implementation merely because they are

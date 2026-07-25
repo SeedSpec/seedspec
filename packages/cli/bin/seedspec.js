@@ -83,7 +83,7 @@ const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experime
 Usage:
   seedspec author
   seedspec author status [package-path] [--json]
-  seedspec author review [package-path] [--area <area>]
+  seedspec author review [package-path] [--area <area>] [--summary]
   seedspec author questions [package-path]
   seedspec author check [package-path]
   seedspec author history [package-path]
@@ -92,8 +92,8 @@ Usage:
   seedspec author create <package-path> [--target <depth>]
   seedspec author help
   seedspec prepare <package-path> [--state <directory>] [--status] [--json]
-  seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
-  seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status] [--json]
+  seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status|--summary] [--json]
+  seedspec audit <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status|--summary] [--json]
   seedspec publish-check <package-path> [--state <directory>] [--json]
   seedspec pack <package-path> [--output <directory>] [--state <directory>] [--json]
   seedspec eval <package-path> [--output <directory>] [--json]
@@ -102,7 +102,7 @@ Usage:
   seedspec docs <authoring [area]|implementing>
   seedspec version [--json]
   seedspec doctor [--full] [--json]
-  seedspec prompt
+  seedspec prompt [root-package-path-or-github-url]
   seedspec begin <root-package-path-or-github-url> [--json]
   seedspec validate <path>
   seedspec digest <path>
@@ -144,7 +144,7 @@ Run this inside a SeedSpec project:
 Commands:
   author              Find or resume the local authoring workspace
   author status       Show the draft and current review
-  author review       Start or continue the current review
+  author review       Start or continue the current review; add --summary for shorter output
   author questions    Show author decisions and unresolved questions
   author check        Check structure, guidance, and publication readiness
   author history      Show completed and current review passes
@@ -153,6 +153,9 @@ Commands:
   author help         Show this guide
 
 Paths are optional when the command runs inside a SeedSpec project.
+
+The complete review output is the agent's version-matched work order. The
+optional author-seedspec skill is a convenience, not a prerequisite.
 `;
 
 function parseArguments(args) {
@@ -179,6 +182,7 @@ function parseArguments(args) {
       value === "--json"
       || value === "--help"
       || value === "--status"
+      || value === "--summary"
       || value === "--full"
       || value === "--write"
       || value === "--dry-run"
@@ -245,6 +249,17 @@ function authorNextCommand(snapshot) {
     return "Next: `npx @seedspec/cli author review`";
   }
   return "Next: `npx @seedspec/cli author check`";
+}
+
+function formatOptionalAuthoringSkillOffer() {
+  return [
+    "Optional authoring skill",
+    "A project-local `author-seedspec` skill is bundled with this CLI. It is not required.",
+    "Before exporting it, ask the user whether they want it added to this project.",
+    "If they accept, run:",
+    "`npx @seedspec/cli skills export --skill author-seedspec --output <project-skill-directory>`",
+    "If they decline or their agent does not support skills, continue with the CLI work order."
+  ].join("\n");
 }
 
 function formatAuthoringQuestions(snapshot) {
@@ -326,7 +341,7 @@ async function run() {
         const allowedOptions = {
           open: ["state", "json"],
           status: ["state", "json"],
-          review: ["area", "target", "state", "status", "json"],
+          review: ["area", "target", "state", "status", "summary", "json"],
           questions: ["state", "json"],
           check: ["state", "json"],
           history: ["state", "json"],
@@ -334,6 +349,9 @@ async function run() {
           pack: ["state", "output", "json"]
         };
         rejectUnknownOptions(options, allowedOptions[action]);
+        if (action === "review" && options.has("status") && options.has("summary")) {
+          throw new Error("Choose either --status or --summary");
+        }
         const context = await resolveAuthoringContext(packagePath, oneOption(options, "state"));
         if (action === "open" && !context.stateExists) {
           await createAuthoringWorkspace(context.packageRoot, {
@@ -349,7 +367,9 @@ async function run() {
           });
           process.stdout.write(options.has("json")
             ? `${JSON.stringify(snapshot, null, 2)}\n`
-            : `${formatAuthoringWorkspaceSnapshot(snapshot)}\n\n${authorNextCommand(snapshot)}\n`);
+            : `${formatAuthoringWorkspaceSnapshot(snapshot)}\n\n${authorNextCommand(snapshot)}${
+              action === "open" ? `\n\n${formatOptionalAuthoringSkillOffer()}` : ""
+            }\n`);
         } else if (action === "review") {
           const result = await auditPackage(context.packageRoot, {
             area: oneOption(options, "area"),
@@ -360,7 +380,10 @@ async function run() {
           });
           process.stdout.write(options.has("json")
             ? `${JSON.stringify(result, null, 2)}\n`
-            : `${formatAuthoringAudit(result, { statusOnly: options.has("status") })}\n`);
+            : `${formatAuthoringAudit(result, {
+              statusOnly: options.has("status"),
+              summary: options.has("summary")
+            })}\n`);
         } else if (action === "questions" || action === "history") {
           const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
             stateDirectory: context.stateRoot,
@@ -457,7 +480,10 @@ async function run() {
     }
     case "audit":
     case "review": {
-      rejectUnknownOptions(options, ["area", "target", "state", "status", "json"]);
+      rejectUnknownOptions(options, ["area", "target", "state", "status", "summary", "json"]);
+      if (options.has("status") && options.has("summary")) {
+        throw new Error("Choose either --status or --summary");
+      }
       const packagePath = requirePositional(positional, 0, "package path");
       const statusOnly = options.has("status");
       const result = await auditPackage(packagePath, {
@@ -469,7 +495,10 @@ async function run() {
       });
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(result, null, 2)}\n`
-        : `${formatAuthoringAudit(result, { statusOnly })}\n`);
+        : `${formatAuthoringAudit(result, {
+          statusOnly,
+          summary: options.has("summary")
+        })}\n`);
       break;
     }
     case "prepare": {
@@ -575,7 +604,11 @@ async function run() {
       break;
     }
     case "prompt": {
-      process.stdout.write(`${formatPackageAgentPrompt()}\n`);
+      rejectUnknownOptions(options, []);
+      if (positional.length > 1) {
+        throw new Error("prompt accepts at most one package path or GitHub URL");
+      }
+      process.stdout.write(`${formatPackageAgentPrompt(positional[0])}\n`);
       break;
     }
     case "begin": {

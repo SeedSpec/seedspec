@@ -11,7 +11,7 @@ as protocol conformance.
 ## Install
 
 ```bash
-npm install @seedspec/runtime@0.2.2
+npm install @seedspec/runtime@0.2.3
 ```
 
 ## Example

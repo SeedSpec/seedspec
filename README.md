@@ -1,6 +1,6 @@
 # SeedSpec
 
-**SeedSpec 0.2.2 — experimental**
+**SeedSpec 0.2.3 — experimental**
 
 SeedSpec helps people turn product and domain expertise into portable,
 agent-ready starting points. A SeedSpec package keeps the intended outcome,
@@ -87,13 +87,20 @@ Run the current CLI without installing it globally:
 ```bash
 npx @seedspec/cli --help
 npx @seedspec/cli version
-npx @seedspec/cli begin <package-path>
+npx @seedspec/cli begin <package-path-or-github-url>
+npx @seedspec/cli prompt <package-path-or-github-url>
 ```
 
 `seedspec begin` is the read-only starting point for an agent. It validates the
 package, inventories the available intent and supporting material, explains the
 trust boundary, and identifies the user choices needed before resolution or
 implementation.
+
+`seedspec prompt` prints a short handoff a person can paste into ChatGPT,
+Codex, Claude, or another agent. A tool-capable agent follows it by running
+`npx @seedspec/cli begin ...`, which supplies the complete version-matched work
+order. The recipient does not need to install a SeedSpec skill or add anything
+to its PATH.
 
 The default npm tag identifies the current release. Human-facing examples use
 that friendly default. Tests, automation, and reproducible integrations should
@@ -115,7 +122,10 @@ Explicit paths remain available for automation and unusual layouts.
 
 The authoring workflow combines deterministic protocol checks with agent-guided
 semantic review. The CLI does not embed a model or silently rewrite package
-content.
+content. Its full review output is the agent work order; the `--summary` option
+is the shorter human-facing form. The front door may offer a bundled
+project-local authoring skill, but it must ask before exporting it and the skill
+is never required.
 
 See [authoring guidance](docs/authoring.md), [kind-aware authoring](docs/kind-guidance.md),
 [preparing and publishing](docs/publishing.md), and the bundled authoring skills
@@ -162,7 +172,7 @@ preferences, optional artifacts, completion scope, and evidence remain explicit
 inputs or state rather than assumptions hidden in resolution. See [runtime
 behavior](docs/runtime.md) for the complete lifecycle.
 
-## What exists in 0.2.2
+## What exists in 0.2.3
 
 - A compact declarative package format inside a wider handoff and composition
   protocol.

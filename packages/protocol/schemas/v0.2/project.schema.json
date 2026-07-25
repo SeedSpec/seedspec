@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.2/schemas/project.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.3/schemas/project.schema.json",
   "title": "Resolved SeedSpec Project 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,

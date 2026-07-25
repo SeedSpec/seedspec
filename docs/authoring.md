@@ -51,7 +51,8 @@ currently provides:
 - `seedspec skills list|export` for agent guidance shipped with the CLI;
 - `seedspec docs authoring [area]` for guidance bundled with the installed
   tool version; and
-- agent-guided application and feature authoring skills under `skills/`.
+- an optional `author-seedspec` skill plus specialized application and feature
+  authoring skills under `skills/`.
 
 Additional tooling may offer web forms, conversational agent flows, visual editors,
 language-specific builders, or other higher-level frontends that compile to the
@@ -103,12 +104,12 @@ and explaining its judgment.
 Start or continue the next incomplete audit area with one command:
 
 ```bash
-seedspec prepare <package-path>
+npx @seedspec/cli author review
 ```
 
-The prepare command first reports the deterministic baseline, then delegates to
-the same review state as `seedspec review` and `seedspec audit`. It emits a
-Markdown work order for the agent and initializes a
+Run `npx @seedspec/cli author` first when resuming or when the next action is
+unknown. The review command reports the deterministic baseline, emits a
+Markdown work order for the agent, and initializes a
 standardized YAML result. After the agent records a completed result, running
 the same command advances to the next incomplete area. There is deliberately no
 `next` command: progression is derived from durable pass state rather than a
@@ -122,10 +123,17 @@ seedspec review <package-path> --area material-ambiguity
 ```
 
 Inspect existing state without creating or changing files with `--status`.
-Text is the primary agent-and-human interface; `--json` exposes the same state
-for another harness. `seedspec docs authoring [area]` prints guidance shipped
-with the installed tool, so an agent does not need to guess from possibly newer
-web documentation.
+The complete text output is the agent's version-matched work order. Add
+`--summary` for a shorter human-facing view that still starts or continues the
+pass. `--json` exposes the same state for another harness.
+`seedspec docs authoring [area]` prints guidance shipped with the installed
+tool, so an agent does not need to guess from possibly newer web documentation.
+
+The CLI work order is self-contained. No installed skill is required. On the
+authoring front door, the CLI may offer its bundled `author-seedspec` skill as a
+convenience and instruct the agent to ask before exporting it into a
+project-local skill directory. Declining the offer, or using an environment
+without skills, must not block authoring.
 
 The ordered review areas are:
 
