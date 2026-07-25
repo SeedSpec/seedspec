@@ -1,6 +1,6 @@
 # SeedSpec
 
-**SeedSpec 0.2.1 — experimental**
+**SeedSpec 0.2.2 — experimental**
 
 SeedSpec helps people turn product and domain expertise into portable,
 agent-ready starting points. A SeedSpec package keeps the intended outcome,
@@ -162,7 +162,7 @@ preferences, optional artifacts, completion scope, and evidence remain explicit
 inputs or state rather than assumptions hidden in resolution. See [runtime
 behavior](docs/runtime.md) for the complete lifecycle.
 
-## What exists in 0.2.1
+## What exists in 0.2.2
 
 - A compact declarative package format inside a wider handoff and composition
   protocol.

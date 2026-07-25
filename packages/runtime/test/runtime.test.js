@@ -33,6 +33,7 @@ import {
   computeDirectoryDigest,
   createAuthorEvaluation,
   discoverAuthoringWorkspace,
+  formatAuthoringWorkspaceSnapshot,
   discoverFeatures,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
@@ -531,6 +532,34 @@ test("authoring workspace discovery follows conventional layouts from nested dir
   assert.equal(discovered.packageRoot, packagePath);
   assert.equal(discovered.stateRoot, stateDirectory);
   assert.equal(discovered.stateExists, true);
+});
+
+test("authoring status reports progress between completed review passes", () => {
+  const text = formatAuthoringWorkspaceSnapshot({
+    workspace: {},
+    package: {
+      id: "org.example.authoring",
+      version: "0.1.0",
+      status: "valid",
+      diagnostics: []
+    },
+    documents: [{ path: "seedspec.yaml" }],
+    review: {
+      questions: { open: 0, resolved: 0 },
+      current: null,
+      complete: false,
+      passes: [{ id: "0001", area: "concern-separation", outcome: "completed" }],
+      areas: [
+        { index: 1, id: "concern-separation", status: "completed" },
+        { index: 2, id: "kind-aware-discovery", status: "not-audited" }
+      ],
+      diagnostics: []
+    }
+  });
+
+  assert.match(text, /Review: 1 of 2 complete/u);
+  assert.match(text, /Next review: kind-aware-discovery/u);
+  assert.doesNotMatch(text, /Review: not started/u);
 });
 
 test("implementation profiles require user choice when ambiguous and preserve profile state", async (t) => {
@@ -2268,8 +2297,8 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.2");
-  assert.equal(versionInfo.conformance_suite_version, "0.2.1");
-  assert.equal(versionInfo.cli_version, "0.2.1");
+  assert.equal(versionInfo.conformance_suite_version, "0.2.2");
+  assert.equal(versionInfo.cli_version, "0.2.2");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.equal(JSON.parse(doctor.stdout).status, "healthy");
   assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
@@ -2298,10 +2327,10 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
 test("installation doctor verifies the exact release and bundled suite", async () => {
   const result = await inspectInstallation({
-    cliVersion: "0.2.1"
+    cliVersion: "0.2.2"
   });
   assert.equal(result.status, "healthy");
-  assert.equal(result.protocol_release.id, "0.2.1");
+  assert.equal(result.protocol_release.id, "0.2.2");
   assert.ok(result.checks.every((check) => check.status === "passed"));
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
@@ -2336,12 +2365,12 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.2\.1`/);
+  assert.match(audit.stdout, /Tool version: `0\.2\.2`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.1/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.2/);
   assert.match(docs.stdout, /Material ambiguity objective/);
 });
 
@@ -2541,7 +2570,7 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "0.2.1",
+    suite_version: "0.2.2",
     protocol_version: "0.2",
     cases: [{
       id: "outside-fixture",

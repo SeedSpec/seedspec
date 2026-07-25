@@ -1,128 +1,128 @@
 {
   "manifest_version": "1",
   "protocol_family": "0.2",
-  "release_id": "0.2.1",
+  "release_id": "0.2.2",
   "status": "experimental",
   "schema_package": {
     "name": "@seedspec/protocol",
-    "version": "0.2.1"
+    "version": "0.2.2"
   },
   "schemas": [
     {
       "path": "packages/protocol/schemas/v0.2/application.schema.json",
-      "digest": "sha256:ad86902031c849d5db818f06b97f1ac49317ad4bc39633c96fcb59711dfba1a7"
+      "digest": "sha256:178065679a0ad958538829b8e9008683ad1ca24ab6749a0ddafd2255084a410f"
     },
     {
       "path": "packages/protocol/schemas/v0.2/applied-intent-input.schema.json",
-      "digest": "sha256:6a5fe352b5764c554619247e91dfb15e56c6d9ca7afa4531325c4b0c0932a990"
+      "digest": "sha256:a9f7ba12ac5a1b44522bff542b7ae2ab5caa66c0547ba99acce886f3f78da89f"
     },
     {
       "path": "packages/protocol/schemas/v0.2/artifact-index.schema.json",
-      "digest": "sha256:66fed2ad56fcf7e9a0fb40e74e386307cf3817b7959582ec41138ec7f90cebba"
+      "digest": "sha256:7d4c433084a0c41ffcb18a4e3e3bd0ac841a6c212775256f76b8e1192c6d2fa6"
     },
     {
       "path": "packages/protocol/schemas/v0.2/artifact-selections.schema.json",
-      "digest": "sha256:a8d9daa9c3cb45e1c30ca9a5d1bf51d2902a2785d352b56c016ef25ee7452980"
+      "digest": "sha256:2c28287a2343f4c00e9fb69566a8fe79ecf901c81eaaad511a87b0b673d2be12"
     },
     {
       "path": "packages/protocol/schemas/v0.2/capability-conformance-result.schema.json",
-      "digest": "sha256:feca3bfe9b800047ad3a72c7e7ed85b3e37bc2a8f6bbc75f2e9c730e5ee3109c"
+      "digest": "sha256:6fa07de5541773bbeee7984dfd12f52cd8cb9d31c19a3be68730ffaa9925b58c"
     },
     {
       "path": "packages/protocol/schemas/v0.2/capability-conformance-suite.schema.json",
-      "digest": "sha256:412d20f736dd4cc6cde0d8a5a7b4b4210c31b905b67c346cf3b2ad0548559ff7"
+      "digest": "sha256:55b69c1de53313c5c1aa93f8bfd20d70fe5ec20fbe8e187379e02b28b5079fd1"
     },
     {
       "path": "packages/protocol/schemas/v0.2/capability-scenarios.schema.json",
-      "digest": "sha256:2e77e17cb896c430bc458ab1ee29f73bb44af502d11df62a8b5531af83b1b1da"
+      "digest": "sha256:fcb0eff05b698f9db8fa1387353d5a2f7980dbcee6b25a38bb0bd7f3bcfe9d5e"
     },
     {
       "path": "packages/protocol/schemas/v0.2/completion-scope-input.schema.json",
-      "digest": "sha256:27e3d286a9a80d0efd450710deb22bc2ad15b1dcfe91b1bc576ef0369b166410"
+      "digest": "sha256:31e07a2b87eac685e31c4c0385f509fdf94c9d41ae0f85bb9aac88a367727130"
     },
     {
       "path": "packages/protocol/schemas/v0.2/completion-scope.schema.json",
-      "digest": "sha256:ed0f2037802e436a4d3d44b85c1608b00c62e53b946567aee852527fb5b0c0f7"
+      "digest": "sha256:99af3cf89d88e2d2ddb63baa186a3fb09276441ca8ec9a6d4d8d7d0bd3a03d78"
     },
     {
       "path": "packages/protocol/schemas/v0.2/component-index.schema.json",
-      "digest": "sha256:0b3ba449763e16eb9cc97bc76a15fd056c14ac5f66a0456f158d12732d3774a8"
+      "digest": "sha256:3e3f2e130831ed18d727d0844099303ddb35c0a5e2af9e33fe82540460e06317"
     },
     {
       "path": "packages/protocol/schemas/v0.2/configuration-selections.schema.json",
-      "digest": "sha256:feff3ba75ce7cf4a7d252c6a24460e400badc8da1c9e603023091175da49424c"
+      "digest": "sha256:658f08fe3725039ea0b2bfb3d8f0d6b95f747129ca61a881d2b309c8a1363654"
     },
     {
       "path": "packages/protocol/schemas/v0.2/conformance-report.schema.json",
-      "digest": "sha256:1f71a54afd71e61fe55471d77a754ee83b56e2ba21346e7d141a04d35f408171"
+      "digest": "sha256:c89b02eb000bdd120fc5e00e395f20c37405962c1642520646014a90051969cb"
     },
     {
       "path": "packages/protocol/schemas/v0.2/conformance.schema.json",
-      "digest": "sha256:a2091fff346ab995a9f8b670593b8264c27c27af6bc6d27196efd176ca2bea30"
+      "digest": "sha256:0f6de6f8758c1da514fbd651b451c3493685bd7fd3d3ee2c80ce1fb860dc0fac"
     },
     {
       "path": "packages/protocol/schemas/v0.2/feature.schema.json",
-      "digest": "sha256:35546ef612d7aa06ff40d553682516a6b3baff36201764f63dccb27ec6e6808c"
+      "digest": "sha256:f7525d89dbc1671752bf3f5ba14e4379ced74fcec25814fb973c7fb08e9dac8e"
     },
     {
       "path": "packages/protocol/schemas/v0.2/implementation-profile-state.schema.json",
-      "digest": "sha256:a12e255c1866b26df498824d45049ffdf2dccd7f61c2218bea486166c54177b9"
+      "digest": "sha256:0181d73be7a624922f9f5acb49bc3c3cc5a34be6c28281c1fc0713769fb7f8a9"
     },
     {
       "path": "packages/protocol/schemas/v0.2/implementation-resource-index.schema.json",
-      "digest": "sha256:ef08701d3510ea168d0977e09225864620f753641203cfe5d3c55a9a4432258f"
+      "digest": "sha256:b7f1a58b80fcdc5ff68f19b2362ba836b9ede2d86886f30f7639cb6918b9eb72"
     },
     {
       "path": "packages/protocol/schemas/v0.2/implementation-resource-manifest.schema.json",
-      "digest": "sha256:692ffcfcb9589963c0afb879bca0009d34072b90652df6788d3d72df9973f509"
+      "digest": "sha256:2e4391b4c3ba0b35257f3534b277e79fd3aa83ea60d5e6708115624c56c3e6ec"
     },
     {
       "path": "packages/protocol/schemas/v0.2/implementation-resource-state.schema.json",
-      "digest": "sha256:05eeb9e6be665b7a74a9f98d708baa57f2c386e11d83a1a25679e72093c16755"
+      "digest": "sha256:bfe735174674500440b2fb24e5fac7f0a2341f9abbf8c1b884bf4401938559f1"
     },
     {
       "path": "packages/protocol/schemas/v0.2/lock.schema.json",
-      "digest": "sha256:79306276cde615c070975cf6a8f649c84fc86ecaa869f04e6e004ffd88a1e6b2"
+      "digest": "sha256:a2a4297138737353652098d37fc5d5232cc95707924b6c38bac33fa05cf4509c"
     },
     {
       "path": "packages/protocol/schemas/v0.2/project.schema.json",
-      "digest": "sha256:0c0f6424834fc6279092ea74d749597ae668654de19c2b91e30c7d437903636a"
+      "digest": "sha256:bd0a19f26c5efd74e560429753895825295e961e85d921cccd6e7ad9f57e6955"
     },
     {
       "path": "packages/protocol/schemas/v0.2/protocol-release.schema.json",
-      "digest": "sha256:d30c0b70d8a68ceafd96b1fcfaf343b2e7842f35150db89eb099e803b2aaf79b"
+      "digest": "sha256:c05b26674f7aebbc85fe065d1215a01f77f711ce4cb3ad0023b73f187593ce47"
     },
     {
       "path": "packages/protocol/schemas/v0.2/resolution-receipt.schema.json",
-      "digest": "sha256:9e500015f46d5e6364dcaea4aef67f34e85f7fed4c42113c06f73b073ea328a4"
+      "digest": "sha256:9ce579e2536e95642fd2ff0dbe3853c32a50723d23195a35ce8aea4fdf8c4df0"
     },
     {
       "path": "packages/protocol/schemas/v0.2/resolved-config.schema.json",
-      "digest": "sha256:b2bcf1c8db69c88a8c948650219a8bdba55b48ffac9e6757a4506f0728e398b2"
+      "digest": "sha256:bbb6d99594889d79fdf4466fd0cee41737119f4cf4b07d38537efb05ae84ae03"
     },
     {
       "path": "packages/protocol/schemas/v0.2/resolved-intent.schema.json",
-      "digest": "sha256:53c44d8478a01daaaf889aaead941f9912776b7c4ef342fd0ef0058e70bf4e7c"
+      "digest": "sha256:ff304c1cf06e7e0c25ea8a9bc9da8a679df80dc60a169002e36979662ced479b"
     },
     {
       "path": "packages/protocol/schemas/v0.2/seedspec.schema.json",
-      "digest": "sha256:10c87ff4226003f62ac13834f6c001a552ea937e6a9c34da0d541db2c2370357"
+      "digest": "sha256:4344efb2379305000798fdb7f3ef3a9460bdf9da0d9070bab8470accf7cfe127"
     },
     {
       "path": "packages/protocol/schemas/v0.2/task-index.schema.json",
-      "digest": "sha256:10804c25f8dce03042ea1f692fbed5c93004386b02f81e6b5ac8e285f498b796"
+      "digest": "sha256:de95afe20d4f9e3d349c88719ac531504ea2324e0c625454d8d7c8b9006ce66f"
     },
     {
       "path": "packages/protocol/schemas/v0.2/task-runbook.schema.json",
-      "digest": "sha256:79f631c7795ddc3210b281124fabf5c75d74c779cb42184503612bff5f1e93d9"
+      "digest": "sha256:786f6992a76c86992f98aa7afbb09342512c074cff39759e622203286b4bd648"
     },
     {
       "path": "packages/protocol/schemas/v0.2/technical-preferences.schema.json",
-      "digest": "sha256:30b299f95b630277f3a9e738338c9e82786a7cd73c59ff48c8115dc4a1254e7a"
+      "digest": "sha256:0c83f0410fad1b7bf4f7c80c937db5e5cfeece7f5f1247ac5b1a54fba4a8c834"
     },
     {
       "path": "packages/protocol/schemas/v0.2/verification-state.schema.json",
-      "digest": "sha256:225e60b1fcce3711ec4499347fcce9e2ed9027195065f4903ef1c020f1f6a5cc"
+      "digest": "sha256:674dad2a139db3d3940594b774def166365efc58eea3b16de842ba2c4dcb1621"
     }
   ],
   "documents": [
@@ -132,7 +132,7 @@
     },
     {
       "path": "documents/protocol.md",
-      "digest": "sha256:8e76afc8295a83ddca6dbfbcec679f570ca3abfd064f7bb7fba43d8bad4d6ac2"
+      "digest": "sha256:c43ddbae1ab51fcd764619a3a3aed8309e0da4aee61c41bc34d957f6677ca668"
     },
     {
       "path": "documents/operations.md",
@@ -151,20 +151,20 @@
     "capability-conformance"
   ],
   "conformance": {
-    "suite_version": "0.2.1",
+    "suite_version": "0.2.2",
     "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
-    "index_digest": "sha256:158d17d3661cce641b209ed874263f2735f07faaefeccb08bb777eefab9cbf01",
-    "bundle_digest": "sha256:cbcf070aa56fe003d37eaaf118690d9f52dcdbd32aa4e24aea6c74605bf518d2"
+    "index_digest": "sha256:e42fc9725706abdc89e677273ffd0df87a2cf305ec2f3cf812b61c535d02cc8f",
+    "bundle_digest": "sha256:6c1b6e5457ba1b82dfeb95ff291e8a7e60ae942eea9da2440aec91330b5dd2f4"
   },
   "implementations": {
     "runtime": {
       "name": "@seedspec/runtime",
-      "version": "0.2.1"
+      "version": "0.2.2"
     },
     "cli": {
       "name": "@seedspec/cli",
-      "version": "0.2.1"
+      "version": "0.2.2"
     }
   },
   "source": {
@@ -174,7 +174,7 @@
     {
       "from_release": "0.1.0-alpha.6",
       "status": "migrate",
-      "notes": "Set protocol_version to 0.2, revalidate package source, and regenerate resolved handoffs to receive exact 0.2.1 release binding and resolution receipts.",
+      "notes": "Set protocol_version to 0.2, revalidate package source, and regenerate resolved handoffs to receive exact 0.2.2 release binding and resolution receipts.",
       "migration": {
         "id": "protocol-0-2",
         "guide": "documents/migrations.md"

@@ -1,11 +1,11 @@
 {
   "receipt_version": "1",
-  "receipt_id": "sha256:81b49db33e11a701209ea12e0a7d3ef15b95b43f82e5609366a69d12e1413684",
+  "receipt_id": "sha256:845a59195d166fa5c04f3eed4ab9f709640e06afe97db48d588afe9f846b0f5b",
   "subject": {
     "operation": "resolve",
     "protocol_release": {
-      "id": "0.2.1",
-      "digest": "sha256:1fb3d4c93d8a652c9235de7ebc8c6a8346ddad9f166434551fa048d05fd6fefd"
+      "id": "0.2.2",
+      "digest": "sha256:76e0118984ab18d41039fcce97160d8fe436022f67fb99fcb35cdbec63c92eca"
     },
     "packages": {
       "root": {
@@ -32,6 +32,6 @@
   },
   "producer": {
     "name": "@seedspec/runtime",
-    "version": "0.2.1"
+    "version": "0.2.2"
   }
 }

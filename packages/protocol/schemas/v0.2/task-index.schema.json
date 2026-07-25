@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.1/schemas/task-index.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.2/schemas/task-index.schema.json",
   "title": "Resolved SeedSpec Task Index 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,

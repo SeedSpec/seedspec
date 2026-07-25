@@ -577,6 +577,13 @@ export function formatAuthoringWorkspaceSnapshot(snapshot) {
     );
   } else if (snapshot.review.complete) {
     lines.push("Review: complete");
+  } else if (snapshot.review.passes.length > 0) {
+    const completed = snapshot.review.areas.filter(({ status }) => status === "completed").length;
+    const next = snapshot.review.areas.find(({ status }) => status !== "completed");
+    lines.push(
+      `Review: ${completed} of ${snapshot.review.areas.length} complete`,
+      `Next review: ${next?.id ?? "available"}`
+    );
   } else {
     lines.push("Review: not started");
   }

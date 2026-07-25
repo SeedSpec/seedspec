@@ -5,6 +5,20 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.2.2
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.2` |
+| Conformance suite | `0.2.2` |
+| `@seedspec/runtime` | `0.2.2` |
+| `@seedspec/cli` | `0.2.2` |
+
+- Correct the friendly authoring summary between completed review passes so it
+  reports completed progress and the next review instead of saying that review
+  has not started.
+
 ## 0.2.1
 
 | Surface | Version |

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.1/schemas/conformance.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.2/schemas/conformance.schema.json",
   "title": "SeedSpec Protocol Conformance Suite Index",
   "type": "object",
   "additionalProperties": false,

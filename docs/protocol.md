@@ -5,8 +5,8 @@
 | Release identifier | Value |
 | --- | --- |
 | Protocol family | `0.2` |
-| Schema package / exact release | `@seedspec/protocol@0.2.1` |
-| Conformance suite | `0.2.1` |
+| Schema package / exact release | `@seedspec/protocol@0.2.2` |
+| Conformance suite | `0.2.2` |
 
 The normative `docs/01-language.md` definition is the first reference for
 SeedSpec concepts, authority, processing, operations, and claims. This document
