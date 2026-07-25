@@ -34,7 +34,9 @@ export {
   auditPackage,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
-  formatAuthoringStarterPrompt
+  formatAuthoringStarterPrompt,
+  formatAuthoringGuidance,
+  listAuthoringGuidanceTopics
 } from "./authoring.js";
 export {
   AUTHORING_SCHEMA_FORMAT,

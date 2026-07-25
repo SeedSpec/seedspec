@@ -25,6 +25,8 @@ import {
   formatAuthoringAudit,
   formatAuthoringDocumentation,
   formatAuthoringStarterPrompt,
+  formatAuthoringGuidance,
+  listAuthoringGuidanceTopics,
   listAuthoringSchemas,
   readAuthoringSchema,
   formatAuthoringWorkspaceCreation,
@@ -95,6 +97,7 @@ Usage:
   seedspec author pack [package-path] [--output <directory>]
   seedspec author create <package-path> [--target <depth>]
   seedspec author schema [result]
+  seedspec author guidance [--topic <topic>]
   seedspec author help
   seedspec prepare <package-path> [--state <directory>] [--status] [--json]
   seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status|--summary] [--json]
@@ -160,6 +163,7 @@ Commands:
   author check        Check structure, guidance, and publication readiness
   author history      Show completed and current review passes
   author schema       Print the authoring state schema (author schema result)
+  author guidance     Print one guidance topic (author guidance --topic <id>)
   author evaluate     Create an independent handoff evaluation
   author pack         Create the distributable SeedSpec archive
   author help         Show this guide
@@ -331,6 +335,7 @@ async function run() {
         "create",
         "prompt",
         "schema",
+        "guidance",
         "status",
         "review",
         "questions",
@@ -359,6 +364,16 @@ async function run() {
       } else if (action === "prompt") {
         rejectUnknownOptions(options, []);
         process.stdout.write(`${formatAuthoringStarterPrompt()}\n`);
+      } else if (action === "guidance") {
+        rejectUnknownOptions(options, ["topic"]);
+        const topic = oneOption(options, "topic") ?? positional[1];
+        if (!topic) {
+          process.stdout.write(`${listAuthoringGuidanceTopics()
+            .map(({ id, summary }) => `  ${id.padEnd(16)} ${summary}`)
+            .join("\n")}\n`);
+        } else {
+          process.stdout.write(`${formatAuthoringGuidance(topic)}\n`);
+        }
       } else if (action === "schema") {
         rejectUnknownOptions(options, []);
         const requested = positional[1];

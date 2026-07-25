@@ -20,6 +20,7 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
+  formatAuthoringGuidance,
   readAuthoringSchema,
   AUTHORING_INSTRUCTION_FORMAT,
   AUTHORING_RESULT_FORMAT,
@@ -337,16 +338,33 @@ test("authoring review is source-bound and advances after an author disposition"
   assert.equal(first.areas.length, AUTHORING_AREAS.length);
   assert.equal(first.instruction_format, AUTHORING_INSTRUCTION_FORMAT);
   assert.match(first.current.instructions, /useful starting seed/);
-  assert.match(first.current.instructions, /four review threads organize your private attention/);
   assert.match(first.current.instructions, /Absence is not a gap/);
   assert.match(first.current.instructions, /restriction on what may become a finding; it is not an instruction to search/);
-  assert.match(first.current.instructions, /Do not announce `Area 1 of 4`/);
-  assert.match(first.current.instructions, /two to five conversational sentences and one clear question/);
-  assert.match(first.current.instructions, /Do not narrate searches, files read, commands run, archived history/);
   assert.match(first.current.instructions, /Save cross-document inconsistency, stale counts/);
-  assert.match(first.current.instructions, /Every factual claim in the response must come directly from the active authored material/);
+  assert.match(first.current.instructions, /Every factual claim must come from the active authored material/);
   assert.match(first.current.instructions, /one or two plain sentences reflecting the central product direction/);
   assert.match(first.current.instructions, /Active attached sources: none/);
+
+  // The brief states response length exactly once. Two competing caps made the
+  // agent hedge, and a rule repeated four times made responses evasive.
+  const lengthRules = first.current.instructions.match(/plain sentences/g) ?? [];
+  assert.equal(lengthRules.length, 1, "response length must be stated once");
+  const prohibitions = first.current.instructions.match(/Do not |Never |must not/g) ?? [];
+  assert.ok(
+    prohibitions.length <= 10,
+    `brief carries ${prohibitions.length} prohibitions; keep it at or under 10`
+  );
+
+  // Depth is served on request rather than embedded up front, because stacked
+  // guidance measurably reduced coverage while multiplying cost.
+  assert.match(first.current.instructions, /seedspec author guidance --topic review-model/);
+  assert.doesNotMatch(first.current.instructions, /## Internal review model/);
+  assert.match(formatAuthoringGuidance("review-model"), /Coherence/);
+  assert.match(formatAuthoringGuidance("source-boundary"), /Absence is not a gap/);
+  assert.throws(
+    () => formatAuthoringGuidance("nope"),
+    (error) => error.code === "UNKNOWN_AUTHORING_GUIDANCE"
+  );
   assert.doesNotMatch(first.current.instructions, /Current source documentation|github\.com\/SeedSpec\/seedspec\/blob/);
   assert.match(formatAuthoringAudit(first), /^# SeedSpec authoring agent operating brief/m);
   assert.doesNotMatch(formatAuthoringAudit(first), /Internal review progress:/);
@@ -406,7 +424,7 @@ test("authoring review supports source-bound targeted areas and keeps state outs
     toolVersion: "0.1.0-test"
   });
   assert.match(support.current.instructions, /The absence of any optional item is valid/);
-  assert.match(support.current.instructions, /Configuration is deliberate authored product variation/);
+  assert.match(support.current.instructions, /Configuration is deliberate authored variation/);
   assert.match(formatAuthoringDocumentation("supporting-material"), /Configuration and supporting material objective/);
 
   await assert.rejects(
@@ -486,11 +504,16 @@ test("an active source-bound pass receives the latest conversation and record br
     parseYaml(await readFile(requestPath, "utf8")).authoring_instruction_version,
     AUTHORING_INSTRUCTION_FORMAT
   );
-  assert.match(refreshed.current.instructions, /Conversation behavior/);
-  assert.match(refreshed.current.instructions, /Do not announce `Area 1 of 4`/);
-  assert.match(refreshed.current.instructions, /not a transcript or activity log/);
-  assert.match(refreshed.current.instructions, /keep `summary` exactly empty/);
-  assert.match(refreshed.current.instructions, /State the product direction, clarification, or authored choice/);
+  assert.match(refreshed.current.instructions, /How to talk to the author/);
+  assert.match(refreshed.current.instructions, /record terms/);
+  assert.match(refreshed.current.instructions, /It is substance, not a transcript/);
+  assert.match(refreshed.current.instructions, /stays exactly empty while `disposition` is `pending`/);
+  assert.match(refreshed.current.instructions, /states the product direction, clarification, or authored choice/);
+  // The record section names the real package path rather than a placeholder
+  // the agent has to resolve from a different section.
+  assert.doesNotMatch(refreshed.current.instructions, /seedspec validate <package-path>/);
+  assert.match(refreshed.current.instructions, new RegExp(`seedspec validate ${allowance}`));
+  assert.match(refreshed.current.instructions, /seedspec author schema result/);
   const preserved = parseYaml(await readFile(resultPath, "utf8"));
   assert.equal(preserved.outcome, "needs-author");
   assert.equal(
