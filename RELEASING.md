@@ -1,6 +1,6 @@
 # Releasing SeedSpec
 
-SeedSpec `0.2.0` is the first coordinated release of the protocol, runtime,
+SeedSpec `0.2.0` established the coordinated release of the protocol, runtime,
 CLI, conformance suite, reference packages, website artifacts, and supporting
 tools. The release is experimental because the protocol is still evolving, but
 every published artifact must identify the same exact release.

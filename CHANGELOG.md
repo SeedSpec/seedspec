@@ -5,6 +5,68 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.2.3
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.3` |
+| Conformance suite | `0.2.3` |
+| `@seedspec/runtime` | `0.2.3` |
+| `@seedspec/cli` | `0.2.3` |
+
+### Authoring and handoff ergonomics
+
+- Show the complete version-matched authoring work order by default and add
+  `author review --summary` as the shorter human-facing view.
+- Bundle an optional `author-seedspec` skill and require explicit author consent
+  before exporting it into a project.
+- Let `seedspec prompt` accept a local package path or GitHub URL and produce a
+  self-bootstrapping `npx @seedspec/cli begin ...` handoff that requires no
+  global install or SeedSpec skill.
+
+## 0.2.2
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.2` |
+| Conformance suite | `0.2.2` |
+| `@seedspec/runtime` | `0.2.2` |
+| `@seedspec/cli` | `0.2.2` |
+
+- Correct the friendly authoring summary between completed review passes so it
+  reports completed progress and the next review instead of saying that review
+  has not started.
+
+## 0.2.1
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.2` |
+| Exact protocol release / `@seedspec/protocol` | `0.2.1` |
+| Conformance suite | `0.2.1` |
+| `@seedspec/runtime` | `0.2.1` |
+| `@seedspec/cli` | `0.2.1` |
+
+### Authoring
+
+- Add a path-independent, revisioned authoring-workspace snapshot that remains
+  readable while a draft is invalid.
+- Allow authoring workspaces to begin before a valid package exists and assign
+  opaque workspace identity independently from package identity.
+- Add automatic discovery for `workspace.yaml`, `seedspec.yaml`, and the
+  conventional sibling `seedspec/` and `authoring/` layout.
+- Make `npx @seedspec/cli author` the human front door and group status,
+  review, questions, checks, history, evaluation, and packing beneath the
+  author namespace.
+- Keep exact versions, noninteractive npm confirmation, explicit paths,
+  revisions, digests, and JSON as automation controls rather than beginner
+  requirements.
+- Record the shared headless-engine contract for CLI and web authoring,
+  artifact-level portability, explicit acceptance of agent-proposed document
+  changes, and agent-session model consent.
+
 ## 0.2.0
 
 | Surface | Version |

@@ -11,20 +11,34 @@ semantic completeness or realization quality.
 ## Run without installing
 
 ```bash
-npx --yes @seedspec/cli@0.2.0 --help
-npx --yes @seedspec/cli@0.2.0 version
+npx @seedspec/cli author
+npx @seedspec/cli version
 ```
 
-## Install
+Human-facing commands use npm's current release and allow npm to ask before its
+first download. Pin the package version and add `--yes` for unattended tests or
+automation.
+
+## Optional global install
 
 ```bash
-npm install --global @seedspec/cli@0.2.0
+npm install --global @seedspec/cli
 seedspec --help
 ```
 
 Common entry points:
 
 ```bash
+seedspec author
+seedspec author status
+seedspec author review [--summary]
+seedspec author questions
+seedspec author check
+seedspec author history
+seedspec author evaluate
+seedspec author pack
+seedspec author help
+seedspec author create <package-path> [--target <depth>] [--state <directory>] [--json]
 seedspec prepare <package-path> [--state <directory>]
 seedspec review <package-path> [--area <area>]
 seedspec publish-check <package-path> [--state <directory>]
@@ -46,6 +60,7 @@ seedspec digest <package-path>
 seedspec capability-conformance <package-path> <capability-id> [--result <yaml>]
 seedspec conformance [cases.yaml] [--json] [--output <report.json>]
 seedspec docs implementing
+seedspec prompt [package-path-or-github-url]
 ```
 
 `seedspec begin` is the read-only agent handoff. It validates the package and
@@ -67,17 +82,45 @@ the command. It does not run package scripts, initialize submodules, load
 package-provided skills, or activate package content. Remote acquisition
 currently supports public `https://github.com` URLs only.
 
+`seedspec author` is the human authoring front door. It discovers an existing
+workspace or conventional `seedspec/` and `authoring/` layout from the current
+directory, initializes adjacent authoring state when a package exists, and
+shows the current work plus the most relevant next command. Paths are optional
+for authoring commands when discovery finds one unambiguous project. It also
+mentions the bundled `author-seedspec` skill and tells the agent to ask before
+exporting it into the project. The skill is optional; declining it or using an
+agent without skill support does not change the workflow.
+
+The `status`, `review`, `questions`, `check`, `history`, `evaluate`, and `pack`
+actions place existing authoring capabilities under one discoverable namespace.
+Exact paths, state directories, revisions, and JSON are available for agents
+and automation without defining the beginner experience.
+
 `seedspec prepare` moves a package through deterministic baseline checks,
 guided agent review, author resolution, publish checking, an optional
 fresh-agent evaluation, and packing. The command is resumable from durable
 state and explains every phase.
 
+`seedspec author create` assigns an opaque workspace identity and initializes
+portable authoring state around an existing, empty, or invalid draft directory.
+It does not require a conforming package and is idempotent for an existing
+workspace.
+
+`seedspec author status` returns a versioned, path-independent authoring
+workspace snapshot. It includes an opaque workspace identity when state has
+been created, a content-derived revision, draft document inventory,
+deterministic package status, questions, and review passes. It remains readable
+while ordinary draft content is invalid. Human text omits opaque IDs and
+digests unless they are needed; `--json` retains the complete machine contract.
+
 `seedspec review` (also available as `seedspec audit`) creates or continues an authoring review outside the
 distributable package and prints versioned Markdown instructions for a capable
 agent. The same command advances after a completed pass; `--area` targets one
-of the seven review areas and `--status` is read-only. The CLI does not embed a
-model or modify package content. See `seedspec docs authoring` for guidance
-bundled with the installed version.
+of the seven review areas. The complete work order is the default output.
+`--summary` starts or continues the same pass but emits a shorter human-facing
+view, while `--status` is read-only. The CLI does not embed a model or modify
+package content. See `seedspec docs authoring` for guidance bundled with the
+installed version.
 
 `seedspec publish-check` enforces the blocking preparation gates.
 `seedspec eval` creates a digest-bound independent-handoff workspace and agent
@@ -90,6 +133,10 @@ available to an author's agent.
 release, schemas, and bundled conformance corpus agree. `--full` runs every
 release-bound conformance case. `seedspec docs implementing` prints the
 version-matched package-to-handoff workflow bundled with the CLI.
+
+`seedspec prompt [package-path-or-github-url]` prints a portable prompt for a
+human to paste into a tool-capable agent. The prompt directs the agent to run
+`npx @seedspec/cli begin ...`; no global install or SeedSpec skill is required.
 
 Protocol `0.2` is experimental. Discovery or validation never authorizes
 package activation or execution.

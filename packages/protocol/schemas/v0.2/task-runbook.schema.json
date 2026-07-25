@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.2.0/schemas/task-runbook.schema.json",
+  "$id": "https://seedspec.dev/releases/0.2.3/schemas/task-runbook.schema.json",
   "title": "SeedSpec Package Task Runbook 0.1 Alpha",
   "type": "object",
   "additionalProperties": false,

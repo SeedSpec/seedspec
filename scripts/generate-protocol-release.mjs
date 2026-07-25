@@ -181,7 +181,7 @@ const release = {
     {
       from_release: "0.1.0-alpha.6",
       status: "migrate",
-      notes: "Set protocol_version to 0.2, revalidate package source, and regenerate resolved handoffs to receive exact 0.2.0 release binding and resolution receipts.",
+      notes: "Set protocol_version to 0.2, revalidate package source, and regenerate resolved handoffs to receive exact 0.2.3 release binding and resolution receipts.",
       migration: {
         id: "protocol-0-2",
         guide: "documents/migrations.md"

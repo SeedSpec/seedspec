@@ -31,6 +31,14 @@ construct every file by hand.
 The included 0.2 authoring toolset is implemented in JavaScript for Node.js and
 currently provides:
 
+- `seedspec author` as a no-path human front door that discovers and resumes
+  the local authoring project;
+- `seedspec author create <package-path>` to assign workspace identity before
+  a draft is valid;
+- `seedspec author status [package-path]` for a path-independent, revisioned
+  snapshot of valid or invalid draft state;
+- `seedspec author review|questions|check|history|evaluate|pack` as discoverable
+  author-oriented entry points for current capabilities;
 - `seedspec init <kind>` for kind-specific package scaffolding;
 - `seedspec prepare <package-path>` for the resumable author-to-publication
   lifecycle;
@@ -43,13 +51,34 @@ currently provides:
 - `seedspec skills list|export` for agent guidance shipped with the CLI;
 - `seedspec docs authoring [area]` for guidance bundled with the installed
   tool version; and
-- agent-guided application and feature authoring skills under `skills/`.
+- an optional `author-seedspec` skill plus specialized application and feature
+  authoring skills under `skills/`.
 
 Additional tooling may offer web forms, conversational agent flows, visual editors,
 language-specific builders, or other higher-level frontends that compile to the
 canonical package. Such frontends could provide reusable helpers, stronger
 construction errors, collaborative review, and organization-specific
 conventions without becoming dependencies of the generated SeedSpec.
+
+The current 0.2 implementation is a headless review and preparation kernel, not
+yet a complete browser authoring product. The CLI and a future web workbench
+will use one shared authoring engine with versioned, serializable operations.
+Frontend parity means equivalent durable authoring artifacts, state
+transitions, deterministic results, and portable package output; it does not
+require identical interactions or capabilities. A web workbench may include an
+embedded decision-support agent while the CLI composes with an external agent,
+provided their accepted results enter the same attributable authoring state.
+See [the shared authoring engine and frontend
+contract](decisions/0013-shared-authoring-engine-and-frontend-contract.md).
+
+Human-facing CLI guidance starts with `npx @seedspec/cli author`. It does not
+require a global install, an exact version, `--yes`, a package path, or a state
+path when run inside one unambiguous authoring project. Exact versions,
+noninteractive confirmation, explicit paths, expected revisions, and JSON
+remain available for reproducible automation. The CLI discovers
+`workspace.yaml`, `seedspec.yaml`, and the conventional sibling `seedspec/` and
+`authoring/` layout while walking from the current directory toward its
+ancestors.
 
 Generated output must pass ordinary package validation and must be usable by a
 consumer that has none of the authoring frontend installed. Executable authoring
@@ -75,12 +104,12 @@ and explaining its judgment.
 Start or continue the next incomplete audit area with one command:
 
 ```bash
-seedspec prepare <package-path>
+npx @seedspec/cli author review
 ```
 
-The prepare command first reports the deterministic baseline, then delegates to
-the same review state as `seedspec review` and `seedspec audit`. It emits a
-Markdown work order for the agent and initializes a
+Run `npx @seedspec/cli author` first when resuming or when the next action is
+unknown. The review command reports the deterministic baseline, emits a
+Markdown work order for the agent, and initializes a
 standardized YAML result. After the agent records a completed result, running
 the same command advances to the next incomplete area. There is deliberately no
 `next` command: progression is derived from durable pass state rather than a
@@ -94,10 +123,17 @@ seedspec review <package-path> --area material-ambiguity
 ```
 
 Inspect existing state without creating or changing files with `--status`.
-Text is the primary agent-and-human interface; `--json` exposes the same state
-for another harness. `seedspec docs authoring [area]` prints guidance shipped
-with the installed tool, so an agent does not need to guess from possibly newer
-web documentation.
+The complete text output is the agent's version-matched work order. Add
+`--summary` for a shorter human-facing view that still starts or continues the
+pass. `--json` exposes the same state for another harness.
+`seedspec docs authoring [area]` prints guidance shipped with the installed
+tool, so an agent does not need to guess from possibly newer web documentation.
+
+The CLI work order is self-contained. No installed skill is required. On the
+authoring front door, the CLI may offer its bundled `author-seedspec` skill as a
+convenience and instruct the agent to ask before exporting it into a
+project-local skill directory. Declining the offer, or using an environment
+without skills, must not block authoring.
 
 The ordered review areas are:
 
@@ -153,9 +189,10 @@ package.
         └── result.yaml
 ```
 
-`workspace.yaml` binds the review to a package, protocol version, target depth,
-and last observed digest. Package paths are relative to the state directory
-when possible. `sources.yaml` inventories authoring inputs,
+`workspace.yaml` gives the authoring workspace an opaque identity and binds the
+review to a package, protocol version, target depth, and last observed digest.
+Package paths are relative to the state directory when possible.
+`sources.yaml` inventories authoring inputs,
 `open-questions.yaml` keeps unresolved decisions out of distributable intent,
 and `candidates/` holds speculative material. Each pass records the exact
 instruction, tool, and protocol versions plus before-and-after package digests,
@@ -171,6 +208,29 @@ they do not become package authority merely because an evaluator produced them.
 Authoring state is local and is never bundled, uploaded, synchronized, or
 exported implicitly. The stable layout is intended to support manual sharing
 now and an explicit export or hosted scratch-space flow later.
+
+### Versioned workspace snapshot
+
+`seedspec author create` can initialize authoring state around an empty,
+invalid, or valid draft. Creation assigns an opaque workspace ID without making
+the draft conformant. Repeating the operation against the same state is
+idempotent.
+
+`seedspec author status --json` returns authoring-workspace snapshot format
+`1`. The snapshot contains:
+
+- the opaque workspace ID and a content-derived revision;
+- valid-package identity when available plus the draft digest and diagnostics;
+- a path-independent document inventory with media types, sizes, and digests;
+- review areas, passes, current work, and material-question records; and
+- the exact snapshot, revision-algorithm, state, and tool format versions.
+
+The revision covers both draft-package bytes and authoring-state bytes. It is a
+content identity suitable for an expected-revision precondition, not an ordered
+counter. Snapshot resources use package-relative IDs and sanitize local
+workspace roots; a hosted frontend does not need server filesystem paths.
+Reading the snapshot performs no model call and does not repair or validate an
+invalid draft implicitly.
 
 The complete baseline, guided-review, author-resolution, publish-check,
 optional agent-evaluation, and pack lifecycle is documented in

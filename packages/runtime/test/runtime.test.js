@@ -21,14 +21,19 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
   AUTHORING_RESULT_FORMAT,
+  AUTHORING_WORKSPACE_OPERATION_FORMAT,
+  AUTHORING_WORKSPACE_SNAPSHOT_FORMAT,
   auditPackage,
   beginPackage,
   capabilityConformanceBinding,
   classifyCapabilityRevision,
   completionScopeDigest,
   conformanceSuiteVersion,
+  createAuthoringWorkspace,
   computeDirectoryDigest,
   createAuthorEvaluation,
+  discoverAuthoringWorkspace,
+  formatAuthoringWorkspaceSnapshot,
   discoverFeatures,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
@@ -37,6 +42,7 @@ import {
   inspectPackage,
   inspectCapabilityConformance,
   inspectInstallation,
+  inspectAuthoringWorkspace,
   inspectProjectCompletion,
   initPackage,
   listArtifactAdapters,
@@ -293,6 +299,11 @@ test("authoring audit emits a versioned agent pass and advances without a next c
   assert.match(first.current.instructions, /no `next` command is required/);
   assert.match(formatAuthoringAudit(first), /1\. Concern separation — in-progress/);
   assert.match(formatAuthoringAudit(first), /After this pass is completed: 2 of 7 — Kind-aware discovery/);
+  assert.match(
+    formatAuthoringAudit(first, { summary: true }),
+    /Review progress: 0 of 7 areas completed/
+  );
+  assert.doesNotMatch(formatAuthoringAudit(first, { summary: true }), /## Area objective/);
 
   const result = parseYaml(await readFile(first.current.result, "utf8"));
   result.outcome = "completed";
@@ -402,6 +413,158 @@ test("authoring audit status is read-only and accepts portable workspace paths",
     statusOnly: true
   });
   assert.equal(await readFile(workspacePath, "utf8"), before);
+});
+
+test("authoring workspace snapshots are path-independent and survive invalid drafts", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "draft-package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  const audit = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0-test"
+  });
+  const questionPath = path.join(stateDirectory, "open-questions.yaml");
+  const questionState = parseYaml(await readFile(questionPath, "utf8"));
+  questionState.questions.push({
+    id: "local-source",
+    source: `${packagePath}/definition/feature.md`,
+    question: "Should this source remain local?",
+    status: "open"
+  });
+  await writeFile(questionPath, stringifyYaml(questionState), "utf8");
+
+  const first = await inspectAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0-test"
+  });
+  assert.equal(first.authoring_workspace_snapshot_version, AUTHORING_WORKSPACE_SNAPSHOT_FORMAT);
+  assert.match(first.workspace.id, /^[0-9a-f]{8}-[0-9a-f-]{27}$/u);
+  assert.match(first.workspace.revision, /^sha256:[0-9a-f]{64}$/u);
+  assert.equal(first.package.status, "valid");
+  assert.equal(first.package.digest, audit.package.digest);
+  assert.equal(first.review.current.id, "0001-concern-separation");
+  assert.equal(first.review.questions.items[0].source, "<package>/definition/feature.md");
+  assert.ok(first.documents.some((document) => document.path === "seedspec.yaml"));
+  assert.doesNotMatch(JSON.stringify(first), new RegExp(output.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+
+  const repeated = await inspectAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0-test"
+  });
+  assert.equal(repeated.workspace.revision, first.workspace.revision);
+  assert.equal(repeated.workspace.id, first.workspace.id);
+
+  await writeFile(path.join(packagePath, "seedspec.yaml"), "protocol_version: [\n", "utf8");
+  const invalid = await inspectAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0-test"
+  });
+  assert.equal(invalid.package.status, "invalid");
+  assert.equal(invalid.package.digest, null);
+  assert.notEqual(invalid.workspace.revision, first.workspace.revision);
+  assert.equal(invalid.workspace.id, first.workspace.id);
+  assert.equal(invalid.review.current.id, first.review.current.id);
+  assert.ok(invalid.package.diagnostics.some((diagnostic) => diagnostic.code === "INVALID_YAML"));
+  assert.ok(invalid.documents.some((document) => document.path === "seedspec.yaml"));
+  assert.doesNotMatch(JSON.stringify(invalid), new RegExp(output.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+});
+
+test("authoring workspaces can begin before a valid package exists", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "empty-draft");
+  const stateDirectory = path.join(output, "authoring-state");
+  const created = await createAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    target: "capture",
+    toolVersion: "0.2.0-test"
+  });
+
+  assert.equal(created.authoring_workspace_operation_version, AUTHORING_WORKSPACE_OPERATION_FORMAT);
+  assert.equal(created.operation, "create");
+  assert.equal(created.created, true);
+  assert.match(created.snapshot.workspace.id, /^[0-9a-f]{8}-[0-9a-f-]{27}$/u);
+  assert.equal(created.snapshot.package.status, "invalid");
+  assert.equal(created.snapshot.documents.length, 0);
+  assert.equal(created.snapshot.review.status, "available");
+  assert.equal(created.snapshot.review.target, "capture");
+
+  const repeated = await createAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    target: "package",
+    toolVersion: "0.2.0-test"
+  });
+  assert.equal(repeated.created, false);
+  assert.equal(repeated.snapshot.workspace.id, created.snapshot.workspace.id);
+  assert.equal(repeated.snapshot.workspace.revision, created.snapshot.workspace.revision);
+  assert.equal(repeated.snapshot.review.target, "capture");
+
+  await initPackage("application", packagePath);
+  const audit = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0-test"
+  });
+  const shaped = await inspectAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0-test"
+  });
+  assert.equal(shaped.workspace.id, created.snapshot.workspace.id);
+  assert.equal(shaped.package.status, "valid");
+  assert.equal(shaped.review.current.id, audit.current.id);
+});
+
+test("authoring workspace discovery follows conventional layouts from nested directories", async (t) => {
+  const output = await temporaryDirectory(t);
+  const projectRoot = path.join(output, "authoring-project");
+  const packagePath = path.join(projectRoot, "seedspec");
+  const stateDirectory = path.join(projectRoot, "authoring");
+  await cp(savings, packagePath, { recursive: true });
+
+  const beforeState = await discoverAuthoringWorkspace(
+    path.join(packagePath, "definition")
+  );
+  assert.equal(beforeState.packageRoot, packagePath);
+  assert.equal(beforeState.stateRoot, stateDirectory);
+  assert.equal(beforeState.stateExists, false);
+
+  await createAuthoringWorkspace(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.1-test"
+  });
+  const discovered = await discoverAuthoringWorkspace(
+    path.join(packagePath, "definition")
+  );
+  assert.equal(discovered.packageRoot, packagePath);
+  assert.equal(discovered.stateRoot, stateDirectory);
+  assert.equal(discovered.stateExists, true);
+});
+
+test("authoring status reports progress between completed review passes", () => {
+  const text = formatAuthoringWorkspaceSnapshot({
+    workspace: {},
+    package: {
+      id: "org.example.authoring",
+      version: "0.1.0",
+      status: "valid",
+      diagnostics: []
+    },
+    documents: [{ path: "seedspec.yaml" }],
+    review: {
+      questions: { open: 0, resolved: 0 },
+      current: null,
+      complete: false,
+      passes: [{ id: "0001", area: "concern-separation", outcome: "completed" }],
+      areas: [
+        { index: 1, id: "concern-separation", status: "completed" },
+        { index: 2, id: "kind-aware-discovery", status: "not-audited" }
+      ],
+      diagnostics: []
+    }
+  });
+
+  assert.match(text, /Review: 1 of 2 complete/u);
+  assert.match(text, /Next review: kind-aware-discovery/u);
+  assert.doesNotMatch(text, /Review: not started/u);
 });
 
 test("implementation profiles require user choice when ambiguous and preserve profile state", async (t) => {
@@ -724,11 +887,22 @@ test("begin reports when a package has no author acceptance material", async (t)
 
 test("the package prompt delegates the detailed workflow to versioned tooling", () => {
   const prompt = formatPackageAgentPrompt();
-  assert.match(prompt, /seedspec begin <package-path>/);
+  assert.match(prompt, /npx @seedspec\/cli begin "<package-path-or-github-url>"/);
   assert.match(prompt, /before planning/i);
+  assert.match(prompt, /do not need an installed SeedSpec skill/i);
+  assert.match(prompt, /complete output as your version-matched work order/i);
+  assert.match(prompt, /rendered SeedSpec handoff instead of guessing/i);
   assert.match(prompt, /Do not execute package-provided scripts/);
   assert.match(prompt, /bundled compatible workflow instructions.*fallback reason/i);
-  assert.doesNotMatch(prompt, /npx|npm install/);
+  assert.doesNotMatch(prompt, /--yes|@\d+\.\d+\.\d+|npm install/u);
+
+  const remote = formatPackageAgentPrompt(
+    "https://github.com/SeedSpec/reference-solutions/tree/main/solutions/family-hub/seedspec"
+  );
+  assert.match(
+    remote,
+    /npx @seedspec\/cli begin "https:\/\/github\.com\/SeedSpec\/reference-solutions\/tree\/main\/solutions\/family-hub\/seedspec"/u
+  );
 });
 
 test("author-declared implementation resources are validated, preserved, and resolved online", async (t) => {
@@ -2110,6 +2284,13 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   const inspection = await execFileAsync(process.execPath, [cli, "inspect", savings]);
   const lint = await execFileAsync(process.execPath, [cli, "lint", hubspotMetric]);
   const artifacts = await execFileAsync(process.execPath, [cli, "artifacts", allowance]);
+  const authoringWorkspace = await execFileAsync(process.execPath, [
+    cli,
+    "author",
+    "status",
+    allowance,
+    "--json"
+  ]);
   const capabilityConformance = await execFileAsync(process.execPath, [
     cli,
     "capability-conformance",
@@ -2132,14 +2313,14 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.2");
-  assert.equal(versionInfo.conformance_suite_version, "0.2.0");
-  assert.equal(versionInfo.cli_version, "0.2.0");
+  assert.equal(versionInfo.conformance_suite_version, "0.2.3");
+  assert.equal(versionInfo.cli_version, "0.2.3");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.equal(JSON.parse(doctor.stdout).status, "healthy");
   assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
   assert.match(validation.stdout, /Valid SeedSpec package: org\.seedspec\.fixtures\.comprehensive-application/);
   assert.match(validation.stdout, /Kind hint: application/);
-  assert.match(prompt.stdout, /Use this SeedSpec package/);
+  assert.match(prompt.stdout, /Implement this SeedSpec with me/);
   assert.match(beginning.stdout, /Do not begin implementation yet/);
   assert.match(beginning.stdout, /CONFIGURATION_EXAMPLE_REQUIRES_REVIEW/);
   assert.match(beginning.stdout, /Discovery does not activate supporting material/);
@@ -2149,6 +2330,11 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.match(inspection.stdout, /Components: acceptance, integration/);
   assert.match(artifacts.stdout, /ProductSpec/);
   assert.match(artifacts.stdout, /Intent role: primary/);
+  const authoringSnapshot = JSON.parse(authoringWorkspace.stdout);
+  assert.equal(authoringSnapshot.authoring_workspace_snapshot_version, "1");
+  assert.equal(authoringSnapshot.package.status, "valid");
+  assert.equal(authoringSnapshot.review.status, "not-created");
+  assert.doesNotMatch(authoringWorkspace.stdout, new RegExp(root.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
   assert.match(capabilityConformance.stdout, /Conformance status: not-evaluated/);
   assert.match(capabilityConformance.stdout, /Declared suite coverage: partial/);
   assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
@@ -2157,10 +2343,10 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
 test("installation doctor verifies the exact release and bundled suite", async () => {
   const result = await inspectInstallation({
-    cliVersion: "0.2.0"
+    cliVersion: "0.2.3"
   });
   assert.equal(result.status, "healthy");
-  assert.equal(result.protocol_release.id, "0.2.0");
+  assert.equal(result.protocol_release.id, "0.2.3");
   assert.ok(result.checks.every((check) => check.status === "passed"));
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
@@ -2195,13 +2381,37 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     "material-ambiguity"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.2\.0`/);
+  assert.match(audit.stdout, /Tool version: `0\.2\.3`/);
   assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
   assert.match(audit.stdout, /no `next` command is required/);
   assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.0/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.3/);
   assert.match(docs.stdout, /Material ambiguity objective/);
+});
+
+test("CLI creates an authoring workspace around an empty draft", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "empty-draft");
+  const stateDirectory = path.join(output, "authoring-state");
+  const cli = path.join(root, "packages/cli/bin/seedspec.js");
+  const created = await execFileAsync(process.execPath, [
+    cli,
+    "author",
+    "create",
+    packagePath,
+    "--target",
+    "capture",
+    "--state",
+    stateDirectory,
+    "--json"
+  ]);
+  const result = JSON.parse(created.stdout);
+  assert.equal(result.authoring_workspace_operation_version, "1");
+  assert.equal(result.created, true);
+  assert.equal(result.snapshot.package.status, "invalid");
+  assert.equal(result.snapshot.review.target, "capture");
+  assert.doesNotMatch(created.stdout, new RegExp(output.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
 });
 
 test("CLI -i records a preferred implementation profile", async (t) => {
@@ -2376,7 +2586,7 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "0.2.0",
+    suite_version: "0.2.3",
     protocol_version: "0.2",
     cases: [{
       id: "outside-fixture",
