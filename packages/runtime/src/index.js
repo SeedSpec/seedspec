@@ -33,8 +33,14 @@ export {
   AUTHORING_TARGETS,
   auditPackage,
   formatAuthoringAudit,
-  formatAuthoringDocumentation
+  formatAuthoringDocumentation,
+  formatAuthoringStarterPrompt
 } from "./authoring.js";
+export {
+  AUTHORING_SCHEMA_FORMAT,
+  listAuthoringSchemas,
+  readAuthoringSchema
+} from "./authoring-schemas.js";
 export {
   AUTHORING_WORKSPACE_OPERATION_FORMAT,
   AUTHORING_WORKSPACE_REVISION_ALGORITHM,

@@ -5,8 +5,8 @@ and verifying SeedSpec packages.
 
 The runtime supports two deliberately separate results: protocol-aware tools
 can determine whether a package is valid, while guided authoring can help a
-person or agent examine semantic completeness without presenting that judgment
-as protocol conformance.
+person or agent understand and improve the authored surface without searching
+for semantic completeness or presenting judgment as protocol conformance.
 
 ## Install
 
@@ -21,6 +21,7 @@ import {
   auditPackage,
   createAuthoringWorkspace,
   createAuthorEvaluation,
+  formatAuthoringStarterPrompt,
   inspectAuthoringWorkspace,
   inspectCapabilityConformance,
   inspectPackage,
@@ -44,6 +45,7 @@ const audit = await auditPackage("./my-seedspec-package", {
   toolVersion: "my-authoring-tool@1.0.0"
 });
 console.log(audit.current?.instructions);
+console.log(formatAuthoringStarterPrompt());
 
 const capability = await inspectCapabilityConformance(
   "./my-seedspec-package",
@@ -53,10 +55,13 @@ const capability = await inspectCapabilityConformance(
 console.log(capability.status);
 ```
 
-The preparation, publish-check, evaluation, and pack functions are headless
-operations used by the CLI and suitable for a future web authoring interface.
-Their JSON results are versioned, while semantic agent work remains explicit
-and outside the runtime.
+The authoring instructions are a self-contained operating brief for natural,
+source-bound co-authoring. Review threads remain private agent scaffolding
+instead of becoming a user-facing wizard or report. The preparation,
+publish-check, evaluation, and pack functions are headless operations used by
+the CLI and suitable for a future web authoring interface. Their JSON results
+are versioned, while semantic agent work remains explicit and outside the
+runtime.
 
 `inspectAuthoringWorkspace` returns a path-independent, versioned snapshot with
 an opaque workspace identity, a content-derived revision, draft document

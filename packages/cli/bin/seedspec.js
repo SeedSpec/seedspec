@@ -24,6 +24,9 @@ import {
   formatArtifactValidation,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatAuthoringStarterPrompt,
+  listAuthoringSchemas,
+  readAuthoringSchema,
   formatAuthoringWorkspaceCreation,
   formatAuthoringWorkspaceSnapshot,
   formatAuthorEvaluation,
@@ -82,6 +85,7 @@ const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experime
 
 Usage:
   seedspec author
+  seedspec author prompt
   seedspec author status [package-path] [--json]
   seedspec author review [package-path] [--area <area>] [--summary]
   seedspec author questions [package-path]
@@ -90,6 +94,7 @@ Usage:
   seedspec author evaluate [package-path] [--output <directory>]
   seedspec author pack [package-path] [--output <directory>]
   seedspec author create <package-path> [--target <depth>]
+  seedspec author schema [result]
   seedspec author help
   seedspec prepare <package-path> [--state <directory>] [--status] [--json]
   seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status|--summary] [--json]
@@ -138,24 +143,33 @@ Resolve options:
 
 const AUTHOR_HELP = `SeedSpec authoring
 
-Run this inside a SeedSpec project:
+Start a new package, then author it:
+  npx @seedspec/cli init application --output my-package
+  cd my-package
   npx @seedspec/cli author
+
+Kinds: solution, application, feature, workflow, automation, configuration,
+integration.
 
 Commands:
   author              Find or resume the local authoring workspace
+  author prompt       Print the short prompt to give an authoring agent
   author status       Show the draft and current review
-  author review       Start or continue the current review; add --summary for shorter output
+  author review       Print the complete versioned agent operating brief
   author questions    Show author decisions and unresolved questions
   author check        Check structure, guidance, and publication readiness
   author history      Show completed and current review passes
+  author schema       Print the authoring state schema (author schema result)
   author evaluate     Create an independent handoff evaluation
   author pack         Create the distributable SeedSpec archive
   author help         Show this guide
 
 Paths are optional when the command runs inside a SeedSpec project.
 
-The complete review output is the agent's version-matched work order. The
-optional author-seedspec skill is a convenience, not a prerequisite.
+The starter prompt stays short. The complete review output supplies the
+version-matched role, context boundary, conversation behavior, private review
+model, authority rules, and durable record contract. The optional
+author-seedspec skill is a convenience, not a prerequisite.
 `;
 
 function parseArguments(args) {
@@ -242,11 +256,11 @@ function authorNextCommand(snapshot) {
   if (snapshot.package.status !== "valid") {
     return "Next: update the draft, then run `npx @seedspec/cli author check`.";
   }
-  if (snapshot.review.questions.open > 0) {
-    return "Next: `npx @seedspec/cli author questions`";
-  }
-  if (!snapshot.review.complete) {
+  if (snapshot.review.current || !snapshot.review.complete) {
     return "Next: `npx @seedspec/cli author review`";
+  }
+  if (snapshot.review.questions.open > 0) {
+    return "Optional session questions: `npx @seedspec/cli author questions`";
   }
   return "Next: `npx @seedspec/cli author check`";
 }
@@ -265,11 +279,14 @@ function formatOptionalAuthoringSkillOffer() {
 function formatAuthoringQuestions(snapshot) {
   const questions = snapshot.review.questions.items;
   const lines = [
-    "SeedSpec authoring questions",
+    "SeedSpec authoring-session questions",
     `${snapshot.review.questions.open} open, ${snapshot.review.questions.resolved} resolved`
   ];
-  if (questions.length === 0) return [...lines, "", "No authoring questions recorded."].join("\n");
-  lines.push("");
+  if (questions.length === 0) return [...lines, "", "No authoring-session questions recorded."].join("\n");
+  lines.push(
+    "",
+    "These questions belong to the authoring conversation. They are not automatically package configuration, portable questions, or future implementation work."
+  );
   for (const question of questions) {
     lines.push(`- ${question.id} — ${question.status ?? "open"}`);
     lines.push(`  ${question.question ?? "No question text recorded."}`);
@@ -312,6 +329,8 @@ async function run() {
       const supportedActions = new Set([
         "open",
         "create",
+        "prompt",
+        "schema",
         "status",
         "review",
         "questions",
@@ -337,6 +356,17 @@ async function run() {
       } else if (action === "help") {
         rejectUnknownOptions(options, []);
         process.stdout.write(AUTHOR_HELP);
+      } else if (action === "prompt") {
+        rejectUnknownOptions(options, []);
+        process.stdout.write(`${formatAuthoringStarterPrompt()}\n`);
+      } else if (action === "schema") {
+        rejectUnknownOptions(options, []);
+        const requested = positional[1];
+        if (!requested) {
+          process.stdout.write(`Available authoring schemas: ${listAuthoringSchemas().join(", ")}\n`);
+        } else {
+          process.stdout.write(`${JSON.stringify(await readAuthoringSchema(requested), null, 2)}\n`);
+        }
       } else {
         const allowedOptions = {
           open: ["state", "json"],
@@ -376,7 +406,9 @@ async function run() {
             target: oneOption(options, "target"),
             stateDirectory: context.stateRoot,
             toolVersion: CLI_VERSION,
-            statusOnly: options.has("status")
+            // `--summary` is a shorter human view, so it reads without
+            // starting a pass. Only a bare `review` begins work.
+            statusOnly: options.has("status") || options.has("summary")
           });
           process.stdout.write(options.has("json")
             ? `${JSON.stringify(result, null, 2)}\n`

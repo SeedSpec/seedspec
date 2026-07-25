@@ -1,145 +1,109 @@
 ---
 name: create-feature-package
-description: Turn a feature idea into a validated SeedSpec feature package, either for an existing resolved SeedSpec project or as a standalone reusable capability. Use when defining a feature before implementation, adding durable core intent to a project, declaring required and provided capabilities, documenting integration behavior, or generalizing an application-specific feature for reuse.
+description: Turn supplied feature intent into a valid SeedSpec feature seed for an existing project or standalone reuse. Use when defining or revising a feature package without inventing host requirements, integration behavior, or product completeness.
 ---
 
-# Create SeedSpec feature package
+# Create a SeedSpec feature package
 
-Define the feature's portable behavior before changing application code. Keep the origin application, portable package, and project-specific integration decisions distinct.
+Capture the feature behavior the author actually wants. A one-sentence feature
+can be a useful seed. Do not require it to become a generalized capability,
+integration design, or exhaustive product contract before it can be shared.
 
-Accept starting material ranging from a one-sentence feature idea to an existing requirements document, prototype, implementation, or structured specification. Capture sparse material honestly before attempting to shape, harden, or generalize it. Do not invent host capabilities or integration guarantees merely to make the feature appear reusable.
+## Establish the authored context
 
-## 1. Select the context
+For an existing resolved SeedSpec project, inspect its local `.seedspec` state
+and host package before asking about concepts already defined there. Treat that
+material as context, not permission to enlarge the requested feature.
 
-For an existing project, read these files when present:
+For a standalone feature, keep host assumptions abstract only when the author
+actually wants reuse. Do not invent required capabilities or integration
+guarantees to make the feature appear portable.
 
-- `.seedspec/project.yaml`;
-- `.seedspec/resolved-intent.yaml`;
-- `.seedspec/resolved-spec.md`;
-- `.seedspec/resolved-config.yaml`;
-- `.seedspec/dependencies.lock.yaml`;
-- existing feature integration records;
-- the host application's SeedSpec package.
+Review only the supplied surface:
 
-Reuse known actors, product terminology, permissions, configuration decisions, units, and capabilities. Do not ask questions already answered by project state.
+- Absence is not a gap.
+- Evaluate actors, permissions, workflows, state, failures, retries,
+  concurrency, deletion, or history only when the author introduces them.
+- A finding must cite authored material that creates ambiguity, contradiction,
+  a broken dependency, or an incomplete declared option.
+- Broader feature or reuse brainstorming is opt-in and remains optional until
+  the author accepts it.
 
-For a standalone feature, identify the smallest host capabilities and authority concepts needed to express the feature without an originating application's private language.
+## Create the practical minimum
 
-## 2. Discover behavior
+Run:
 
-Define:
+```bash
+seedspec init feature --output <package-path>
+```
 
-- intended outcome and affected actors;
-- required host capabilities;
-- new concepts and provided capabilities;
-- workflows, permissions, state transitions, and invariants;
-- configurable variations;
-- integration points and atomicity expectations;
-- failure, retry, concurrency, deletion, and historical behavior;
-- observable acceptance criteria and credible verification plans;
-- non-goals, forbidden states, and genuine constraints; and
-- choices fixed by the author, reserved for the end user, or delegated to the
-  implementing agent.
+Then replace the scaffold with:
 
-Ask only unresolved questions that materially affect behavior, authorization, data treatment, or portability. Put reversible representative values in example configuration, but do not describe the example as an end-user-selected default.
+- `seed.md`, describing the behavior added or changed and, when supplied, the
+  host context; and
+- `success.md`, describing at least one observable result supported by that
+  seed.
 
-## 3. Set the portability boundary
+Keep the generated configuration empty unless the author deliberately offers
+variation. Keep the generated compatibility scope honest, but do not treat it
+as proof that a realization is compatible.
 
-Use `compatibility.scope` deliberately:
+Capabilities, integration material, decisions, profiles, tasks, artifacts,
+skills, reference code, and conformance suites are optional. Add one only when
+the supplied intent or existing project already depends on it, or when the
+author accepts it during explicit brainstorming.
 
-- `generic` when only abstract capabilities and authority concepts are required;
-- `domain` when behavior depends on a stable domain;
-- `application` when the feature cannot faithfully exist outside named applications.
+## Represent declared relationships
 
-Do not claim generic compatibility merely because names can be changed. Remove unnecessary screen, route, framework, publisher, and host-specific assumptions.
+When the author does introduce reusable or host-dependent behavior:
 
-Compatibility scope records where the author intended or tested the feature. It
-does not prove compatibility or incompatibility with a realization.
+- require only host capabilities the feature actually uses;
+- provide only durable behavior the feature actually adds;
+- use stable namespaced capability IDs and the protocol's declared revision
+  semantics;
+- describe host mappings or atomicity only when they are part of the authored
+  feature boundary;
+- place deliberately selectable product behavior in configuration; and
+- keep framework, hosting, repository layout, and other implementation
+  preferences outside portable feature intent.
 
-## 4. Declare capabilities and configuration
+Configuration is not an unresolved-question bucket. A declared option needs a
+meaning, effect, valid boundary, and relevant success observation.
 
-Require only capabilities whose behavior the feature uses. Provide only durable product behavior the feature adds. Use reverse-DNS capability IDs, an exact `tested_against` revision for each required capability, and one Markdown contract per provided capability. When revising a provided capability, add a contiguous structured change-history transition whose breaking, additive, or clarifying entries agree with the version bump. When behavior has a stable checkable surface, optionally ship a version-bound conformance suite with honest partial or full coverage; keep schemas, scenarios, and eval bundles subordinate to the expressive contract. Missing, multiple, cyclic, self-provided, or revision-different declarations are severity-ranked integration-review signals, not installation gates or observations of the actual host.
+When generalizing an existing feature, propose each removal or abstraction and
+wait for author acceptance. Generalization must not silently change the
+feature's outcome merely to broaden its compatibility label.
 
-Turn variable product behavior into JSON Schema-backed configuration. Keep implementation preferences outside feature configuration. When a configured behavior needs a host operation not guaranteed by declared capabilities, document it as an explicit integration requirement or unresolved decision; never silently approximate it.
+## Co-author and validate
 
-## 5. Create and validate the package
+Run the version-matched guided review:
 
-Run `seedspec init feature --output <package-path>` when available, then write:
+```bash
+seedspec author review
+```
 
-- `seedspec.yaml` with feature kind, tested-against requirements, versioned provisions, compatibility, known conflicts, durable decisions, and components;
-- a capability contract for every provided capability;
-- structured change history for revised capabilities and optional checkable
-  conformance material where it detects meaningful defects;
-- one primary intent source with clear **Purpose**, **Obligations and
-  boundaries**, **Success and evidence**, and **Decision latitude** semantics;
-- configuration schema and example;
-- `integration/requirements.md` with host mappings, authorization, atomicity, and unresolved-decision rules;
-- `acceptance/criteria.md` with observable host-independent behavior.
+Keep the review threads private rather than presenting them as headings or an
+audit report. Default to a brief reflection of the feature and one question,
+with one grounded concern at a time.
 
-If the author knows a useful realization sequence, optionally add a `tasks`
-runbook containing ordered agent reminders. Each task has only a stable `id`,
-an `instruction`, and optional package-file `references`. Do not turn feature
-requirements into a backlog or add task dependencies, checkpoints, progress,
-or completion claims; array order is sufficient.
+Do not search archived workspaces, history, sibling documents, or engine code
+for additional sources. Show an exact package change only after the author says
+they want to address the concern, then wait for explicit acceptance before
+applying it.
 
-Use native SeedSpec Markdown for the primary intent unless the author already
-uses a recognized external intent format. To make an external document such as
-ProductSpec the primary source, declare it as an intent artifact and reference
-its ID from `definition.artifact`; its path must equal `definition.entrypoint`.
-This does not activate the format's workflow.
-
-Preserve other useful specifications, designs, execution plans, infrastructure
-descriptions, and package evidence as supporting artifacts. Label their
-concerns and relationships without claiming they govern the implementing agent.
-Use `evidence_for` only for package claims, never as proof of the future host
-realization.
-
-At packaging time, optionally select independently versioned skills,
-instructions, verification material, tools, or target profiles that materially
-help implement this feature. Let the author choose usage and additional-guidance
-policy. Associate resources with capabilities or targets only as discovery
-context, not implementation-state evidence, and include a digest-verified
-bundled failsafe when offline or version-unavailable operation matters.
-Treat bundled skills as package-scoped guidance that agents explicitly consult;
-do not assume frontmatter installs or automatically invokes them, and do not put
-feature behavior or success criteria only in the skill.
-
-Validate and inspect:
+Then run:
 
 ```bash
 seedspec validate <package-path>
-seedspec inspect <package-path>
-seedspec artifacts <package-path>
-seedspec resources <package-path>
+seedspec lint <package-path>
+seedspec digest <package-path>
+seedspec publish-check <package-path>
 ```
 
-When a host application is available, resolve them together in a temporary project:
+When a host is available, an optional temporary `seedspec resolve` can reveal
+real integration questions. Those observed questions may inform the seed; a
+generic feature checklist may not.
 
-```bash
-seedspec resolve <root-package-path> --add <feature-path> --output <temporary-path>
-```
-
-Repair structural errors. Inspect declaration review records and confirm the
-resolved specification preserves both packages' intent without presenting those
-records as compatibility verdicts.
-
-## 6. Generalize for reuse
-
-When asked to generalize an existing feature:
-
-1. Remove private project details and replace narrow actor names with roles.
-2. Separate invariants from origin-specific choices.
-3. Convert legitimate variations into configuration.
-4. Minimize and document required capabilities.
-5. Replace host screen and storage assumptions with integration outcomes.
-6. Add acceptance criteria that can run against a clean host context.
-7. Separate non-goals from forbidden states and name the agent's decision
-   latitude.
-8. Reassess compatibility scope honestly.
-9. Validate and resolve again without relying on undocumented origin context.
-
-Continue with `seedspec prepare <package-path>` and let the author resolve each
-material question. Before distribution, require `seedspec publish-check
-<package-path>` and create the archive with `seedspec pack <package-path>`.
-Use `seedspec eval <package-path>` when a fresh-agent handoff attempt would
-provide useful, narrowly scoped feedback about the feature specification.
+Publish readiness requires stable valid bytes and separate, non-placeholder
+success material. The four private review threads and a fresh-agent evaluation are
+optional tools, not completeness gates.

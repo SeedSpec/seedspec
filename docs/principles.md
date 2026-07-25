@@ -237,12 +237,15 @@ sparse but honest idea is preferable to invented completeness.
 
 Authoring tools may help a user progressively:
 
-1. capture the source idea;
-2. shape actors, outcomes, workflows, and concepts;
-3. harden permissions, invariants, failures, and acceptance behavior;
-4. analyze feature candidates, capability context, and related artifacts.
-5. select or decline reusable implementation resources and decide whether
-   additional discovery is delegated to the implementing agent.
+1. understand and clarify the source idea without enlarging its subject;
+2. resolve contradictions created by authored claims;
+3. define observable success aligned with the seed; and
+4. understand and refine configuration or supporting material the package
+   actually declares.
+
+The absence of a common domain topic is not a gap. Broader product exploration
+is available when the author explicitly requests it and remains optional until
+accepted.
 
 Not every author must complete every stage before using or sharing a SeedSpec.
 

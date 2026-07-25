@@ -20,6 +20,8 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
+  readAuthoringSchema,
+  AUTHORING_INSTRUCTION_FORMAT,
   AUTHORING_RESULT_FORMAT,
   AUTHORING_WORKSPACE_OPERATION_FORMAT,
   AUTHORING_WORKSPACE_SNAPSHOT_FORMAT,
@@ -37,6 +39,7 @@ import {
   discoverFeatures,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatAuthoringStarterPrompt,
   formatPackageAgentPrompt,
   formatPackageBeginning,
   inspectPackage,
@@ -86,8 +89,9 @@ async function completeAuthoringReview(packagePath, stateDirectory) {
       toolVersion: "0.2.0"
     });
     const result = parseYaml(await readFile(audit.current.result, "utf8"));
-    result.outcome = "completed";
-    result.summary = `Completed ${audit.current.area} for publishing test.`;
+    result.outcome = "reviewed";
+    result.disposition = "good-enough";
+    result.summary = `Reviewed ${audit.current.area} for publishing test.`;
     result.package_digest_after = audit.package.digest;
     result.validation.protocol_valid = true;
     result.validation.commands = [
@@ -245,7 +249,7 @@ test("kind is a tooling hint rather than a composition gate", async (t) => {
   assert.equal(customKind.manifest.kind, "com.example.kind.agent");
 });
 
-test("kind-aware linting separates protocol validity from authoring feedback", async (t) => {
+test("source-bound linting separates protocol validity from authored-content feedback", async (t) => {
   const output = await temporaryDirectory(t);
   const packagePath = path.join(output, "integration-lint");
   await cp(allowance, packagePath, { recursive: true });
@@ -280,9 +284,45 @@ test("kind-aware linting separates protocol validity from authoring feedback", a
   assert.ok(codes.includes("CORE_INTENT_MAY_CONTAIN_IMPLEMENTATION_DETAIL"));
   assert.ok(codes.includes("KIND_SCOPE_MAY_INCLUDE_APPLICATION_UI"));
   assert.ok(codes.includes("PROFILE_CONDITION_IS_QUESTION"));
+  assert.ok(!codes.includes("KIND_RECOMMENDED_CONCEPT_MISSING"));
 });
 
-test("authoring audit emits a versioned agent pass and advances without a next command", async (t) => {
+test("a sparse seed does not acquire invented domain gaps and separate success is the readiness floor", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "ice-cream");
+  await initPackage("application", packagePath);
+  await writeFile(
+    path.join(packagePath, "seed.md"),
+    "# Ice cream shop\n\nCreate a friendly website where people can browse ice cream and place an order.\n",
+    "utf8"
+  );
+  await writeFile(
+    path.join(packagePath, "success.md"),
+    "# Success\n\nA visitor can browse available ice cream, place an order, and see a confirmation.\n",
+    "utf8"
+  );
+
+  const lint = await lintPackage(packagePath);
+  assert.deepEqual(lint.diagnostics, []);
+  assert.doesNotMatch(JSON.stringify(lint), /tax|refund|identity|retry|hosting|accessibility/iu);
+
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  delete manifest.components;
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+  const withoutSuccess = await lintPackage(packagePath);
+  assert.ok(withoutSuccess.diagnostics.some(
+    ({ code }) => code === "SUCCESS_MATERIAL_UNDECLARED"
+  ));
+  const publish = await publishCheckPackage(packagePath, {
+    stateDirectory: path.join(output, "authoring"),
+    toolVersion: "0.2.3-test"
+  });
+  assert.equal(publish.ready, false);
+  assert.equal(publish.checks.find(({ id }) => id === "success-material").status, "failed");
+});
+
+test("authoring review is source-bound and advances after an author disposition", async (t) => {
   const output = await temporaryDirectory(t);
   const stateDirectory = path.join(output, "authoring-state");
   const first = await auditPackage(allowance, {
@@ -291,23 +331,37 @@ test("authoring audit emits a versioned agent pass and advances without a next c
     toolVersion: "0.1.0-test"
   });
 
-  assert.equal(first.current.id, "0001-concern-separation");
+  assert.equal(first.current.id, "0001-seed");
   assert.equal(first.result_format, AUTHORING_RESULT_FORMAT);
-  assert.equal(first.current.area, "concern-separation");
+  assert.equal(first.current.area, "seed");
   assert.equal(first.areas.length, AUTHORING_AREAS.length);
-  assert.match(first.current.instructions, /The package, not the conversation, is the durable source of truth/);
-  assert.match(first.current.instructions, /no `next` command is required/);
-  assert.match(formatAuthoringAudit(first), /1\. Concern separation — in-progress/);
-  assert.match(formatAuthoringAudit(first), /After this pass is completed: 2 of 7 — Kind-aware discovery/);
+  assert.equal(first.instruction_format, AUTHORING_INSTRUCTION_FORMAT);
+  assert.match(first.current.instructions, /useful starting seed/);
+  assert.match(first.current.instructions, /four review threads organize your private attention/);
+  assert.match(first.current.instructions, /Absence is not a gap/);
+  assert.match(first.current.instructions, /restriction on what may become a finding; it is not an instruction to search/);
+  assert.match(first.current.instructions, /Do not announce `Area 1 of 4`/);
+  assert.match(first.current.instructions, /two to five conversational sentences and one clear question/);
+  assert.match(first.current.instructions, /Do not narrate searches, files read, commands run, archived history/);
+  assert.match(first.current.instructions, /Save cross-document inconsistency, stale counts/);
+  assert.match(first.current.instructions, /Every factual claim in the response must come directly from the active authored material/);
+  assert.match(first.current.instructions, /one or two plain sentences reflecting the central product direction/);
+  assert.match(first.current.instructions, /Active attached sources: none/);
+  assert.doesNotMatch(first.current.instructions, /Current source documentation|github\.com\/SeedSpec\/seedspec\/blob/);
+  assert.match(formatAuthoringAudit(first), /^# SeedSpec authoring agent operating brief/m);
+  assert.doesNotMatch(formatAuthoringAudit(first), /Internal review progress:/);
+  assert.match(formatAuthoringAudit(first, { statusOnly: true }), /1\. The seed — in-progress/);
+  assert.match(formatAuthoringAudit(first, { statusOnly: true }), /Next private focus after review: Coherence/);
   assert.match(
     formatAuthoringAudit(first, { summary: true }),
-    /Review progress: 0 of 7 areas completed/
+    /Review progress: 0 of 4 areas reviewed/
   );
   assert.doesNotMatch(formatAuthoringAudit(first, { summary: true }), /## Area objective/);
 
   const result = parseYaml(await readFile(first.current.result, "utf8"));
-  result.outcome = "completed";
-  result.summary = "The package separates durable intent from implementation material.";
+  result.outcome = "reviewed";
+  result.disposition = "good-enough";
+  result.summary = "The author reviewed the supplied seed and accepted its current depth.";
   result.package_digest_after = first.package.digest;
   result.validation.commands = [
     "seedspec validate <package-path>",
@@ -320,8 +374,8 @@ test("authoring audit emits a versioned agent pass and advances without a next c
     stateDirectory,
     toolVersion: "0.1.0-test"
   });
-  assert.equal(second.current.id, "0002-kind-aware-discovery");
-  assert.equal(second.areas[0].status, "completed");
+  assert.equal(second.current.id, "0002-coherence");
+  assert.equal(second.areas[0].status, "reviewed");
   assert.equal(second.areas[1].status, "in-progress");
 
   const status = await auditPackage(allowance, {
@@ -330,28 +384,30 @@ test("authoring audit emits a versioned agent pass and advances without a next c
     statusOnly: true
   });
   assert.equal(status.current.id, second.current.id);
-  assert.match(formatAuthoringAudit(status, { statusOnly: true }), /Run `seedspec audit/);
+  assert.match(formatAuthoringAudit(status, { statusOnly: true }), /Run `seedspec author review`/);
 });
 
-test("authoring audit supports targeted areas and keeps state outside the package", async (t) => {
+test("authoring review supports source-bound targeted areas and keeps state outside the package", async (t) => {
   const output = await temporaryDirectory(t);
   const targeted = await auditPackage(hubspotMetric, {
-    area: "material-ambiguity",
+    area: "coherence",
     stateDirectory: path.join(output, "hubspot-authoring"),
     toolVersion: "0.1.0-test"
   });
-  assert.equal(targeted.current.id, "0001-material-ambiguity");
-  assert.match(targeted.current.instructions, /two or more plausible interpretations/);
-  assert.match(formatAuthoringDocumentation("material-ambiguity"), /Material ambiguity objective/);
+  assert.equal(targeted.current.id, "0001-coherence");
+  assert.match(targeted.current.instructions, /two cited authored claims/);
+  assert.match(targeted.current.instructions, /Do not infer gaps from topics the package never introduces/);
+  assert.match(targeted.current.instructions, /ask whether the author wants to address it before drafting replacement wording/);
+  assert.match(formatAuthoringDocumentation("coherence"), /Coherence objective/);
 
-  const provenance = await auditPackage(allowance, {
-    area: "decision-provenance",
-    stateDirectory: path.join(output, "allowance-decisions"),
+  const support = await auditPackage(allowance, {
+    area: "supporting-material",
+    stateDirectory: path.join(output, "allowance-support"),
     toolVersion: "0.1.0-test"
   });
-  assert.match(provenance.current.instructions, /A greater author share is not inherently better/);
-  assert.match(provenance.current.instructions, /normative, preferred, or illustrative/);
-  assert.match(formatAuthoringDocumentation("decision-provenance"), /Decision provenance objective/);
+  assert.match(support.current.instructions, /The absence of any optional item is valid/);
+  assert.match(support.current.instructions, /Configuration is deliberate authored product variation/);
+  assert.match(formatAuthoringDocumentation("supporting-material"), /Configuration and supporting material objective/);
 
   await assert.rejects(
     auditPackage(allowance, {
@@ -362,7 +418,7 @@ test("authoring audit supports targeted areas and keeps state outside the packag
   );
 });
 
-test("completed authoring passes accept pinned npm CLI commands", async (t) => {
+test("reviewed authoring areas accept pinned npm CLI commands", async (t) => {
   const output = await temporaryDirectory(t);
   const stateDirectory = path.join(output, "authoring-state");
   const audit = await auditPackage(allowance, {
@@ -370,7 +426,8 @@ test("completed authoring passes accept pinned npm CLI commands", async (t) => {
     toolVersion: "0.1.0-test"
   });
   const result = parseYaml(await readFile(audit.current.result, "utf8"));
-  result.outcome = "completed";
+  result.outcome = "reviewed";
+  result.disposition = "good-enough";
   result.summary = "Validated through the exact npm CLI package.";
   result.validation.commands = [
     "npx --yes @seedspec/cli@0.2.0 validate package",
@@ -383,7 +440,77 @@ test("completed authoring passes accept pinned npm CLI commands", async (t) => {
     stateDirectory,
     toolVersion: "0.1.0-test"
   });
-  assert.equal(advanced.current.area, "kind-aware-discovery");
+  assert.equal(advanced.current.area, "coherence");
+});
+
+test("an active source-bound pass receives the latest conversation and record brief without a reset", async (t) => {
+  const output = await temporaryDirectory(t);
+  const stateDirectory = path.join(output, "authoring-state");
+  const first = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.3.0-test"
+  });
+  const requestPath = path.join(first.current.root, "request.yaml");
+  const instructionsPath = path.join(first.current.root, "instructions.md");
+  const request = parseYaml(await readFile(requestPath, "utf8"));
+  request.authoring_instruction_version = "0.4";
+  await writeFile(requestPath, stringifyYaml(request), "utf8");
+  await writeFile(instructionsPath, "# Older source-bound instructions\n", "utf8");
+  const resultPath = first.current.result;
+  const result = parseYaml(await readFile(resultPath, "utf8"));
+  result.outcome = "needs-author";
+  result.summary = "Reflected the seed and asked the author to confirm it.";
+  result.inventory.push({
+    path: "definition/solution.md",
+    note: "Primary intent"
+  });
+  result.questions.asked.push("Is this still the intended direction?");
+  await writeFile(resultPath, stringifyYaml(result), "utf8");
+
+  const status = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.4.0-test",
+    statusOnly: true
+  });
+  assert.equal(
+    parseYaml(await readFile(requestPath, "utf8")).authoring_instruction_version,
+    "0.4"
+  );
+  assert.match(status.current.instructions, /Older source-bound instructions/);
+
+  const refreshed = await auditPackage(allowance, {
+    stateDirectory,
+    toolVersion: "0.4.0-test"
+  });
+  assert.equal(
+    parseYaml(await readFile(requestPath, "utf8")).authoring_instruction_version,
+    AUTHORING_INSTRUCTION_FORMAT
+  );
+  assert.match(refreshed.current.instructions, /Conversation behavior/);
+  assert.match(refreshed.current.instructions, /Do not announce `Area 1 of 4`/);
+  assert.match(refreshed.current.instructions, /not a transcript or activity log/);
+  assert.match(refreshed.current.instructions, /keep `summary` exactly empty/);
+  assert.match(refreshed.current.instructions, /State the product direction, clarification, or authored choice/);
+  const preserved = parseYaml(await readFile(resultPath, "utf8"));
+  assert.equal(preserved.outcome, "needs-author");
+  assert.equal(
+    preserved.summary,
+    "Reflected the seed and asked the author to confirm it."
+  );
+  assert.equal(preserved.inventory[0].note, "Primary intent");
+  assert.equal(
+    preserved.questions.asked[0],
+    "Is this still the intended direction?"
+  );
+});
+
+test("the authoring starter prompt is short and delegates detail to the CLI brief", () => {
+  const prompt = formatAuthoringStarterPrompt();
+  assert.equal(
+    prompt,
+    "Co-author the SeedSpec in this directory with me. Run `npx @seedspec/cli author review` and follow the complete operating brief it returns. Do not change package documents without my explicit approval."
+  );
+  assert.doesNotMatch(prompt, /source-bound|review area|configuration|success material/iu);
 });
 
 test("authoring audit status is read-only and accepts portable workspace paths", async (t) => {
@@ -395,7 +522,7 @@ test("authoring audit status is read-only and accepts portable workspace paths",
     statusOnly: true
   });
   assert.equal(emptyStatus.passes.length, 0);
-  assert.match(formatAuthoringAudit(emptyStatus, { statusOnly: true }), /No authoring pass exists/);
+  assert.match(formatAuthoringAudit(emptyStatus, { statusOnly: true }), /No guided review exists/);
   await assert.rejects(access(missingState), { code: "ENOENT" });
 
   const stateDirectory = path.join(output, "reviews", "allowance");
@@ -443,7 +570,7 @@ test("authoring workspace snapshots are path-independent and survive invalid dra
   assert.match(first.workspace.revision, /^sha256:[0-9a-f]{64}$/u);
   assert.equal(first.package.status, "valid");
   assert.equal(first.package.digest, audit.package.digest);
-  assert.equal(first.review.current.id, "0001-concern-separation");
+  assert.equal(first.review.current.id, "0001-seed");
   assert.equal(first.review.questions.items[0].source, "<package>/definition/feature.md");
   assert.ok(first.documents.some((document) => document.path === "seedspec.yaml"));
   assert.doesNotMatch(JSON.stringify(first), new RegExp(output.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
@@ -539,7 +666,7 @@ test("authoring workspace discovery follows conventional layouts from nested dir
   assert.equal(discovered.stateExists, true);
 });
 
-test("authoring status reports progress between completed review passes", () => {
+test("authoring status reports progress between reviewed areas", () => {
   const text = formatAuthoringWorkspaceSnapshot({
     workspace: {},
     package: {
@@ -553,17 +680,17 @@ test("authoring status reports progress between completed review passes", () => 
       questions: { open: 0, resolved: 0 },
       current: null,
       complete: false,
-      passes: [{ id: "0001", area: "concern-separation", outcome: "completed" }],
+      passes: [{ id: "0001", area: "seed", outcome: "reviewed" }],
       areas: [
-        { index: 1, id: "concern-separation", status: "completed" },
-        { index: 2, id: "kind-aware-discovery", status: "not-audited" }
+        { index: 1, id: "seed", status: "reviewed" },
+        { index: 2, id: "coherence", status: "not-audited" }
       ],
       diagnostics: []
     }
   });
 
-  assert.match(text, /Review: 1 of 2 complete/u);
-  assert.match(text, /Next review: kind-aware-discovery/u);
+  assert.match(text, /Review: 1 of 2 reviewed/u);
+  assert.match(text, /Next review: coherence/u);
   assert.doesNotMatch(text, /Review: not started/u);
 });
 
@@ -2163,23 +2290,25 @@ test("all structured resolved state conforms to protocol schemas", async (t) => 
 
 test("init creates valid starter packages for every kind hint", async (t) => {
   const output = await temporaryDirectory(t);
-  const expectedSection = new Map([
-    ["solution", "### Boundaries"],
-    ["application", "### Actors and permissions"],
-    ["feature", "### Host boundary"],
-    ["workflow", "### Stages and handoffs"],
-    ["automation", "### Trigger or schedule"],
-    ["configuration", "### Desired state"],
-    ["integration", "### Concept and data mappings"]
-  ]);
-  for (const [kind, section] of expectedSection) {
+  const kinds = [
+    "solution",
+    "application",
+    "feature",
+    "workflow",
+    "automation",
+    "configuration",
+    "integration"
+  ];
+  for (const kind of kinds) {
     const packagePath = path.join(output, kind);
     await initPackage(kind, packagePath);
     const record = await validatePackage(packagePath);
     assert.equal(record.manifest.kind, kind);
-    assert.match(record.definition, new RegExp(section));
-    assert.match(record.definition, /## Success and evidence/);
-    assert.match(record.definition, /## Decision latitude/);
+    assert.equal(record.manifest.definition.entrypoint, "seed.md");
+    assert.equal(record.manifest.components.acceptance, "success.md");
+    assert.match(record.definition, /## Seed/);
+    assert.match(record.definition, /short honest seed is valid/);
+    assert.match(await readFile(path.join(packagePath, "success.md"), "utf8"), /result that someone could observe/);
   }
 });
 
@@ -2194,18 +2323,25 @@ test("preparation, author evaluation, publish checking, and packing form one hea
     toolVersion: "0.2.0"
   });
   assert.equal(preparation.preparation_version, "1");
-  assert.equal(preparation.phase, "guided-review");
-  assert.equal(preparation.review.current.area, "concern-separation");
+  assert.equal(preparation.phase, "ready-to-pack");
+  // Preparation reports readiness without starting work or changing the
+  // author's coaching depth. Asking "am I ready?" must not open a review pass.
+  assert.equal(preparation.review.current, null);
+  await assert.rejects(
+    readFile(path.join(stateDirectory, "passes", "0001-seed", "result.yaml"), "utf8"),
+    (error) => error.code === "ENOENT"
+  );
 
-  const blocked = await publishCheckPackage(packagePath, {
+  const beforeReview = await publishCheckPackage(packagePath, {
     stateDirectory,
     toolVersion: "0.2.0"
   });
-  assert.equal(blocked.ready, false);
+  assert.equal(beforeReview.ready, true);
   assert.equal(
-    blocked.checks.find(({ id }) => id === "authoring-review").status,
-    "failed"
+    beforeReview.checks.find(({ id }) => id === "authoring-review").status,
+    "advisory"
   );
+  assert.equal(beforeReview.checks.find(({ id }) => id === "success-material").status, "passed");
 
   const evaluation = await createAuthorEvaluation(packagePath, {
     outputDirectory: path.join(output, "evaluations", "first"),
@@ -2325,7 +2461,7 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.match(beginning.stdout, /CONFIGURATION_EXAMPLE_REQUIRES_REVIEW/);
   assert.match(beginning.stdout, /Discovery does not activate supporting material/);
   assert.match(inspection.stdout, /Requires: org\.seedspec\.core\.actors \(tested against 1\.0\.0\)/);
-  assert.match(lint.stdout, /Kind-aware authoring review: Profiled Workflow Fixture/);
+  assert.match(lint.stdout, /Source-bound authoring review: Profiled Workflow Fixture/);
   assert.match(lint.stdout, /Kind hint: workflow/);
   assert.match(inspection.stdout, /Components: acceptance, integration/);
   assert.match(artifacts.stdout, /ProductSpec/);
@@ -2351,16 +2487,16 @@ test("installation doctor verifies the exact release and bundled suite", async (
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
 
-test("CLI audit emits agent instructions, status, and bundled documentation", async (t) => {
+test("CLI review emits source-bound agent instructions, status, and bundled documentation", async (t) => {
   const output = await temporaryDirectory(t);
   const stateDirectory = path.join(output, "authoring-state");
   const cli = path.join(root, "packages/cli/bin/seedspec.js");
   const audit = await execFileAsync(process.execPath, [
     cli,
-    "audit",
+    "review",
     hubspotMetric,
     "--area",
-    "material-ambiguity",
+    "coherence",
     "--target",
     "harden",
     "--state",
@@ -2368,7 +2504,7 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
   ]);
   const status = await execFileAsync(process.execPath, [
     cli,
-    "audit",
+    "review",
     hubspotMetric,
     "--state",
     stateDirectory,
@@ -2378,16 +2514,18 @@ test("CLI audit emits agent instructions, status, and bundled documentation", as
     cli,
     "docs",
     "authoring",
-    "material-ambiguity"
+    "coherence"
   ]);
 
   assert.match(audit.stdout, /Tool version: `0\.2\.3`/);
-  assert.match(audit.stdout, /Area: 3 of 7 — Material ambiguity/);
-  assert.match(audit.stdout, /no `next` command is required/);
-  assert.match(status.stdout, /3\. Material ambiguity — in-progress/);
+  assert.match(audit.stdout, /Internal focus: 2 of 4 — Coherence/);
+  assert.match(audit.stdout, /Absence is not a gap/);
+  assert.match(audit.stdout, /After recording a reviewed disposition, rerun `seedspec author review`/);
+  assert.doesNotMatch(audit.stdout, /Internal review progress:/);
+  assert.match(status.stdout, /2\. Coherence — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
   assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.3/);
-  assert.match(docs.stdout, /Material ambiguity objective/);
+  assert.match(docs.stdout, /Coherence objective/);
 });
 
 test("CLI creates an authoring workspace around an empty draft", async (t) => {
@@ -2599,5 +2737,73 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await assert.rejects(
     runConformanceSuite(indexPath),
     (error) => error.code === "INVALID_CONFORMANCE_SUITE"
+  );
+});
+
+test("historical authoring passes stay readable and never block a command", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+
+  // Open a pass, then corrupt its result the way a hand-editing agent does.
+  const opened = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+  await writeFile(opened.current.result, "authoring_result_version: \"9.9\"\nthis: [is, broken\n", "utf8");
+
+  // Every read surface must survive it rather than throwing INVALID_AUTHORING_RESULT.
+  const status = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0",
+    statusOnly: true
+  });
+  assert.equal(status.passes[0].outcome, "unreadable");
+  assert.ok(status.notices.some(({ code }) => code === "AUTHORING_PASS_UNREADABLE"));
+
+  // And review recovers by opening fresh work instead of dead-ending.
+  const recovered = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+  assert.equal(recovered.current.area, "seed");
+  assert.notEqual(recovered.current.id, opened.current.id);
+});
+
+test("editing a package after review is advisory, not a blocked command", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+
+  await completeAuthoringReview(packagePath, stateDirectory);
+  await writeFile(
+    path.join(packagePath, "definition", "feature.md"),
+    `${await readFile(path.join(packagePath, "definition", "feature.md"), "utf8")}\n\nA later clarification.\n`,
+    "utf8"
+  );
+
+  const after = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0",
+    statusOnly: true
+  });
+  const stale = after.notices.find(({ code }) => code === "AUTHORING_REVIEW_STALE");
+  assert.ok(stale, "changing a reviewed package should report staleness");
+  assert.equal(stale.severity, "advisory");
+
+  // Publishing must remain possible; guided review is advisory for packing.
+  const check = await publishCheckPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+  assert.equal(check.ready, true);
+});
+
+test("the authoring result contract is published rather than implied", async () => {
+  const schema = await readAuthoringSchema("result");
+  assert.equal(schema.$id, "https://seedspec.dev/schemas/authoring/v1/authoring-pass-result.schema.json");
+  for (const field of ["outcome", "disposition", "summary", "questions", "changes", "validation"]) {
+    assert.ok(schema.properties[field], `${field} must be documented`);
+  }
+  assert.deepEqual(
+    schema.properties.disposition.enum,
+    ["pending", "improved", "good-enough", "not-relevant"]
+  );
+  await assert.rejects(
+    readAuthoringSchema("nope"),
+    (error) => error.code === "UNKNOWN_AUTHORING_SCHEMA"
   );
 });

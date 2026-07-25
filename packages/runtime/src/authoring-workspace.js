@@ -17,7 +17,8 @@ export const AUTHORING_WORKSPACE_SNAPSHOT_FORMAT = "1";
 export const AUTHORING_WORKSPACE_OPERATION_FORMAT = "1";
 export const AUTHORING_WORKSPACE_REVISION_ALGORITHM = "seedspec-authoring-workspace-sha256-v1";
 
-const TERMINAL_OUTCOMES = new Set(["completed", "abandoned", "superseded"]);
+const TERMINAL_OUTCOMES = new Set(["reviewed", "completed", "abandoned", "superseded"]);
+const SATISFIED_OUTCOMES = new Set(["reviewed", "completed"]);
 const RESOLVED_QUESTION_STATUSES = new Set(["resolved", "closed", "rejected"]);
 
 function lexicalCompare(left, right) {
@@ -153,9 +154,22 @@ export async function discoverAuthoringWorkspace(startPath = process.cwd()) {
     const candidates = await discoveryCandidates(directory);
     if (candidates.length === 1) return candidates[0];
     if (candidates.length > 1) {
+      // A live workspace beside an unstarted suggestion is not ambiguous; the
+      // started one is the answer. Only two real workspaces need the author.
+      const started = candidates.filter((candidate) => candidate.stateExists);
+      if (started.length === 1) return started[0];
+      if (started.length === 0 && candidates.length > 0) {
+        const preferred = candidates.find(
+          (candidate) => path.basename(candidate.packageRoot) === "seedspec"
+        );
+        if (preferred) return preferred;
+      }
       throw new SeedSpecError("More than one SeedSpec authoring workspace was found", {
         code: "AMBIGUOUS_AUTHORING_WORKSPACE",
-        details: candidates.map(({ packageRoot }) => packageRoot)
+        details: [
+          ...candidates.map(({ packageRoot }) => packageRoot),
+          "Pass an explicit package path, or add --state <directory> to choose one."
+        ]
       });
     }
     const parent = path.dirname(directory);
@@ -166,8 +180,11 @@ export async function discoverAuthoringWorkspace(startPath = process.cwd()) {
   throw new SeedSpecError("No SeedSpec authoring project was found here", {
     code: "AUTHORING_WORKSPACE_NOT_FOUND",
     details: [
-      "Run this command inside a SeedSpec project.",
-      "To start a package explicitly, use `seedspec author create <package-path>`."
+      "To start a new package, run: seedspec init application --output <path>",
+      "  (kinds: solution, application, feature, workflow, automation, configuration, integration)",
+      "Then change into that directory and run: seedspec author",
+      "To add authoring state to a draft you already have, run: seedspec author create <package-path>",
+      "Discovery looks in the current directory and its parents; it does not search subdirectories."
     ]
   });
 }
@@ -467,7 +484,7 @@ export async function inspectAuthoringWorkspace(inputPath, {
         items: sanitizeValue(review.questions.items, replacements)
       },
       diagnostics: review.diagnostics,
-      complete: review.areas.every((area) => area.status === "completed")
+      complete: review.areas.every((area) => SATISFIED_OUTCOMES.has(area.status))
     }
   };
 }
@@ -578,10 +595,10 @@ export function formatAuthoringWorkspaceSnapshot(snapshot) {
   } else if (snapshot.review.complete) {
     lines.push("Review: complete");
   } else if (snapshot.review.passes.length > 0) {
-    const completed = snapshot.review.areas.filter(({ status }) => status === "completed").length;
-    const next = snapshot.review.areas.find(({ status }) => status !== "completed");
+    const completed = snapshot.review.areas.filter(({ status }) => SATISFIED_OUTCOMES.has(status)).length;
+    const next = snapshot.review.areas.find(({ status }) => !SATISFIED_OUTCOMES.has(status));
     lines.push(
-      `Review: ${completed} of ${snapshot.review.areas.length} complete`,
+      `Review: ${completed} of ${snapshot.review.areas.length} reviewed`,
       `Next review: ${next?.id ?? "available"}`
     );
   } else {

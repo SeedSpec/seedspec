@@ -46,7 +46,7 @@ findings](docs/evaluations.md).
 
 | Layer | Role |
 | --- | --- |
-| **SeedSpec Authoring** | Guided audits, skills, and frontends help authors capture intent, expose material ambiguity, record decision provenance, and prepare a useful handoff. |
+| **SeedSpec Authoring** | Source-bound conversations, skills, and frontends help authors clarify the seed they supplied, resolve contradictions, define observable success, and understand included supporting material. |
 | **SeedSpec Protocol** | The package and handoff contract defines semantic roles, identity, configuration, composition, integrity, resolution, and scoped verification state. |
 | **SeedSpec Runtime and CLI** | Reference tools validate, inspect, author, configure, resolve, and prepare packages for an agent without executing package content implicitly. |
 | **Implementation environments** | User-chosen agents and tools adapt resolved intent to a real codebase, external system, workflow, or other target and record scoped evidence. |
@@ -71,8 +71,9 @@ the canonical source for both the protocol and first-party tooling.
 
 - A **valid package** satisfies protocol structure and semantic validation. It
   is not automatically a strong or complete seed.
-- A **completed authoring review** records that the requested review areas were
-  examined. It does not eliminate every unknown or certify quality.
+- A **reviewed authoring area** records that the author improved it, accepted
+  it as good enough, or marked it irrelevant. It does not eliminate unknowns or
+  certify quality.
 - A **resolved handoff** preserves selected package material, user choices, and
   provenance for one implementation context. It does not prove the guidance was
   followed.
@@ -122,10 +123,12 @@ Explicit paths remain available for automation and unusual layouts.
 
 The authoring workflow combines deterministic protocol checks with agent-guided
 semantic review. The CLI does not embed a model or silently rewrite package
-content. Its full review output is the agent work order; the `--summary` option
-is the shorter human-facing form. The front door may offer a bundled
-project-local authoring skill, but it must ask before exporting it and the skill
-is never required.
+content. `npx @seedspec/cli author prompt` prints the short prompt a person gives
+an agent; the full review output then supplies the self-contained operating
+brief. Its review threads stay private while the author gets a short, natural
+conversation about the seed. The `--summary` option is the shorter human-facing
+CLI form. The front door may offer a bundled project-local authoring skill, but
+it must ask before exporting it and the skill is never required.
 
 See [authoring guidance](docs/authoring.md), [kind-aware authoring](docs/kind-guidance.md),
 [preparing and publishing](docs/publishing.md), and the bundled authoring skills
@@ -176,8 +179,8 @@ behavior](docs/runtime.md) for the complete lifecycle.
 
 - A compact declarative package format inside a wider handoff and composition
   protocol.
-- Kind-aware authoring audits, bundled guidance, package scaffolding, linting,
-  and authoring skills.
+- Four private source-bound authoring threads, bundled guidance, minimal
+  seed-and-success scaffolding, linting, and authoring skills.
 - A resumable preparation workflow, independent-agent evaluation workspace,
   publish gate, deterministic package archive, and digest-bound sidecars.
 - A generic CLI and JavaScript runtime for validation, inspection, authoring,

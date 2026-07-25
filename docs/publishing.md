@@ -1,79 +1,62 @@
 # Preparing and publishing a SeedSpec package
 
 > **Informative guidance.** These tools prepare portable package bytes and
-> evidence about the preparation process. They do not certify package quality,
-> publisher identity, or a future realization.
+> evidence about preparation. They do not certify completeness, package
+> quality, publisher identity, or a future realization.
 
-`seedspec prepare` is the resumable author entry point. It orchestrates
-protocol checks and the existing guided review without embedding a model or
-silently changing the package:
+The reference publishing floor is deliberately small:
 
-```bash
-seedspec prepare <package-path>
-seedspec prepare <package-path> --status
-```
+1. the package is structurally valid;
+2. two consecutive validations produce the same package digest; and
+3. the package declares a separate, non-placeholder Markdown success
+   component.
 
-Run the same command after each agent pass or author decision. Durable state,
-not an in-memory wizard cursor, determines what happens next.
+Guided authoring review and local authoring-session questions are reported as
+advisories. They do not block a valid seed from being packed.
 
-## Preparation phases
-
-1. **Baseline** validates package structure, referenced content, portable paths,
-   and digest stability, then reports deterministic kind-aware diagnostics.
-   This phase is automatic and does not claim semantic completeness.
-2. **Guided review** emits one versioned work order at a time across concern
-   separation, kind-aware discovery, material ambiguity, decision provenance,
-   internal consistency, progressive hardening, and an independent handoff
-   review. The author and their agent do the semantic work.
-3. **Author resolution** keeps consequential questions outside the
-   distributable package until the author answers, rejects, or deliberately
-   defers them. The CLI never invents an answer to advance the workflow.
-4. **Publish check** requires stable valid bytes, completed review records, and
-   no open authoring questions. Lint findings remain visible advisories unless a
-   publisher imposes a stricter policy.
-5. **Agent evaluation** is optional. It creates a digest-bound workspace and
-   instructions for a fresh agent to attempt an independent handoff, record
-   blockers and deviations, and return narrowly classified package
-   improvements to the author.
-6. **Pack** writes a deterministic `tar+gzip` archive and sidecar inspection,
-   publish-check, and pack-receipt JSON files outside the source package.
-
-Every phase is available as a headless JSON operation. A CLI, web interface,
-desktop application, or hosted service can render the same state without
-reimplementing protocol rules.
-
-## Review with an agent
-
-`review` is the author-facing name for the existing `audit` operation; both
-commands read and write the same state:
+## Inspect readiness
 
 ```bash
-seedspec review <package-path> --state <authoring-state>
-seedspec review <package-path> --status --json
+npx @seedspec/cli author check
 ```
 
-The command prints the current work order and the exact result file the agent
-must update. Completing a pass records that the area was examined; it is not a
-score or certification.
-
-## Run a publish check
+Or with explicit paths:
 
 ```bash
 seedspec publish-check <package-path> --state <authoring-state>
 ```
 
-The process exits unsuccessfully when a blocking check fails. Its JSON form is
-versioned and safe for a publishing UI to consume:
+The JSON result separates blocking checks from advisories:
+
+- `protocol-valid` is blocking;
+- `digest-stable` is blocking;
+- `success-material` is blocking;
+- `authoring-review` is advisory when some guided areas remain;
+- `open-authoring-questions` is advisory because those questions belong to the
+  current session; and
+- deterministic lint findings are advisory.
+
+An organization or catalog may require a stronger review profile. That policy
+belongs to that publisher and must not be presented as universal SeedSpec
+validity.
+
+## Guided review
+
+Use the source-bound co-authoring review when it adds value:
 
 ```bash
-seedspec publish-check <package-path> \
-  --state <authoring-state> \
-  --json
+npx @seedspec/cli author review
 ```
 
-## Evaluate the handoff
+Four private threads organize the agent's attention and durable record without
+becoming author-facing steps. The author may improve a thread, accept its
+material as good enough, or mark it irrelevant. Review records help explain how
+the seed was considered; they are not a score. See
+[SeedSpec Authoring](authoring.md).
 
-Create the optional harness outside the package:
+## Evaluate an independent handoff
+
+A fresh-agent evaluation remains optional:
 
 ```bash
 seedspec eval <package-path> --output <evaluation-directory>
@@ -84,30 +67,22 @@ The workspace contains:
 - `eval-request.json`, binding the exact package and protocol release;
 - `agent-instructions.md`, describing a fresh-context evaluation procedure;
   and
-- `eval-result.yaml`, a structured place to record scope, agent and model,
-  observations, blockers, deviations, evidence, limitations, and proposed
-  package improvements.
+- `eval-result.yaml`, recording the scenario, agent, observations, evidence,
+  limitations, and proposed improvements.
 
-If the package digest changes, create a new workspace. A successful attempt
-supports only the specific scenario and environment recorded in the result. A
-failed attempt may expose a package problem, an agent limitation, a tool
-failure, an environmental constraint, or a deliberately delegated decision;
-the evaluator must distinguish them.
-
-## Export bundled skills
-
-The CLI archive includes the version-matched authoring and adoption skills:
-
-```bash
-seedspec skills list
-seedspec skills export --output .agents/skills
-seedspec skills export --skill create-application-package \
-  --output .agents/skills
-```
-
-Export is explicit and refuses to overwrite a skill with the same ID.
+An evaluation finding must distinguish a package defect from an implementing
+agent limitation, environment constraint, deliberately unconstrained choice,
+or tool failure. Evaluation may deliberately explore beyond the authored
+surface because the author explicitly requested an implementation handoff test;
+its proposals still require author acceptance.
 
 ## Pack
+
+```bash
+npx @seedspec/cli author pack
+```
+
+Or:
 
 ```bash
 seedspec pack <package-path> \
@@ -115,16 +90,27 @@ seedspec pack <package-path> \
   --output <release-directory>
 ```
 
-Packing refuses to run until the publish check is ready. It also refuses to
-write inside the package or overwrite an existing release artifact. The
-receipt binds:
+Packing refuses to write inside the package or overwrite an existing release
+artifact. It writes:
 
-- seed ID, author-controlled version, protocol family, and package digest;
-- exact protocol release and release-manifest digest;
-- archive name, format, root, and digest; and
-- the accompanying versioned inspection and publish-check records.
+- a deterministic `tar+gzip` package archive;
+- a package inspection record;
+- the publish-check result; and
+- a digest-bound receipt.
 
-`pack` prepares artifacts only. It does not register or upload a package, set
-commercial terms, or create third-party trust claims. The resulting archive can
-be copied, stored, or shared through any channel without changing package
-identity or conformance.
+The receipt binds the package ID, author-controlled version, protocol release,
+package digest, archive digest, and output names. It does not register or upload
+the package, set commercial terms, activate packaged content, or claim that a
+realization exists.
+
+## Optional bundled skill
+
+The CLI archive contains a version-matched `author-seedspec` skill:
+
+```bash
+seedspec skills list
+seedspec skills export --skill author-seedspec --output .agents/skills
+```
+
+Export is explicit and refuses to overwrite a skill with the same ID. The
+skill is a convenience; the full CLI work order remains sufficient by itself.

@@ -13,11 +13,13 @@
   ],
   "type": "module",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./schemas/authoring/v1/*": "./schemas/authoring/v1/*"
   },
   "files": [
     "src",
-    "README.md"
+    "README.md",
+    "schemas"
   ],
   "scripts": {
     "test": "node --test"

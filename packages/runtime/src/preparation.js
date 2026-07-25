@@ -17,34 +17,30 @@ export async function preparePackage(inputPath, {
     validatePackage(inputPath),
     lintPackage(inputPath)
   ]);
+  // Preparation reports readiness; it never starts a review pass or changes the
+  // author's coaching depth. Silently resetting `target` to "package" as a side
+  // effect of asking "am I ready?" discarded an in-flight session's setting.
   const review = await auditPackage(inputPath, {
     stateDirectory,
-    target: statusOnly ? undefined : "package",
     toolVersion,
-    statusOnly
+    statusOnly: true
   });
 
-  let publishCheck = null;
-  let phase;
-  if (!review.complete) {
-    phase = review.current?.outcome === "needs-author"
+  const publishCheck = await publishCheckPackage(inputPath, {
+    stateDirectory,
+    toolVersion
+  });
+  const phase = publishCheck.ready
+    ? "ready-to-pack"
+    : review.current?.outcome === "needs-author"
       ? "author-resolution"
-      : "guided-review";
-  } else {
-    publishCheck = await publishCheckPackage(inputPath, {
-      stateDirectory,
-      toolVersion
-    });
-    phase = publishCheck.ready ? "ready-to-pack" : "final-check";
-  }
+      : "final-check";
 
   const phaseStatuses = {
     baseline: "completed",
-    "guided-review": review.complete ? "completed" : "active",
-    "author-resolution": review.questions.open > 0 ? "active" : "available",
-    "publish-check": !publishCheck
-      ? "pending"
-      : publishCheck.ready ? "completed" : "blocked",
+    "guided-review": review.complete ? "completed" : review.current ? "available" : "optional",
+    "author-resolution": review.questions.open > 0 ? "available" : "not-needed",
+    "publish-check": publishCheck.ready ? "completed" : "blocked",
     "agent-evaluation": "optional",
     pack: publishCheck?.ready ? "ready" : "pending"
   };
@@ -67,17 +63,17 @@ export async function preparePackage(inputPath, {
       {
         id: "guided-review",
         status: phaseStatuses["guided-review"],
-        purpose: "Work through the seven versioned review lenses with an author and capable agent."
+        purpose: "Optionally work through four source-bound conversations; good enough is a valid outcome."
       },
       {
         id: "author-resolution",
         status: phaseStatuses["author-resolution"],
-        purpose: "Resolve consequential questions without inventing answers or hiding deferred judgment."
+        purpose: "Resolve questions from the current authoring session when the author chooses; they are not automatically package obligations."
       },
       {
         id: "publish-check",
         status: phaseStatuses["publish-check"],
-        purpose: "Confirm stable bytes, completed review records, and no open authoring questions."
+        purpose: "Confirm stable valid bytes and a separate package-authored success document."
       },
       {
         id: "agent-evaluation",
@@ -95,9 +91,7 @@ export async function preparePackage(inputPath, {
     publish_check: publishCheck,
     next_command: phase === "ready-to-pack"
       ? `seedspec pack ${JSON.stringify(record.root)}`
-      : phase === "final-check"
-        ? `seedspec publish-check ${JSON.stringify(record.root)}`
-        : `seedspec prepare ${JSON.stringify(record.root)} --state ${JSON.stringify(review.state)}`
+      : `seedspec publish-check ${JSON.stringify(record.root)}`
   };
 }
 

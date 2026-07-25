@@ -83,17 +83,25 @@ Protocol validity establishes that a package can be interpreted. It cannot
 establish that an author discovered the important product rules or supplied
 enough context for a strong realization.
 
-The reference authoring workflow addresses that separate problem. Its guided
-audits help an author or authoring agent:
+The reference authoring workflow addresses that separate problem through four
+private source-bound review threads:
 
-1. separate intent, configuration, acceptance, design, and implementation
-   guidance;
-2. apply a kind-aware review lens without imposing a rigid template;
-3. identify ambiguity that could materially change behavior or authority;
-4. record decision provenance and preserve genuine unknowns;
-5. check consistency across the package;
-6. harden a seed progressively rather than manufacture completeness; and
-7. inspect the handoff an independent implementing agent will actually receive.
+1. explain and, when the author chooses, clarify the seed they actually
+   supplied;
+2. resolve contradictions and meaning on which existing authored claims
+   depend;
+3. keep a separate observable success definition aligned with the seed; and
+4. inventory and review declared configuration, decisions, skills, assets,
+   artifacts, reference code, and other supporting material.
+
+These threads organize agent attention and durable state; they are not visible
+wizard steps or report headings. The author instead gets a short, natural
+conversation about the thing they want to make.
+
+Absence is not a gap. The default reviewer may not use a kind or domain
+checklist to manufacture missing requirements. Broader ideation remains
+available when the author explicitly asks for it, but its results are optional
+suggestions until accepted.
 
 This is why structure and tooling should be evaluated together. Empty folders
 do not add expertise. Stable semantic roles plus guided authoring create a

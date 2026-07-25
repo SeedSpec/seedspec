@@ -55,6 +55,7 @@ export async function publishCheckPackage(inputPath, {
       statusOnly: true
     })
   ]);
+  const successDiagnostics = lint.diagnostics.filter(({ code }) => code.startsWith("SUCCESS_MATERIAL_"));
 
   const checks = [
     check(
@@ -70,18 +71,25 @@ export async function publishCheckPackage(inputPath, {
         : `${record.digest} then ${secondRecord.digest}`
     ),
     check(
+      "success-material",
+      successDiagnostics.length === 0 ? "passed" : "failed",
+      successDiagnostics.length === 0
+        ? `Declared at ${record.manifest.components.acceptance}`
+        : successDiagnostics.map(({ message }) => message).join(" ")
+    ),
+    check(
       "authoring-review",
-      review.complete ? "passed" : "failed",
+      review.complete ? "passed" : "advisory",
       review.complete
-        ? `${review.areas.length} guided review areas completed`
-        : `${review.areas.filter((area) => area.status === "completed").length}/${review.areas.length} guided review areas completed`
+        ? `${review.areas.length} guided areas reviewed`
+        : `${review.areas.filter((area) => ["reviewed", "completed"].includes(area.status)).length}/${review.areas.length} optional guided areas reviewed`
     ),
     check(
       "open-authoring-questions",
-      review.questions.open === 0 ? "passed" : "failed",
+      review.questions.open === 0 ? "passed" : "advisory",
       review.questions.open === 0
-        ? "No open authoring questions"
-        : `${review.questions.open} open authoring question(s)`
+        ? "No open session questions"
+        : `${review.questions.open} open authoring-session question(s); these are not automatically package content or future work`
     ),
     check(
       "lint-advisories",
@@ -113,7 +121,8 @@ export async function publishCheckPackage(inputPath, {
       open_questions: review.questions.open
     },
     limitations: [
-      "Publish readiness confirms protocol integrity and completed review records; it does not certify package quality.",
+      "Publish readiness confirms protocol integrity, stable bytes, and separate success material; it does not certify package quality or completeness.",
+      "Guided authoring review and local session-question closure are advisory, not universal publication gates.",
       "Lint diagnostics are advisories unless a publisher applies a stricter policy.",
       "No implementation or outcome claim is created by this check."
     ]

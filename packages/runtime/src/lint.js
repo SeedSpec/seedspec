@@ -1,54 +1,5 @@
+import { readMarkdownComponent } from "./files.js";
 import { validatePackage } from "./validate.js";
-
-const kindGuidance = Object.freeze({
-  solution: [
-    ["outcome", ["outcome", "purpose", "accomplish", "result"]],
-    ["boundaries", ["boundary", "scope", "out of scope", "depends"]],
-    ["success", ["success", "acceptance", "conformance", "evidence", "verify"]]
-  ],
-  application: [
-    ["actors", ["actor", "user", "role", "guardian", "customer", "operator"]],
-    ["permissions", ["permission", "authorize", "access", "may ", "cannot"]],
-    ["workflows or state", ["workflow", "state", "transition", "lifecycle"]],
-    ["failure behavior", ["failure", "fails", "error", "retry", "conflict"]],
-    ["observable success", ["acceptance", "conformance", "evidence", "verify"]]
-  ],
-  feature: [
-    ["host boundary", ["host", "existing", "application", "solution"]],
-    ["capability or integration expectations", ["capability", "integration", "requires", "provides"]],
-    ["configurable behavior", ["configuration", "configurable", "variation"]],
-    ["failure behavior", ["failure", "fails", "error", "retry", "conflict"]],
-    ["observable success", ["acceptance", "conformance", "evidence", "verify"]]
-  ],
-  workflow: [
-    ["participants", ["participant", "actor", "user", "agent", "system", "owner"]],
-    ["stages or handoffs", ["step", "stage", "handoff", "workflow", "then"]],
-    ["trigger or starting condition", ["trigger", "starts", "begin", "schedule", "event"]],
-    ["failure and recovery", ["failure", "fails", "retry", "recover", "duplicate"]],
-    ["completion evidence", ["complete", "success", "evidence", "verify", "delivery"]]
-  ],
-  automation: [
-    ["trigger or schedule", ["trigger", "schedule", "event", "cadence", "timezone"]],
-    ["operational ownership", ["owner", "operator", "responsible", "on-call"]],
-    ["idempotency or duplicate prevention", ["idempotent", "duplicate", "exactly once"]],
-    ["failure and retry behavior", ["failure", "fails", "retry", "backoff", "dead letter"]],
-    ["observability", ["monitor", "alert", "audit", "evidence", "log"]]
-  ],
-  configuration: [
-    ["desired state", ["desired state", "target state", "configured", "property", "setting"]],
-    ["existing-state discovery", ["existing", "current state", "inspect", "discover"]],
-    ["drift or idempotency", ["drift", "idempotent", "reconcile", "duplicate"]],
-    ["rollback or recovery", ["rollback", "restore", "recover", "revert"]],
-    ["verification evidence", ["verify", "evidence", "audit", "identifier", "screenshot"]]
-  ],
-  integration: [
-    ["participating systems", ["system", "platform", "service", "source", "target"]],
-    ["data or concept mapping", ["mapping", "map ", "transform", "field", "object"]],
-    ["authorization boundary", ["authorization", "permission", "credential", "access", "scope"]],
-    ["direction and synchronization", ["direction", "synchronize", "sync", "source", "target", "inbound", "outbound"]],
-    ["partial failure and retry behavior", ["partial", "failure", "fails", "retry", "idempotent", "duplicate"]]
-  ]
-});
 
 const implementationSignals = Object.freeze([
   ["Next.js", /\bnext\.?js\b/i],
@@ -71,20 +22,6 @@ const uiSignals = /\b(screen|page|route|component|navigation|design system)\b/gi
 
 function diagnostic(code, level, scope, message, suggestion) {
   return { code, level, scope, message, suggestion };
-}
-
-function missingKindConcepts(kind, definition) {
-  const guidance = kindGuidance[kind] ?? kindGuidance.solution;
-  const normalized = definition.toLowerCase();
-  return guidance
-    .filter(([, signals]) => !signals.some((signal) => normalized.includes(signal)))
-    .map(([concept]) => diagnostic(
-      "KIND_RECOMMENDED_CONCEPT_MISSING",
-      "recommendation",
-      "definition",
-      `The ${kind} definition does not clearly address ${concept}.`,
-      `Add ${concept} when it is known and material, or leave the package sparse rather than inventing detail.`
-    ));
 }
 
 function implementationDetailDiagnostics(kind, definition) {
@@ -122,24 +59,6 @@ function implementationProfileDiagnostics(manifest) {
     const scope = `implementation_profiles.${profile.id}`;
     const conditions = [...(profile.prerequisites ?? []), ...(profile.blockers ?? [])];
     const diagnostics = [];
-    if (profiles.length > 1 && conditions.length === 0) {
-      diagnostics.push(diagnostic(
-        "PROFILE_APPLICABILITY_UNSPECIFIED",
-        "recommendation",
-        scope,
-        "This candidate profile declares no prerequisite or blocker condition.",
-        "Describe what makes this profile viable or unsuitable so an agent can compare it with the other candidates."
-      ));
-    }
-    if ((profile.tradeoffs ?? []).length === 0) {
-      diagnostics.push(diagnostic(
-        "PROFILE_TRADEOFFS_UNSPECIFIED",
-        "recommendation",
-        scope,
-        "This implementation profile declares no tradeoff.",
-        "Record only material consequences that help a user and agent compare implementation directions."
-      ));
-    }
     for (const condition of conditions) {
       if (condition.statement.trim().endsWith("?")) {
         diagnostics.push(diagnostic(
@@ -175,18 +94,42 @@ function implementationProfileDiagnostics(manifest) {
   });
 }
 
+async function successMaterialDiagnostics(record) {
+  if (!record.manifest.components?.acceptance) {
+    return [diagnostic(
+      "SUCCESS_MATERIAL_UNDECLARED",
+      "review",
+      "components.acceptance",
+      "The package has no separate author-authored success document.",
+      "Add the smallest success Markdown that describes observable results already supported by the seed."
+    )];
+  }
+  const success = await readMarkdownComponent(record, "acceptance");
+  if (success.trim() === "") {
+    return [diagnostic(
+      "SUCCESS_MATERIAL_EMPTY",
+      "review",
+      "components.acceptance",
+      "The declared success component contains no readable Markdown.",
+      "Add at least one observable result supported by the seed."
+    )];
+  }
+  if (/replace this item|describe observable success|describe at least one result/i.test(success)) {
+    return [diagnostic(
+      "SUCCESS_MATERIAL_PLACEHOLDER",
+      "review",
+      "components.acceptance",
+      "The success document still contains starter placeholder text.",
+      "Replace the placeholder with at least one observable result supported by the seed."
+    )];
+  }
+  return [];
+}
+
 export async function lintPackage(inputPath) {
   const record = await validatePackage(inputPath);
-  const knownKind = Object.hasOwn(kindGuidance, record.manifest.kind);
   const diagnostics = [
-    ...(!knownKind ? [diagnostic(
-      "CUSTOM_KIND_USES_SOLUTION_GUIDANCE",
-      "information",
-      "manifest.kind",
-      `The namespaced kind hint ${record.manifest.kind} has no core authoring profile.`,
-      "Generic tooling will preserve it and apply solution-oriented guidance."
-    )] : []),
-    ...missingKindConcepts(knownKind ? record.manifest.kind : "solution", record.definition),
+    ...await successMaterialDiagnostics(record),
     ...implementationDetailDiagnostics(record.manifest.kind, record.definition),
     ...implementationProfileDiagnostics(record.manifest)
   ];
@@ -203,7 +146,7 @@ export async function lintPackage(inputPath) {
       digest: record.digest
     },
     protocol_valid: true,
-    kind_guidance: knownKind ? record.manifest.kind : "solution",
+    review_basis: "source-bound",
     diagnostics,
     counts
   };
@@ -211,13 +154,14 @@ export async function lintPackage(inputPath) {
 
 export function formatPackageLint(result) {
   const lines = [
-    `Kind-aware authoring review: ${result.package.name}`,
+    `Source-bound authoring review: ${result.package.name}`,
     `Kind hint: ${result.package.kind}`,
+    `Review basis: ${result.review_basis}`,
     `Protocol valid: yes`,
     `Diagnostics: ${result.counts.review} review, ${result.counts.recommendation} recommendation, ${result.counts.information} information`
   ];
   if (result.diagnostics.length === 0) {
-    lines.push("No kind-aware authoring diagnostic was produced. This is not a completeness or quality certification.");
+    lines.push("No source-triggered authoring diagnostic was produced. This is not a completeness or quality certification.");
   } else {
     for (const item of result.diagnostics) {
       lines.push(

@@ -59,7 +59,7 @@ test("author discovers and resumes a conventional workspace without paths", asyn
   assert.doesNotMatch(nested.stdout, /Optional authoring skill/u);
 });
 
-test("author exposes review, questions, history, check, and help under one namespace", async () => {
+test("author exposes prompt, review, questions, history, check, and help under one namespace", async () => {
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
   const projectRoot = path.join(temporaryRoot, "project");
   const packageRoot = path.join(projectRoot, "seedspec");
@@ -68,12 +68,20 @@ test("author exposes review, questions, history, check, and help under one names
   assert.equal(run(["author"], projectRoot).status, 0);
   const review = run(["author", "review", "--status"], projectRoot);
   assert.equal(review.status, 0, review.stderr);
-  assert.match(review.stdout, /SeedSpec authoring audit/u);
+  assert.match(review.stdout, /SeedSpec authoring agent brief/u);
   assert.doesNotMatch(review.stdout, /## Area objective/u);
+
+  const prompt = run(["author", "prompt"], projectRoot);
+  assert.equal(prompt.status, 0, prompt.stderr);
+  assert.equal(
+    prompt.stdout.trim(),
+    "Co-author the SeedSpec in this directory with me. Run `npx @seedspec/cli author review` and follow the complete operating brief it returns. Do not change package documents without my explicit approval."
+  );
+  assert.doesNotMatch(prompt.stdout, /source-bound|review area|configuration|success material/iu);
 
   const questions = run(["author", "questions"], projectRoot);
   assert.equal(questions.status, 0, questions.stderr);
-  assert.match(questions.stdout, /No authoring questions recorded/u);
+  assert.match(questions.stdout, /No authoring-session questions recorded/u);
 
   const history = run(["author", "history"], projectRoot);
   assert.equal(history.status, 0, history.stderr);
@@ -97,8 +105,14 @@ test("author review emits the agent work order by default and shortens it only o
   assert.equal(run(["author"], fullProjectRoot).status, 0);
   const full = run(["author", "review"], fullProjectRoot);
   assert.equal(full.status, 0, full.stderr);
-  assert.match(full.stdout, /## Area objective/u);
-  assert.match(full.stdout, /## Operating contract/u);
+  assert.match(full.stdout, /# SeedSpec authoring agent operating brief/u);
+  assert.match(full.stdout, /## Conversation behavior/u);
+  assert.match(full.stdout, /## Current private focus/u);
+  assert.match(full.stdout, /Absence is not a gap/u);
+  assert.match(full.stdout, /Do not announce `Area 1 of 4`/u);
+  assert.match(full.stdout, /two to five conversational sentences and one clear question/u);
+  assert.match(full.stdout, /Do not narrate searches, files read, commands run, archived history/u);
+  assert.doesNotMatch(full.stdout, /Current source documentation|github\.com\/SeedSpec\/seedspec\/blob/u);
 
   const summaryProjectRoot = path.join(temporaryRoot, "summary-project");
   const summaryPackageRoot = path.join(summaryProjectRoot, "seedspec");
@@ -108,9 +122,9 @@ test("author review emits the agent work order by default and shortens it only o
   const summary = run(["author", "review", "--summary"], summaryProjectRoot);
   assert.equal(summary.status, 0, summary.stderr);
   assert.match(summary.stdout, /SeedSpec authoring summary/u);
-  assert.match(summary.stdout, /Review progress: 0 of 7 areas completed/u);
+  assert.match(summary.stdout, /Review progress: 0 of 4 areas reviewed/u);
   assert.match(summary.stdout, /rerun this review without `--summary`/u);
-  assert.doesNotMatch(summary.stdout, /## Area objective|## Operating contract/u);
+  assert.doesNotMatch(summary.stdout, /## Conversation behavior|## Current private focus/u);
 
   const history = run(["author", "history"], summaryProjectRoot);
   assert.equal(history.status, 0, history.stderr);

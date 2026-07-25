@@ -30,6 +30,7 @@ Common entry points:
 
 ```bash
 seedspec author
+seedspec author prompt
 seedspec author status
 seedspec author review [--summary]
 seedspec author questions
@@ -51,7 +52,7 @@ seedspec validate <package-path>
 seedspec version --json
 seedspec doctor [--full] [--json]
 seedspec audit <package-path>
-seedspec audit <package-path> --area material-ambiguity
+seedspec review <package-path> --area coherence
 seedspec audit <package-path> --status
 seedspec docs authoring
 seedspec inspect <package-path> --json
@@ -91,15 +92,21 @@ mentions the bundled `author-seedspec` skill and tells the agent to ask before
 exporting it into the project. The skill is optional; declining it or using an
 agent without skill support does not change the workflow.
 
-The `status`, `review`, `questions`, `check`, `history`, `evaluate`, and `pack`
-actions place existing authoring capabilities under one discoverable namespace.
-Exact paths, state directories, revisions, and JSON are available for agents
-and automation without defining the beginner experience.
+`seedspec author prompt` prints the short, copyable prompt for a person to give
+an agent. `author review` prints the complete self-contained operating brief:
+role, active context boundary, natural conversation behavior, private review
+model, change authority, and durable record rules. The agent does not need to
+find current documentation or inspect runtime source to learn how to co-author.
 
-`seedspec prepare` moves a package through deterministic baseline checks,
-guided agent review, author resolution, publish checking, an optional
-fresh-agent evaluation, and packing. The command is resumable from durable
-state and explains every phase.
+The `status`, `review`, `questions`, `check`, `history`, `evaluate`, and `pack`
+actions place existing authoring capabilities under one discoverable
+namespace. Exact paths, state directories, revisions, and JSON are available
+for agents and automation without defining the beginner experience.
+
+`seedspec prepare` reports deterministic baseline checks, optional guided
+review, publish readiness, an optional fresh-agent evaluation, and packing. The
+command is resumable from durable state and does not require review completion
+or local question closure before a valid seed can be packed.
 
 `seedspec author create` assigns an opaque workspace identity and initializes
 portable authoring state around an existing, empty, or invalid draft directory.
@@ -113,16 +120,21 @@ deterministic package status, questions, and review passes. It remains readable
 while ordinary draft content is invalid. Human text omits opaque IDs and
 digests unless they are needed; `--json` retains the complete machine contract.
 
-`seedspec review` (also available as `seedspec audit`) creates or continues an authoring review outside the
-distributable package and prints versioned Markdown instructions for a capable
-agent. The same command advances after a completed pass; `--area` targets one
-of the seven review areas. The complete work order is the default output.
+`seedspec review` (also available as the compatibility name `seedspec audit`)
+creates or continues a source-bound authoring review outside the distributable
+package and prints versioned Markdown instructions for a capable agent. Its
+four review threads are private scaffolding, not author-facing wizard steps or
+report headings. The same command advances after a reviewed thread; `--area`
+targets seed, coherence, success, or supporting-material state. The complete
+operating brief is the default output.
 `--summary` starts or continues the same pass but emits a shorter human-facing
 view, while `--status` is read-only. The CLI does not embed a model or modify
 package content. See `seedspec docs authoring` for guidance bundled with the
 installed version.
 
-`seedspec publish-check` enforces the blocking preparation gates.
+`seedspec publish-check` blocks only on protocol integrity, stable bytes, and a
+separate non-placeholder success component. Guided review and local session
+questions are advisories.
 `seedspec eval` creates a digest-bound independent-handoff workspace and agent
 instructions without running a model. `seedspec pack` emits the source archive,
 versioned inspection and publish-check records, and a digest-bound receipt.

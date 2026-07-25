@@ -83,10 +83,12 @@ may reference one or more skills without turning them into core intent.
 
 ## Authoring
 
-- **authoring review**: an informative, tool-supported examination of concern
-  separation, kind-specific coverage, material ambiguity, decision provenance,
-  consistency, progressive depth, and handoff quality. Completing a review does
-  not certify package completeness or realization quality.
+- **authoring review**: an informative, source-bound co-authoring conversation.
+  Private review threads cover the supplied seed, coherence, observable
+  success, and declared configuration or supporting material without becoming
+  user-facing steps. A finding must be triggered by authored material; absence
+  alone is not a gap. A reviewed thread does not certify completeness or
+  realization quality.
 - **authoring state**: sources, candidates, questions, instructions, results,
   and provenance kept outside the distributable package while it is being
   shaped. Authoring state does not become package authority implicitly.
