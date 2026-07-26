@@ -9,4 +9,4 @@
 // against the exact value `author status` hands out, and a second
 // implementation of the same digest would break that agreement silently.
 
-export { computeWorkspaceRevision as computeAuthoringRevision } from "../../authoring-workspace.js";
+export { computeWorkspaceRevision as computeAuthoringRevision } from "../authoring-workspace.js";

@@ -79,7 +79,7 @@ async function resolveActivePass(stateRoot, requested) {
 }
 
 async function currentRevision(packageRoot, stateRoot) {
-  const { computeAuthoringRevision } = await import("./core/revision.js");
+  const { computeAuthoringRevision } = await import("./revision.js");
   return computeAuthoringRevision(packageRoot, stateRoot);
 }
 

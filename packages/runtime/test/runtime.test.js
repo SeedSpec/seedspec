@@ -21,6 +21,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
   answerQuestion,
+  computeWorkspaceRevision,
   attachSource,
   recordObservations,
   reviewArea,
@@ -2999,4 +3000,54 @@ test("a mutation rejects a revision that no longer describes the workspace", asy
     }),
     (error) => error.code === "AUTHORING_REVISION_CONFLICT"
   );
+});
+
+test("workspace revision has exactly one implementation", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  // Decision 0013 forbids a second engine. The revision an operation checks and
+  // the revision `author status` reports must be the same value computed the
+  // same way, or optimistic concurrency fails closed on every honest caller.
+  const snapshot = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const direct = await computeWorkspaceRevision(packagePath, stateDirectory);
+  assert.equal(direct, snapshot.workspace.revision);
+
+  // It must also move when either side changes, and only then.
+  const unchanged = await computeWorkspaceRevision(packagePath, stateDirectory);
+  assert.equal(unchanged, direct);
+  await recordObservations(packagePath, {
+    stateRoot: stateDirectory,
+    entries: [{ type: "inventory", item: "definition/feature.md" }]
+  });
+  assert.notEqual(await computeWorkspaceRevision(packagePath, stateDirectory), direct);
+
+  const afterPackageEdit = await computeWorkspaceRevision(packagePath, stateDirectory);
+  await writeFile(
+    path.join(packagePath, "definition", "feature.md"),
+    `${await readFile(path.join(packagePath, "definition", "feature.md"), "utf8")}\n\nA clarification.\n`,
+    "utf8"
+  );
+  assert.notEqual(await computeWorkspaceRevision(packagePath, stateDirectory), afterPackageEdit);
+});
+
+test("the operation layer stays free of node built-ins", async () => {
+  // core/ must remain portable so the same operations can run over a hosted
+  // store without a second implementation. Storage belongs behind the adapter.
+  const core = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "src",
+    "authoring",
+    "core"
+  );
+  for (const entry of await readdir(core)) {
+    if (!entry.endsWith(".js")) continue;
+    const source = await readFile(path.join(core, entry), "utf8");
+    const imports = source.match(/from "node:[a-z/]+"/g) ?? [];
+    assert.deepEqual(imports, [], `authoring/core/${entry} must not import node built-ins`);
+  }
 });
