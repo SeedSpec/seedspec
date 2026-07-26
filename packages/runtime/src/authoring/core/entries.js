@@ -23,19 +23,31 @@ export const RESULT_COLLECTION = Object.freeze({
   "tooling-feedback": "tooling_feedback"
 });
 
+/**
+ * Every status that closes a question.
+ *
+ * This is the single definition. Read surfaces and the write operation must
+ * agree, or a question closes and keeps reporting itself as open: the same
+ * split-brain that made recorded questions invisible in the first place.
+ *
+ * `not-package-decision` and `routed-to-platform` exist because the earlier
+ * vocabulary forced a false choice between deleting a question and losing the
+ * audit trail, or marking it resolved and misreporting that the author decided
+ * package intent.
+ */
 export const QUESTION_RESOLUTIONS = Object.freeze([
   "resolved",
   "closed",
   "rejected",
-  // A question the author answered by saying it is not theirs to answer. Without
-  // these two, the only options were deleting the question and losing the audit
-  // trail, or marking it resolved and misreporting that the author decided
-  // package intent.
   "not-package-decision",
   "routed-to-platform"
 ]);
 
-export const RESOLVED_QUESTION_STATUSES = Object.freeze(new Set(QUESTION_RESOLUTIONS));
+const RESOLVED_QUESTION_STATUSES = new Set(QUESTION_RESOLUTIONS);
+
+export function isResolvedQuestion(question) {
+  return RESOLVED_QUESTION_STATUSES.has(question?.status);
+}
 
 const REQUIRED_FIELDS = Object.freeze({
   finding: ["source", "assessment"],

@@ -39,6 +39,10 @@ export {
   listAuthoringGuidanceTopics
 } from "./authoring.js";
 export {
+  QUESTION_RESOLUTIONS,
+  isResolvedQuestion
+} from "./authoring/core/entries.js";
+export {
   AUTHORING_OPERATION_FORMAT,
   answerQuestion,
   attachSource,

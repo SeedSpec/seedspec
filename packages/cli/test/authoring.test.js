@@ -16,10 +16,11 @@ const fixture = path.join(
   "conformance/fixtures/comprehensive-application"
 );
 
-function run(arguments_, cwd) {
+function run(arguments_, cwd, input) {
   return spawnSync(process.execPath, [cli, ...arguments_], {
     cwd,
-    encoding: "utf8"
+    encoding: "utf8",
+    input
   });
 }
 
@@ -106,13 +107,22 @@ test("author review emits the agent work order by default and shortens it only o
   const full = run(["author", "review"], fullProjectRoot);
   assert.equal(full.status, 0, full.stderr);
   assert.match(full.stdout, /# SeedSpec authoring agent operating brief/u);
-  assert.match(full.stdout, /## Conversation behavior/u);
-  assert.match(full.stdout, /## Current private focus/u);
+  assert.match(full.stdout, /## How to talk to the author/u);
+  assert.match(full.stdout, /## Current focus/u);
   assert.match(full.stdout, /Absence is not a gap/u);
-  assert.match(full.stdout, /Do not announce `Area 1 of 4`/u);
-  assert.match(full.stdout, /two to five conversational sentences and one clear question/u);
-  assert.match(full.stdout, /Do not narrate searches, files read, commands run, archived history/u);
   assert.doesNotMatch(full.stdout, /Current source documentation|github\.com\/SeedSpec\/seedspec\/blob/u);
+
+  // Every command the brief prints must run for someone with no global
+  // install, so the brief may never emit a bare `seedspec` invocation.
+  const bareInvocations = full.stdout.match(/(?:^|[|(\s])seedspec [a-z]/gmu) ?? [];
+  assert.deepEqual(bareInvocations, [], "brief must invoke the CLI through npx");
+  for (const operation of ["record", "answer", "attach-source", "reviewed"]) {
+    assert.match(
+      full.stdout,
+      new RegExp(`npx @seedspec/cli author ${operation}`, "u"),
+      `${operation} must appear as a runnable command`
+    );
+  }
 
   const summaryProjectRoot = path.join(temporaryRoot, "summary-project");
   const summaryPackageRoot = path.join(summaryProjectRoot, "seedspec");
@@ -124,12 +134,67 @@ test("author review emits the agent work order by default and shortens it only o
   assert.match(summary.stdout, /SeedSpec authoring summary/u);
   assert.match(summary.stdout, /Review progress: 0 of 4 areas reviewed/u);
   assert.match(summary.stdout, /rerun this review without `--summary`/u);
-  assert.doesNotMatch(summary.stdout, /## Conversation behavior|## Current private focus/u);
+  assert.doesNotMatch(summary.stdout, /## How to talk to the author|## Current focus/u);
 
+  // `--summary` is a shorter human view, so peeking must not start work.
+  const afterSummary = run(["author", "history"], summaryProjectRoot);
+  assert.equal(afterSummary.status, 0, afterSummary.stderr);
+  assert.match(afterSummary.stdout, /No review passes recorded/u);
+
+  // A bare review is what begins a thread.
+  assert.equal(run(["author", "review"], summaryProjectRoot).status, 0);
   const history = run(["author", "history"], summaryProjectRoot);
   assert.equal(history.status, 0, history.stderr);
   assert.doesNotMatch(history.stdout, /No review passes recorded/u);
   assert.match(history.stdout, /in-progress/u);
+});
+
+test("a generated operation command preserves apostrophes in author prose", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
+  const projectRoot = path.join(temporaryRoot, "author's project");
+  const packageRoot = path.join(projectRoot, "seedspec");
+  await cp(fixture, packageRoot, { recursive: true });
+
+  assert.equal(run(["author"], projectRoot).status, 0);
+  const review = run(["author", "review"], projectRoot);
+  assert.equal(review.status, 0, review.stderr);
+
+  const recorded = run(
+    ["author", "record", packageRoot, "--json", "-"],
+    projectRoot,
+    JSON.stringify({ entries: [{ type: "question", question: "Is that the direction?" }] })
+  );
+  assert.equal(recorded.status, 0, recorded.stderr);
+  const questionId = JSON.parse(recorded.stdout).recorded[0].id;
+
+  const generated = review.stdout.match(
+    /npx @seedspec\/cli author answer[^\n]+--json - <<'SEEDSPEC_JSON_ANSWER'\n[\s\S]*?\nSEEDSPEC_JSON_ANSWER/u
+  );
+  assert.ok(generated, "the brief must contain the complete answer command");
+
+  const command = generated[0]
+    .replace(
+      "npx @seedspec/cli",
+      `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}`
+    )
+    .replace(
+      '{"question_id":"...","answer":"...","resolution":"resolved"}',
+      JSON.stringify({
+        question_id: questionId,
+        answer: "That's right — don't change it.",
+        resolution: "resolved"
+      })
+    );
+  const answered = spawnSync("/bin/sh", ["-c", command], {
+    cwd: projectRoot,
+    encoding: "utf8"
+  });
+  assert.equal(answered.status, 0, answered.stderr);
+
+  const result = JSON.parse(answered.stdout);
+  assert.equal(result.snapshot.review.questions.open, 0);
+  assert.equal(result.snapshot.review.questions.resolved, 1);
+  assert.equal(result.snapshot.review.questions.items[0].answer, "That's right — don't change it.");
 });
 
 test("the bundled authoring skill can be listed and exported project-locally", async () => {

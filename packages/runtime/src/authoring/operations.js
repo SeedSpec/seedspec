@@ -20,9 +20,9 @@ import { validatePackage } from "../validate.js";
 import {
   AuthoringInputError,
   QUESTION_RESOLUTIONS,
-  RESOLVED_QUESTION_STATUSES,
   RESULT_COLLECTION,
   assignEntryId,
+  isResolvedQuestion,
   normalizeEntry,
   questionRecord,
   validateEntry
@@ -234,7 +234,7 @@ export async function answerQuestion(packageRoot, {
   const question = questions.find(({ id }) => id === questionId);
   if (!question) {
     fail(`Unknown authoring question: ${questionId}`, "UNKNOWN_AUTHORING_QUESTION", [
-      `open: ${questions.filter((item) => !RESOLVED_QUESTION_STATUSES.has(item.status))
+      `open: ${questions.filter((item) => !isResolvedQuestion(item))
         .map(({ id }) => id).join(", ") || "none"}`
     ]);
   }

@@ -8,6 +8,7 @@ import {
   AUTHORING_TARGETS,
   resolveAuthoringStateDirectory
 } from "./authoring.js";
+import { isResolvedQuestion } from "./authoring/core/entries.js";
 import { SeedSpecError } from "./errors.js";
 import { resolvePackageLocation } from "./files.js";
 import { computeDirectoryDigest } from "./integrity.js";
@@ -19,7 +20,7 @@ export const AUTHORING_WORKSPACE_REVISION_ALGORITHM = "seedspec-authoring-worksp
 
 const TERMINAL_OUTCOMES = new Set(["reviewed", "completed", "abandoned", "superseded"]);
 const SATISFIED_OUTCOMES = new Set(["reviewed", "completed"]);
-const RESOLVED_QUESTION_STATUSES = new Set(["resolved", "closed", "rejected"]);
+
 
 function lexicalCompare(left, right) {
   return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
@@ -368,8 +369,8 @@ async function inspectReviewState(stateRoot, stateExists) {
     current,
     questions: {
       total: questionItems.length,
-      open: questionItems.filter((question) => !RESOLVED_QUESTION_STATUSES.has(question?.status)).length,
-      resolved: questionItems.filter((question) => RESOLVED_QUESTION_STATUSES.has(question?.status)).length,
+      open: questionItems.filter((question) => !isResolvedQuestion(question)).length,
+      resolved: questionItems.filter((question) => isResolvedQuestion(question)).length,
       items: questionItems
     },
     diagnostics,

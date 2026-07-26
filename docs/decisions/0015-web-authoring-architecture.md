@@ -1,8 +1,16 @@
 # Decision 0015: Web authoring architecture
 
-- Status: accepted direction; not implemented
+- Status: **proposed**; not accepted and not implemented
 - Date: 2026-07-25
-- Supersedes nothing. Extends [Decision 0013](0013-shared-authoring-engine-and-frontend-contract.md).
+- Supersedes nothing. Would extend [Decision 0013](0013-shared-authoring-engine-and-frontend-contract.md).
+
+> **This is a proposal, not a decision.** The dedicated authoring session owns
+> the CLI and web authoring direction; this record exists so the reasoning
+> gathered while building the operation layer is not lost, and so that session
+> can accept, revise, or reject it. Nothing here is settled, and no storage,
+> identity, tenancy, or model-routing choice below should be treated as chosen.
+>
+> Every "decision" heading in this document should be read as "proposal".
 
 ## Context
 
@@ -12,11 +20,11 @@ CLI came first deliberately: it was the cheapest way to reform the authoring
 skills and observe how different agents, harnesses, and models respond to the
 operating brief.
 
-The operation layer that 0013 specified now exists for the write half —
-recording observations, resolving questions, attaching sources, and closing a
-thread — with revision checking on every mutation. That was the blocking
-prerequisite. A hosted authoring product is now an architecture question rather
-than an engine question.
+Several foundational write operations now exist: recording observations,
+resolving questions, attaching sources, and closing a thread. Each can compare
+an expected workspace revision when the caller supplies one. The proposal and
+acceptance path remains unimplemented, so hosted architecture can be explored
+but cannot move independently of the remaining engine work.
 
 A separate evaluation harness already runs a Cloudflare Think agent against
 SeedSpec packages. It solves several problems a hosted authoring product also
@@ -25,7 +33,7 @@ usage capture — and solves several it does not, because an evaluation binds it
 inputs before the model runs, while authoring creates its inputs through the
 conversation.
 
-## Decision
+## Proposal
 
 ### Sessions bind after the fact, not before
 
@@ -158,7 +166,7 @@ permission authority. No tool accepts a URL.
 Model and gateway are server-selected by plan. Author-supplied routing is a
 billing hole.
 
-## Consequences
+## Consequences if accepted
 
 - The web product cannot ship before the propose/accept operations land.
   Retrofitting attribution is not possible after the fact, so proposal

@@ -5,6 +5,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { SeedSpecError } from "./errors.js";
 import { lintPackage } from "./lint.js";
 import { validatePackage } from "./validate.js";
+import { isResolvedQuestion } from "./authoring/core/entries.js";
 
 export const AUTHORING_INSTRUCTION_FORMAT = "0.5";
 export const AUTHORING_RESULT_FORMAT = "0.3";
@@ -313,11 +314,24 @@ async function listPasses(stateRoot) {
       ? result.outcome
       : undefined;
     // The first genuinely in-flight pass is the one the agent is working on, so
-    // it is the only one whose contract must hold exactly.
+    // it is the only one whose contract must hold exactly. A pass that fails
+    // that contract becomes unreadable rather than an exception: refusing to
+    // run `review` and `check` removed the only commands that could get the
+    // author moving again, and the recovery path is to open fresh work.
     if (!activeClaimed && isActiveOutcome(outcome)) {
-      activeClaimed = true;
-      passes.push({ root, request, result: validateResult(result, request), readable: true, diagnostic: null });
-      continue;
+      try {
+        const validated = validateResult(result, request);
+        activeClaimed = true;
+        passes.push({ root, request, result: validated, readable: true, diagnostic: null });
+        continue;
+      } catch (error) {
+        passes.push(unreadablePass(
+          root,
+          request,
+          `result.yaml does not satisfy the pass contract: ${(error.details ?? [error.message]).join("; ")}`
+        ));
+        continue;
+      }
     }
     if (TERMINAL_OUTCOMES.has(outcome)) {
       passes.push({ root, request, result, readable: true, diagnostic: null });
@@ -381,7 +395,7 @@ function roleInstructions(target) {
     "A SeedSpec is not a complete implementation specification, requirements audit, risk register, or substitute for collaboration during implementation.",
     "The author experiences one natural conversation about what they want to make. The review threads below organize your attention, not theirs.",
     `Current coaching depth: ${targetInstruction(target)}`,
-    "This brief is self-contained. Run `seedspec author guidance --topic <topic>` for more depth instead of inspecting the runtime source, online documentation, or another workspace."
+    "This brief is self-contained. Run `npx @seedspec/cli author guidance --topic <topic>` for more depth instead of inspecting the runtime source, online documentation, or another workspace."
   ];
 }
 
@@ -533,32 +547,45 @@ function authorResponseContract(area) {
   ];
 }
 
+function quoteShellArgument(value) {
+  return `'${String(value).replaceAll("'", "'\"'\"'")}'`;
+}
+
+// Every command here must run as printed for someone with no global install.
+// A quoted heredoc carries arbitrary JSON prose without making the agent escape
+// apostrophes, dollar signs, or backticks for the shell.
 function recordInstructions(pass, packageRoot) {
-  const target = packageRoot ? ` ${packageRoot}` : "";
+  const cli = "npx @seedspec/cli";
+  const target = packageRoot ? ` ${quoteShellArgument(packageRoot)}` : "";
+  const input = (payload, action) => {
+    const delimiter = `SEEDSPEC_JSON_${action.replaceAll("-", "_").toUpperCase()}`;
+    return [
+      `${cli} author ${action}${target} --json - <<'${delimiter}'`,
+      payload,
+      delimiter
+    ];
+  };
   return [
-    "Record through these commands. Each takes one JSON payload on stdin and reports the new state, so you never hand-edit workspace files or transcribe a digest.",
+    "Record through these commands. Each reads one JSON payload from stdin and reports the new state, so you never hand-edit workspace files or transcribe a digest.",
     "",
-    `\`\`\`sh`,
-    `seedspec author record${target} --json -`,
-    `  {"entries": [{"type": "question", "question": "..."},`,
-    `               {"type": "finding", "source": "<path>", "assessment": "..."}]}`,
-    `  types: finding, inventory, contradiction, suggestion, question, tooling-feedback`,
-    ``,
-    `seedspec author answer${target} --json -`,
-    `  {"question_id": "...", "answer": "...", "resolution": "resolved"}`,
-    `  resolution: resolved | closed | rejected | not-package-decision | routed-to-platform`,
-    ``,
-    `seedspec author attach-source${target} --json -`,
-    `  {"source": {"kind": "document", "authority": "author", "location": "...", "summary": "..."}}`,
-    ``,
-    `seedspec author reviewed${target} --json -`,
-    `  {"summary": "what the author confirmed", "disposition": "improved"}`,
-    `  disposition: improved | good-enough | not-relevant`,
-    `\`\`\``,
+    "```sh",
+    "# Findings, questions, inventory, contradictions, suggestions, tooling feedback.",
+    ...input('{"entries":[{"type":"question","question":"..."},{"type":"finding","source":"<path>","assessment":"..."}]}', "record"),
     "",
+    "# The author's answer, or a question they decline to own.",
+    ...input('{"question_id":"...","answer":"...","resolution":"resolved"}', "answer"),
+    "",
+    "# Material the review may draw findings from.",
+    ...input('{"source":{"kind":"document","authority":"author","location":"...","summary":"..."}}', "attach-source"),
+    "",
+    "# Close the current thread.",
+    ...input('{"summary":"what the author confirmed","disposition":"improved"}', "reviewed"),
+    "```",
+    "",
+    "Entry types: `finding`, `inventory`, `contradiction`, `suggestion`, `question`, `tooling-feedback`. Resolutions: `resolved`, `closed`, `rejected`, `not-package-decision`, `routed-to-platform`. Dispositions: `improved`, `good-enough`, `not-relevant`.",
     "The record is substance for a future co-author, not a transcript. A finding cites what triggered it; `summary` states the product direction, clarification, or authored choice the author confirmed, never your activity.",
     "`author reviewed` runs validation, linting, and the digest itself and closes the thread. Declining a suggestion creates no package content and no future work.",
-    `Run \`seedspec author schema result\` to inspect the durable shape these commands write. Pass \`--pass ${pass}\` only when acting on a thread other than the open one.`
+    `Run \`${cli} author schema result\` to inspect the durable shape these commands write. Add \`--pass ${pass}\` only when acting on a thread other than the open one.`
   ];
 }
 
@@ -628,11 +655,11 @@ function formatInstructionsDocument({ request, record, lint, sources, stateRoot 
     "",
     "Each topic is served on request; none of it is required reading up front.",
     "",
-    ...GUIDANCE_TOPICS.map((topic) => `- \`seedspec author guidance --topic ${topic.id}\` — ${topic.summary}`),
+    ...GUIDANCE_TOPICS.map((topic) => `- \`npx @seedspec/cli author guidance --topic ${topic.id}\` — ${topic.summary}`),
     "",
     "## Continue",
     "",
-    "After recording a reviewed disposition, rerun `seedspec author review`. It moves to the next thread. Continue the conversation without announcing the transition."
+    "After recording a reviewed disposition, rerun `npx @seedspec/cli author review`. It moves to the next thread. Continue the conversation without announcing the transition."
   ];
   return `${sections.join("\n")}\n`;
 }
@@ -677,7 +704,7 @@ const GUIDANCE_TOPICS = Object.freeze([
     lines: () => [
       ...recordInstructions("<pass>", "<package-path>"),
       "",
-      "Run `seedspec author schema result` for the enforced field contract."
+      "Run `npx @seedspec/cli author schema result` for the enforced field contract."
     ]
   },
   {
@@ -788,12 +815,11 @@ async function summarizeQuestions(stateRoot) {
       details: [questionsPath]
     });
   }
-  const resolvedStatuses = new Set(["resolved", "closed", "rejected"]);
   return {
     path: questionsPath,
     total: questions.length,
-    open: questions.filter((question) => !resolvedStatuses.has(question.status)).length,
-    resolved: questions.filter((question) => resolvedStatuses.has(question.status)).length
+    open: questions.filter((question) => !isResolvedQuestion(question)).length,
+    resolved: questions.filter((question) => isResolvedQuestion(question)).length
   };
 }
 
@@ -1053,7 +1079,9 @@ export async function auditPackage(inputPath, {
         severity: "advisory",
         pass: pass.request.pass ?? path.basename(pass.root),
         area: pass.request.area ?? null,
-        message: `Historical pass could not be read and is preserved as-is: ${pass.diagnostic}`
+        message: `Pass could not be read and is preserved exactly as it is: ${pass.diagnostic}`,
+        recovery: "Review continues in a new pass for that thread. Run `npx @seedspec/cli author schema result` to see the contract, or leave the record alone and keep working.",
+        result: path.join(pass.root, "result.yaml")
       });
     }
   }
@@ -1191,9 +1219,9 @@ export function formatAuthoringAudit(result, { statusOnly = false, summary = fal
     } else {
       lines.push(`After this focus is reviewed: all ${result.areas.length} internal threads will have reviewed results.`);
     }
-    lines.push("", `Run \`seedspec author review\` from the project, or \`seedspec review <package-path> --state ${JSON.stringify(result.state)}\`, to print the current instructions.`);
+    lines.push("", `Run \`npx @seedspec/cli author review\` from the project, or \`npx @seedspec/cli review <package-path> --state ${JSON.stringify(result.state)}\`, to print the current instructions.`);
   } else if (statusOnly) {
-    lines.push("", "No guided review exists. Run `seedspec author review` to start with the seed itself.");
+    lines.push("", "No guided review exists. Run `npx @seedspec/cli author review` to start with the seed itself.");
   }
   return lines.join("\n");
 }
@@ -1243,7 +1271,7 @@ export function formatAuthoringDocumentation(area) {
     "",
     "The agent keeps thread names, inventory, findings, and record mechanics out of ordinary author-facing conversation. It defaults to a short reflection and one question, surfaces one grounded concern at a time, and shows exact edits only after the author chooses to address the concern.",
     "",
-    "A valid package with separate success material can be packed without completing every optional review. Run `seedspec publish-check`, optionally create a fresh-agent workspace with `seedspec eval`, and create the distributable archive with `seedspec pack`.",
+    "A valid package with separate success material can be packed without completing every optional review. Run `npx @seedspec/cli publish-check`, optionally create a fresh-agent workspace with `npx @seedspec/cli eval`, and create the distributable archive with `npx @seedspec/cli pack`.",
     "Authoring state is stored outside the distributable package. No authoring state is uploaded or exported implicitly."
   );
   return lines.join("\n");

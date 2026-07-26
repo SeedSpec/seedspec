@@ -20,6 +20,7 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
+  QUESTION_RESOLUTIONS,
   answerQuestion,
   computeWorkspaceRevision,
   attachSource,
@@ -362,7 +363,7 @@ test("authoring review is source-bound and advances after an author disposition"
 
   // Depth is served on request rather than embedded up front, because stacked
   // guidance measurably reduced coverage while multiplying cost.
-  assert.match(first.current.instructions, /seedspec author guidance --topic review-model/);
+  assert.match(first.current.instructions, /npx @seedspec\/cli author guidance --topic review-model/);
   assert.doesNotMatch(first.current.instructions, /## Internal review model/);
   assert.match(formatAuthoringGuidance("review-model"), /Coherence/);
   assert.match(formatAuthoringGuidance("source-boundary"), /Absence is not a gap/);
@@ -407,7 +408,7 @@ test("authoring review is source-bound and advances after an author disposition"
     statusOnly: true
   });
   assert.equal(status.current.id, second.current.id);
-  assert.match(formatAuthoringAudit(status, { statusOnly: true }), /Run `seedspec author review`/);
+  assert.match(formatAuthoringAudit(status, { statusOnly: true }), /Run `npx @seedspec\/cli author review`/);
 });
 
 test("authoring review supports source-bound targeted areas and keeps state outside the package", async (t) => {
@@ -513,15 +514,16 @@ test("an active source-bound pass receives the latest conversation and record br
   assert.match(refreshed.current.instructions, /record terms/);
   assert.match(refreshed.current.instructions, /substance for a future co-author, not a transcript/);
   assert.match(refreshed.current.instructions, /states the product direction, clarification, or authored choice/);
-  assert.match(refreshed.current.instructions, /seedspec author schema result/);
+  assert.match(refreshed.current.instructions, /npx @seedspec\/cli author schema result/);
 
   // The record section hands the agent runnable commands against the real
   // package path, rather than an unpublished YAML contract it has to guess at.
   for (const operation of ["record", "answer", "attach-source", "reviewed"]) {
-    assert.match(
-      refreshed.current.instructions,
-      new RegExp(`seedspec author ${operation} ${allowance} --json -`),
-      `${operation} must be offered as a runnable command`
+    assert.ok(
+      refreshed.current.instructions.includes(
+        `npx @seedspec/cli author ${operation} '${allowance}' --json - <<'SEEDSPEC_JSON_${operation.replaceAll("-", "_").toUpperCase()}'`
+      ),
+      `${operation} must be offered as a shell-safe runnable command`
     );
   }
   assert.doesNotMatch(refreshed.current.instructions, /<package-path>/);
@@ -2554,7 +2556,7 @@ test("CLI review emits source-bound agent instructions, status, and bundled docu
   assert.match(audit.stdout, /Tool version: `0\.2\.3`/);
   assert.match(audit.stdout, /Internal focus: 2 of 4 — Coherence/);
   assert.match(audit.stdout, /Absence is not a gap/);
-  assert.match(audit.stdout, /After recording a reviewed disposition, rerun `seedspec author review`/);
+  assert.match(audit.stdout, /After recording a reviewed disposition, rerun `npx @seedspec\/cli author review`/);
   assert.doesNotMatch(audit.stdout, /Internal review progress:/);
   assert.match(status.stdout, /2\. Coherence — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
@@ -3050,4 +3052,84 @@ test("the operation layer stays free of node built-ins", async () => {
     const imports = source.match(/from "node:[a-z/]+"/g) ?? [];
     assert.deepEqual(imports, [], `authoring/core/${entry} must not import node built-ins`);
   }
+});
+
+test("every closing resolution disappears from the open count", async (t) => {
+  // The write path and the read surfaces must share one definition of "closed".
+  // Two resolutions were once accepted by the operation and unknown to every
+  // reader, so a closed question reported itself open forever.
+  for (const resolution of QUESTION_RESOLUTIONS) {
+    const output = await temporaryDirectory(t);
+    const packagePath = path.join(output, `package-${resolution}`);
+    const stateDirectory = path.join(output, `state-${resolution}`);
+    await cp(savings, packagePath, { recursive: true });
+    await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+    const recorded = await recordObservations(packagePath, {
+      stateRoot: stateDirectory,
+      entries: [{ type: "question", question: `Closed via ${resolution}?` }]
+    });
+    const before = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+    assert.equal(before.review.questions.open, 1, `${resolution}: should start open`);
+
+    await answerQuestion(packagePath, {
+      stateRoot: stateDirectory,
+      questionId: recorded.recorded[0].id,
+      answer: "An answer.",
+      resolution
+    });
+
+    // Assert through the read surfaces, not the operation's return value.
+    const snapshot = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+    assert.equal(snapshot.review.questions.open, 0, `${resolution}: must not remain open`);
+    assert.equal(snapshot.review.questions.resolved, 1, `${resolution}: must count as resolved`);
+
+    const audit = await auditPackage(packagePath, {
+      stateDirectory,
+      toolVersion: "0.2.0",
+      statusOnly: true
+    });
+    assert.equal(audit.questions.open, 0, `${resolution}: audit must agree`);
+    assert.equal(audit.questions.resolved, 1, `${resolution}: audit must agree`);
+  }
+});
+
+test("a malformed active pass never blocks the commands that recover it", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  const opened = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  // Semantically malformed: the outcome stays a valid in-flight value, so the
+  // pass is genuinely active, but the record breaks its contract.
+  const result = parseYaml(await readFile(opened.current.result, "utf8"));
+  result.disposition = "bogus";
+  await writeFile(opened.current.result, stringifyYaml(result), "utf8");
+
+  // Every command must keep working, including the two that must run for the
+  // author to make progress.
+  const review = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+  const check = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.2.0",
+    statusOnly: true
+  });
+  await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  await publishCheckPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
+
+  // The author is told what happened and what to do, and work continues.
+  const notice = check.notices.find(({ code }) => code === "AUTHORING_PASS_UNREADABLE");
+  assert.ok(notice, "an unreadable pass must be reported");
+  assert.equal(notice.severity, "advisory");
+  assert.match(notice.message, /does not satisfy the pass contract/);
+  assert.match(notice.recovery, /new pass/);
+  assert.equal(notice.result, opened.current.result);
+
+  assert.equal(review.current.area, "seed");
+  assert.notEqual(review.current.id, opened.current.id);
+
+  // The broken record is preserved exactly, not repaired or deleted.
+  const preserved = parseYaml(await readFile(opened.current.result, "utf8"));
+  assert.equal(preserved.disposition, "bogus");
 });
