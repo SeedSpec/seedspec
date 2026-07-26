@@ -109,17 +109,32 @@ pin an exact version and may add `--yes` to avoid npm's first-run confirmation.
 
 ## Author a package
 
-SeedSpec authoring is intended to be guided rather than a requirement to
-hand-edit every YAML and JSON file:
+Start from nothing:
 
 ```bash
+npx @seedspec/cli init application --output my-package
+cd my-package
 npx @seedspec/cli author
 ```
 
-Run it inside a project containing `seedspec.yaml`, a conventional
-`seedspec/` package, or an existing authoring workspace. It discovers the local
-draft and review state, reports the current work, and suggests the next command.
-Explicit paths remain available for automation and unusual layouts.
+The [quickstart](docs/quickstart-authoring.md) walks through that path end to
+end, and the [worked example](docs/worked-example.md) shows a rough seed
+becoming a strong one.
+
+`author` discovers the local draft and review state, reports the current work,
+and suggests the next command. Run it inside a project containing
+`seedspec.yaml`, a conventional `seedspec/` package, or an existing authoring
+workspace; explicit paths remain available for automation and unusual layouts.
+
+Authoring is guided rather than a requirement to hand-edit YAML and JSON. The
+agent records through operations that validate and write durable state:
+
+```bash
+npx @seedspec/cli author record --json -         # findings, questions, inventory
+npx @seedspec/cli author answer --json -         # the author's answer, or a decline
+npx @seedspec/cli author attach-source --json -  # material the review may cite
+npx @seedspec/cli author reviewed --json -       # close a thread
+```
 
 The authoring workflow combines deterministic protocol checks with agent-guided
 semantic review. The CLI does not embed a model or silently rewrite package
@@ -130,9 +145,10 @@ conversation about the seed. The `--summary` option is the shorter human-facing
 CLI form. The front door may offer a bundled project-local authoring skill, but
 it must ask before exporting it and the skill is never required.
 
-See [authoring guidance](docs/authoring.md), [kind-aware authoring](docs/kind-guidance.md),
-[preparing and publishing](docs/publishing.md), and the bundled authoring skills
-under [`skills/`](skills/).
+See the [documentation index](docs/README.md), [authoring guidance](docs/authoring.md),
+[kind-aware authoring](docs/kind-guidance.md), [preparing and
+publishing](docs/publishing.md), [authoring errors](docs/authoring-errors.md),
+and the bundled authoring skills under [`skills/`](skills/).
 
 ## Work in this repository
 

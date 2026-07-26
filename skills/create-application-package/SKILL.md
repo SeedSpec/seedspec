@@ -30,7 +30,7 @@ Do not hide the contradiction behind implementation freedom.
 Run:
 
 ```bash
-seedspec init application --output <package-path>
+npx @seedspec/cli init application --output <package-path>
 ```
 
 Then replace the scaffold with:
@@ -72,7 +72,7 @@ supplied intent makes one a genuine outcome constraint.
 Use the version-matched work order:
 
 ```bash
-seedspec author review
+npx @seedspec/cli author review
 ```
 
 Treat the four threads as private navigation, not a visible conversation
@@ -96,10 +96,10 @@ future task, or an implementation obligation.
 Run:
 
 ```bash
-seedspec validate <package-path>
-seedspec lint <package-path>
-seedspec digest <package-path>
-seedspec publish-check <package-path>
+npx @seedspec/cli validate <package-path>
+npx @seedspec/cli lint <package-path>
+npx @seedspec/cli digest <package-path>
+npx @seedspec/cli publish-check <package-path>
 ```
 
 Repair protocol, path, schema, configuration, and broken-reference errors.
@@ -109,5 +109,5 @@ Publish readiness requires stable valid bytes and a declared, non-placeholder
 success component. Completing all guided review threads is useful evidence of
 co-authoring, but is not required and does not certify quality or completeness.
 
-Use `seedspec pack <package-path>` to create the digest-bound archive and
+Use `npx @seedspec/cli pack <package-path>` to create the digest-bound archive and
 receipt when the publish check is ready.

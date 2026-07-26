@@ -1,12 +1,13 @@
 ---
 name: author-seedspec
-description: Co-author, review, or prepare a SeedSpec with the version-matched CLI while keeping the review structure private, conversation concise, findings limited to active authored material, and every package edit under explicit human acceptance.
+description: Co-author, review, or prepare a SeedSpec with the version-matched CLI, keeping the review structure private, the conversation concise, findings limited to active authored material, and every package edit under explicit human acceptance. This is the default authoring skill whenever the SeedSpec CLI can be run; use shape-solution-intent only when it cannot.
 ---
 
 # Author a SeedSpec
 
-Use this skill as an optional convenience. The CLI operating brief is
-authoritative and sufficient without an installed skill.
+The CLI operating brief is authoritative. This skill routes you to it and
+carries the few habits that matter most; when the two ever differ, the brief
+wins.
 
 ## Begin or resume
 
@@ -65,10 +66,22 @@ Do not treat silence or continued conversation as acceptance. Declining an
 improvement does not create configuration, a portable question, a task, or
 future implementation work.
 
-Keep package inventory, findings, contradictions, suggestions, tooling
-feedback, questions, changes, and validation results in the durable result
-record according to the CLI brief. Do not expose that bookkeeping during
-ordinary co-authoring.
+## Record through the commands
+
+Never hand-edit workspace files. Each command takes one JSON payload on stdin
+and reports the new state:
+
+```sh
+npx @seedspec/cli author record --json -         # findings, questions, inventory
+npx @seedspec/cli author answer --json -         # the author's answer, or a decline
+npx @seedspec/cli author attach-source --json -  # material the review may cite
+npx @seedspec/cli author reviewed --json -       # close the thread
+```
+
+`author reviewed` runs validation, linting, and the digest itself. Run
+`npx @seedspec/cli author schema result` to inspect the shape they write.
+
+Keep that bookkeeping out of the conversation.
 
 The result summary is substantive state, not an activity log. Keep it empty
 while awaiting the author. Record the current question under `questions.asked`;

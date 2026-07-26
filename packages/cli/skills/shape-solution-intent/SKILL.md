@@ -1,6 +1,6 @@
 ---
 name: shape-solution-intent
-description: Help a person understand and clarify supplied solution intent, resolve authored contradictions, and define aligned observable success through concise natural conversation without inventing gaps or exposing an audit framework. Use when co-authoring a rough idea, existing specification, or packaged solution before implementation.
+description: Clarify supplied solution intent, resolve authored contradictions, and define aligned observable success through concise natural conversation without inventing gaps. Use ONLY when the SeedSpec CLI is unavailable in this environment; when it can be run, use author-seedspec instead, which drives the same conversation through the version-matched brief and records durable state.
 ---
 
 # Shape solution intent

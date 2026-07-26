@@ -34,7 +34,7 @@ Review only the supplied surface:
 Run:
 
 ```bash
-seedspec init feature --output <package-path>
+npx @seedspec/cli init feature --output <package-path>
 ```
 
 Then replace the scaffold with:
@@ -79,7 +79,7 @@ feature's outcome merely to broaden its compatibility label.
 Run the version-matched guided review:
 
 ```bash
-seedspec author review
+npx @seedspec/cli author review
 ```
 
 Keep the review threads private rather than presenting them as headings or an
@@ -94,13 +94,13 @@ applying it.
 Then run:
 
 ```bash
-seedspec validate <package-path>
-seedspec lint <package-path>
-seedspec digest <package-path>
-seedspec publish-check <package-path>
+npx @seedspec/cli validate <package-path>
+npx @seedspec/cli lint <package-path>
+npx @seedspec/cli digest <package-path>
+npx @seedspec/cli publish-check <package-path>
 ```
 
-When a host is available, an optional temporary `seedspec resolve` can reveal
+When a host is available, an optional temporary `npx @seedspec/cli resolve` can reveal
 real integration questions. Those observed questions may inform the seed; a
 generic feature checklist may not.
 
