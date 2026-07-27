@@ -290,17 +290,9 @@ For Allowance Tracker, the child is the owner, a guardian is the authority, and 
 15. A transaction failure leaves goal allocation and available balance unchanged.
 16. Changes to closed or archived goals are rejected except for permitted administrative annotation.
 
-## Implementation profile state
-
-No implementation profiles were declared. Execution remains open to the implementing agent under end-user direction.
-
 ## Completion scope
 
 Review required. No completion scope covers: org.seedspec.fixtures.comprehensive-application, org.seedspec.fixtures.portable-feature.
-
-## Technical preferences
-
-No technical preferences were supplied. The execution engine retains implementation freedom.
 
 ## Package-authored task sequences
 
@@ -330,14 +322,6 @@ These artifacts are preserved inputs, not automatically activated workflows:
 
 - org.seedspec.fixtures.comprehensive-application/product-spec: org.seedspec.artifact.product-spec — artifacts/org.seedspec.fixtures.comprehensive-application/product-spec/allowance-tracker.product-spec.md — disposition selected; review before-planning
 
-## Author-declared implementation resources
-
-No selected package declares an implementation resource.
-
-## Resolved decisions
-
-No declared decisions were answered during resolution.
-
 ## Declared capabilities
 
 - org.seedspec.core.actors@1.0.0 — org.seedspec.fixtures.comprehensive-application@0.1.0
@@ -357,10 +341,10 @@ No declared decisions were answered during resolution.
 - **NO DECLARED CONCERN** org.seedspec.fixtures.portable-feature expects org.seedspec.core.balances@1.0.0; declared candidates: org.seedspec.fixtures.comprehensive-application@1.0.0 (tested revision); issues: none.
 - **NO DECLARED CONCERN** org.seedspec.fixtures.portable-feature expects org.seedspec.core.transactions@1.0.0; declared candidates: org.seedspec.fixtures.comprehensive-application@1.0.0 (tested revision); issues: none.
 
-### Composition review records
-
-No concern is visible from package declarations. This does not establish implementation compatibility.
-
 ## Unresolved solution decisions
 
 No package-declared decisions remain unresolved. An implementing agent must still surface any new semantic conflict it discovers.
+
+## Not declared by any selected package
+
+implementation profiles, technical preferences, implementation resources, answered decisions.

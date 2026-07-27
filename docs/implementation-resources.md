@@ -165,11 +165,11 @@ even when an agent consults only a small subset. Authors should normally bundle
 a curated, product-relevant set rather than an entire ecosystem merely because
 it is available.
 
-When practical, declaring both a canonical source and a bundled fallback gives
-the strongest operational shape:
+When practical, declaring both a canonical source and a bundled copy gives the
+strongest operational shape:
 
 1. the canonical resource can supply the requested current or pinned version;
-2. the bundled fallback preserves known-good bytes when remote resolution is
+2. the bundled copy preserves known-good bytes when remote resolution is
    unavailable; and
 3. resolution state records which source was actually used.
 
@@ -177,6 +177,33 @@ This is not always necessary. Link-only profiles are appropriate for
 replaceable design direction, while bundled-only resources are appropriate for
 offline use, long-lived reproducibility, controlled environments, or exact
 author-curated implementation kits.
+
+### The digest is what carries trust, not the location
+
+Resolution prefers the canonical source so an adopter can receive a current or
+pinned version, and `resolution_status` records `bundled-fallback` when it does
+not. That ordering is about freshness. It is not a statement that remote bytes
+are more trustworthy than bundled ones.
+
+Every path verifies the same way. Canonical downloads are checked per file and
+in aggregate against the published manifest, and against the package-pinned
+digest when the author declared one. Bundled bytes are verified against
+`bundled.digest` at validation time and re-verified before they are promoted for
+use. A resource whose bytes do not match its digest is never consulted,
+regardless of where it came from.
+
+The practical consequence favors bundling for anything consequential. Bundled
+bytes are fixed at publication, travel with the package digest, and can be read
+in full before anything consults them:
+
+```bash
+seedspec resources <package-path> --show <resource-id>
+```
+
+A canonical-only resource cannot be reviewed that way until it is resolved, and
+what arrives can differ from what the author reviewed. Both are safe against
+tampering; only one is reviewable in advance. Authors distributing guidance that
+shapes agent behavior should bundle it.
 
 ## Tooling recommendations
 

@@ -18,6 +18,7 @@ import {
   createAuthorEvaluation,
   discoverAuthoringWorkspace,
   discoverFeatures,
+  discoverProviders,
   formatError,
   formatAdapterListing,
   formatArtifactListing,
@@ -39,6 +40,7 @@ import {
   formatCapabilityConformance,
   formatConformanceResult,
   formatFeatureDiscovery,
+  formatProviderDiscovery,
   formatPackageAgentPrompt,
   formatInspection,
   formatPackageLint,
@@ -61,6 +63,8 @@ import {
   listArtifactAdapters,
   listPackageArtifacts,
   listPackageImplementationResources,
+  readBundledResource,
+  formatBundledResource,
   packPackage,
   preparePackage,
   publishCheckPackage,
@@ -125,13 +129,14 @@ Usage:
   seedspec inspect <path> [--json]
   seedspec lint <path> [--json]
   seedspec artifacts <path> [--json]
-  seedspec resources <path> [--json]
+  seedspec resources <path> [--show <resource-id>] [--json]
   seedspec resolve-resources <project-path> [--json]
   seedspec record-resource-use <project-path> <package-id> <resource-id> <consulted|skipped> [--reason <text>] [--json]
   seedspec resource-digest <directory>
   seedspec adapters [--json]
   seedspec validate-artifact <path> <artifact-id> [--json]
   seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
+  seedspec discover-providers <package-path> --catalog <path> [--catalog <path>] [--json]
   seedspec conformance [cases.yaml] [--json] [--output <report.json>]
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
   seedspec completion <project-path> [--json]
@@ -792,8 +797,16 @@ async function run() {
       break;
     }
     case "resources": {
-      rejectUnknownOptions(options, ["json"]);
+      rejectUnknownOptions(options, ["json", "show"]);
       const packagePath = requirePositional(positional, 0, "package path");
+      const show = oneOption(options, "show");
+      if (show) {
+        const bundled = await readBundledResource(packagePath, show);
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(bundled, null, 2)}\n`
+          : `${formatBundledResource(bundled)}\n`);
+        break;
+      }
       const listing = await listPackageImplementationResources(packagePath);
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(listing, null, 2)}\n`
@@ -846,6 +859,14 @@ async function run() {
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(result, null, 2)}\n`
         : `${formatArtifactValidation(result)}\n`);
+      break;
+    }
+    case "discover-providers": {
+      const consumerPath = requirePositional(positional, 0, "package path");
+      const providerResult = await discoverProviders(consumerPath, options.get("catalog") ?? []);
+      process.stdout.write(options.has("json")
+        ? `${JSON.stringify(providerResult, null, 2)}\n`
+        : `${formatProviderDiscovery(providerResult)}\n`);
       break;
     }
     case "discover-features": {

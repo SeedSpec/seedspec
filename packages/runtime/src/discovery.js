@@ -200,6 +200,110 @@ export async function discoverFeatures(applicationPath, catalogPaths) {
   };
 }
 
+/**
+ * The reverse of feature discovery: given a package that expects host concepts,
+ * find catalog packages that declare providing them.
+ *
+ * `discoverFeatures` answers "what can I add to this application?" by checking a
+ * candidate's requirements against the root's provides. It never searches for
+ * the root's own unmet expectations, so a portable feature looking for a host
+ * had no command at all. Composition needs both directions.
+ *
+ * Like all discovery, this reports candidates without verdicts. A declaration
+ * that a package provides a capability is the author's claim, not an
+ * observation of the realization.
+ */
+export async function discoverProviders(packagePath, catalogPaths) {
+  const consumer = await validatePackage(packagePath);
+  if (!catalogPaths?.length) {
+    throw new SeedSpecError("Provider discovery requires at least one catalog path", {
+      code: "CATALOG_REQUIRED"
+    });
+  }
+
+  const manifestPaths = [];
+  for (const catalogPath of catalogPaths) await collectManifestPaths(catalogPath, manifestPaths);
+
+  const uniquePaths = [...new Set(manifestPaths)].sort();
+  const candidates = [];
+  const invalid = [];
+  for (const manifestPath of uniquePaths) {
+    try {
+      const record = await validatePackage(manifestPath);
+      if (record.manifest.id !== consumer.manifest.id) candidates.push(record);
+    } catch (error) {
+      invalid.push({
+        path: path.dirname(manifestPath),
+        code: error.code ?? "INVALID_PACKAGE",
+        message: error.message
+      });
+    }
+  }
+
+  const expectations = (consumer.manifest.requires?.capabilities ?? []).map((requirement) => {
+    const providers = candidates
+      .flatMap((record) => record.manifest.provides.capabilities
+        .filter((capability) => capability.id === requirement.id)
+        .map((capability) => ({
+          id: record.manifest.id,
+          name: record.manifest.name,
+          version: record.manifest.version,
+          kind: record.manifest.kind,
+          path: record.root,
+          digest: record.digest,
+          provided_version: capability.version,
+          contract: capability.contract
+        })))
+      .sort((left, right) => left.id.localeCompare(right.id));
+    return {
+      capability: requirement.id,
+      tested_against: requirement.tested_against,
+      providers,
+      status: providers.length > 0 ? "declared-provider-found" : "no-declared-provider-in-catalog"
+    };
+  });
+
+  return {
+    consumer: {
+      id: consumer.manifest.id,
+      version: consumer.manifest.version,
+      kind: consumer.manifest.kind,
+      digest: consumer.digest
+    },
+    catalogs: catalogPaths.map((catalogPath) => path.resolve(catalogPath)),
+    expectations,
+    invalid
+  };
+}
+
+export function formatProviderDiscovery(result) {
+  const lines = [`Host concepts expected by ${result.consumer.id}@${result.consumer.version}`];
+  if (result.expectations.length === 0) {
+    lines.push("- this package expects no host concepts");
+  }
+  for (const expectation of result.expectations) {
+    lines.push(`- ${expectation.capability} (tested against ${expectation.tested_against})`);
+    if (expectation.providers.length === 0) {
+      lines.push("  No catalog package declares this capability. A host may still supply an equivalent concept under a different name.");
+      continue;
+    }
+    for (const provider of expectation.providers) {
+      lines.push(
+        `  Declared by ${provider.name} (${provider.id}@${provider.version}, ${provider.kind}) at ${provider.provided_version}`,
+        `    Path: ${provider.path}`
+      );
+    }
+  }
+  lines.push(
+    "",
+    "These are author declarations, not verified compatibility. Inspect the actual host before composing."
+  );
+  if (result.invalid.length > 0) {
+    lines.push(`Skipped invalid packages: ${result.invalid.length}`);
+  }
+  return lines.join("\n");
+}
+
 export function formatFeatureDiscovery(result) {
   const lines = [`Feature candidates for ${result.application.id}@${result.application.version}`];
   if (result.candidates.length === 0) lines.push("- none found");

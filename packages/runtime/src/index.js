@@ -12,7 +12,12 @@ export {
 } from "@seedspec/protocol";
 export { SeedSpecError, formatError } from "./errors.js";
 export { beginPackage, formatPackageAgentPrompt, formatPackageBeginning } from "./begin.js";
-export { discoverFeatures, formatFeatureDiscovery } from "./discovery.js";
+export {
+  discoverFeatures,
+  discoverProviders,
+  formatFeatureDiscovery,
+  formatProviderDiscovery
+} from "./discovery.js";
 export {
   PRODUCTSPEC_ARTIFACT_TYPE,
   formatAdapterListing,
@@ -81,6 +86,8 @@ export {
   formatImplementationResourceResolution,
   implementationResourceIndexDigest,
   listPackageImplementationResources,
+  readBundledResource,
+  formatBundledResource,
   materializeImplementationResources,
   reconcileImplementationResourceState,
   recordImplementationResourceUse,

@@ -21,6 +21,9 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
   QUESTION_RESOLUTIONS,
+  discoverProviders,
+  readBundledResource,
+  formatBundledResource,
   answerQuestion,
   computeWorkspaceRevision,
   attachSource,
@@ -78,6 +81,7 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const root = path.resolve(packageRoot, "../..");
 const allowance = path.join(root, "conformance/fixtures/comprehensive-application");
 const savings = path.join(root, "conformance/fixtures/portable-feature");
+const resourcesFixture = path.join(root, "conformance/fixtures/implementation-resources");
 const streaks = path.join(root, "conformance/fixtures/revision-feature");
 const hubspotMetric = path.join(root, "conformance/fixtures/profiled-workflow");
 const fixtures = path.join(packageRoot, "test/fixtures");
@@ -1111,15 +1115,17 @@ test("author-declared implementation resources are validated, preserved, and res
   ));
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
-    /resolve-resources.*report fallback use.*inspect skill frontmatter/is
+    /seedspec docs implementing/
   );
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
     /implementation resource org\.seedspec\.fixtures\.comprehensive-application\/org\.seedspec\.guidance\.authorization-decisions/
   );
+  // The skill-activation boundary now lives in the shared implementing guide;
+  // the per-project guide points at it rather than restating it every time.
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
-    /package-scoped skill is not installed or automatically invoked/i
+    /Discovery is not activation/
   );
 
   const fileDigest = `sha256:${createHash("sha256").update(fixture.skillSource).digest("hex")}`;
@@ -1514,7 +1520,7 @@ test("the comprehensive application fixture resolves without additions", async (
   ));
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
-    /obtain specific user direction at activation time/
+    /seedspec docs implementing/
   );
   assert.match(
     await readFile(path.join(result.workspace, "agent-guide.md"), "utf8"),
@@ -1570,7 +1576,7 @@ test("artifact dispositions and implementation targets survive resolution", asyn
   assert.equal(artifact.selection_note, "Use this as supporting product intent.");
   assert.match(guide, /production-hosting.*org\.seedspec\.target\.hosting.*com\.example\.hosting\.static/);
   assert.match(guide, /artifact org\.seedspec\.fixtures\.comprehensive-application\/product-spec/);
-  assert.match(guide, /Even a selected artifact does not authorize/);
+  assert.match(guide, /Discovery is not activation/);
 });
 
 test("invalid artifact references fail and primary intent may guide a target without optional selection", async (t) => {
@@ -3132,4 +3138,117 @@ test("a malformed active pass never blocks the commands that recover it", async 
   // The broken record is preserved exactly, not repaired or deleted.
   const preserved = parseYaml(await readFile(opened.current.result, "utf8"));
   assert.equal(preserved.disposition, "bogus");
+});
+
+test("standing rules moved out of the guide are still delivered", async () => {
+  // The per-project guide carries the rules that change a decision where it is
+  // made; the rest live in the shared implementing guide so boilerplate stops
+  // outweighing intent. Nothing may be dropped in the move.
+  const guide = await readFile(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..", "..", "cli", "docs", "implementing.md"
+    ),
+    "utf8"
+  );
+  for (const rule of [
+    "kind as a hint",
+    "conformance suite",
+    "Even a selected artifact",
+    "obtain specific user direction at activation time",
+    "ordered implementation reminders",
+    "cherry-picking",
+    "expected`, `recommended`, and `available`"
+  ]) {
+    assert.ok(guide.includes(rule), `implementing.md must still carry: ${rule}`);
+  }
+});
+
+test("a package waiting for a host is not reported as a defect", async (t) => {
+  const output = await temporaryDirectory(t);
+  const workspace = path.join(output, "solo");
+  // A feature declaring the host concepts it expects is in its designed state.
+  // Reporting that at high severity made a correct package look broken and
+  // taught agents that severity carries no information.
+  const result = await resolveProject(savings, {
+    outputDirectory: workspace,
+    configurationSelections: { packages: [{ package: "org.seedspec.fixtures.portable-feature", selection: "example" }] }
+  });
+  const guide = await readFile(path.join(result.workspace, "agent-guide.md"), "utf8");
+  assert.doesNotMatch(guide, /HIGH \/ no-declared-provider/);
+  assert.match(guide, /## Host concepts this package expects/);
+  assert.match(guide, /org\.seedspec\.core\.actors/);
+
+  // The declarations are still preserved verbatim in machine state.
+  const lock = parseYaml(await readFile(path.join(result.workspace, "dependencies.lock.yaml"), "utf8"));
+  const unmet = lock.requirements.filter(({ issues }) => issues?.includes("no-declared-provider"));
+  assert.equal(unmet.length, 3, "requirements stay recorded regardless of framing");
+  assert.ok(
+    lock.reviews.filter(({ code }) => code === "no-declared-provider").every(({ severity }) => severity === "low"),
+    "an unjoined expectation is low severity"
+  );
+});
+
+test("provider discovery answers the question feature discovery cannot", async () => {
+  // discoverFeatures asks "what can I add to this application?". Composition
+  // also needs "who could satisfy what this package expects?", which had no
+  // command at all.
+  const result = await discoverProviders(savings, [
+    path.join(root, "conformance/fixtures")
+  ]);
+  assert.equal(result.consumer.id, "org.seedspec.fixtures.portable-feature");
+  assert.equal(result.expectations.length, 3);
+  const actors = result.expectations.find(({ capability }) => capability === "org.seedspec.core.actors");
+  assert.ok(actors, "the expectation is reported");
+  assert.ok(
+    actors.providers.some(({ id }) => id === "org.seedspec.fixtures.comprehensive-application"),
+    "a catalog package declaring the capability is offered as a candidate"
+  );
+  assert.equal(actors.status, "declared-provider-found");
+});
+
+test("a bundled resource can be read in full before anything consults it", async () => {
+  // Bundled bytes are digest-bound and therefore reviewable, but reviewable in
+  // principle is not reviewed in practice unless something shows a person the
+  // text. Only the author's short description was ever visible.
+  const listing = await listPackageImplementationResources(path.join(root, "conformance/fixtures/implementation-resources"));
+  const skill = listing.resources.find(({ kind }) => kind === "skill");
+  assert.ok(skill.declares?.name, "the skill's own frontmatter name is surfaced");
+  assert.ok(skill.declares?.description, "the skill's own description is surfaced");
+
+  const shown = await readBundledResource(resourcesFixture, skill.id);
+  assert.equal(shown.verified_digest, shown.resource.digest);
+  assert.match(shown.text, /^---\n/, "the exact entrypoint text is returned");
+  assert.match(formatBundledResource(shown), /match the digest the package declares/);
+
+  await assert.rejects(
+    readBundledResource(resourcesFixture, "org.example.not-a-resource"),
+    (error) => error.code === "IMPLEMENTATION_RESOURCE_NOT_FOUND"
+  );
+});
+
+test("declaring capabilities without success material is flagged, and naming is not", async (t) => {
+  // A declared capability is a promise to whoever composes this package. The
+  // check is the mechanical fact -- promised, nothing to check it against --
+  // never a guess from vocabulary, which misfired on well-named capabilities.
+  const withAcceptance = await lintPackage(savings);
+  assert.equal(
+    withAcceptance.diagnostics.filter(({ code }) => code === "CAPABILITY_WITHOUT_ACCEPTANCE_COVERAGE").length,
+    0,
+    "a package with acceptance material is not flagged for wording"
+  );
+
+  const output = await temporaryDirectory(t);
+  const stripped = path.join(output, "package");
+  await cp(savings, stripped, { recursive: true });
+  const manifestPath = path.join(stripped, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  delete manifest.components.acceptance;
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+
+  const withoutAcceptance = await lintPackage(stripped);
+  assert.equal(
+    withoutAcceptance.diagnostics.filter(({ code }) => code === "CAPABILITY_WITHOUT_ACCEPTANCE_COVERAGE").length,
+    1
+  );
 });

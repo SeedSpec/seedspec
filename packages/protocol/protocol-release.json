@@ -155,7 +155,7 @@
     "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
     "index_digest": "sha256:ffbcbb3e0538b939faff5224e2045f48df239b14cf2b0157e08fae8d41e05100",
-    "bundle_digest": "sha256:54253e141483f82b4489feb82f8a7c379467c835d794bf18cf27e3fcab7e7b05"
+    "bundle_digest": "sha256:d4a5b52ec5eb36130dc20b17f8889dacce2c3b4133965945dd7313198dd08bea"
   },
   "implementations": {
     "runtime": {

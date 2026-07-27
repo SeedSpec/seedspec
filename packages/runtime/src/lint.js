@@ -126,10 +126,40 @@ async function successMaterialDiagnostics(record) {
   return [];
 }
 
+/**
+ * A declared capability is a promise to whoever composes this package. A
+ * promise with no way to observe it is hope: the composing agent inherits the
+ * claim and no means of checking it survived the mapping.
+ *
+ * Source-bound — this only fires on capabilities the author actually declared,
+ * and it never asks for criteria about anything the package does not claim.
+ */
+async function capabilityAcceptanceDiagnostics(record) {
+  const declared = record.manifest.provides.capabilities;
+  if (declared.length === 0) return [];
+
+  // Deliberately only the mechanical fact: capabilities promised, nothing to
+  // check them against. Matching capability names against criteria text was
+  // tried and systematically misfired -- `family-coordination` is fully covered
+  // by criteria about households, events, and tasks that never use the word
+  // "coordination". A capability name is an abstraction; criteria are concrete.
+  // Inferring a gap from vocabulary would be exactly the checklist behavior the
+  // source-bound rule exists to prevent.
+  if (record.manifest.components?.acceptance) return [];
+  return [diagnostic(
+    "CAPABILITY_WITHOUT_ACCEPTANCE_COVERAGE",
+    "recommendation",
+    "provides.capabilities",
+    `This package declares ${declared.length} capability contract(s) and no success material an adopter could check them against.`,
+    "Add observable criteria for the behavior each declared capability promises. Whoever composes this package inherits the promise; without criteria they inherit no way to verify it survived."
+  )];
+}
+
 export async function lintPackage(inputPath) {
   const record = await validatePackage(inputPath);
   const diagnostics = [
     ...await successMaterialDiagnostics(record),
+    ...await capabilityAcceptanceDiagnostics(record),
     ...implementationDetailDiagnostics(record.manifest.kind, record.definition),
     ...implementationProfileDiagnostics(record.manifest)
   ];

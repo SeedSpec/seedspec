@@ -711,6 +711,35 @@ const GUIDANCE_TOPICS = Object.freeze([
     id: "depth",
     summary: "what each coaching depth changes",
     lines: () => AUTHORING_TARGETS.map((target) => `- \`${target}\` — ${targetInstruction(target)}`)
+  },
+  {
+    id: "resources",
+    summary: "deciding what guidance is worth bundling",
+    lines: () => [
+      "Bundle what only this author knows. Do not bundle what any competent agent already does.",
+      "",
+      "Domain knowledge an implementer cannot infer — a platform's real constraints, an integration's",
+      "actual quirks, a contract nobody outside this organization has seen — is worth carrying. Generic",
+      "engineering procedure is not: the implementing agent already has its own, the author cannot know",
+      "which model will run it, and bundled guidance that duplicates it costs context and time the",
+      "author does not control.",
+      "",
+      "Test a candidate rather than judging it. Asking whether guidance looks valuable returns yes almost",
+      "every time; asking whether it is *recoverable* is answerable:",
+      "",
+      "1. Pose the domain question to a capable model without the candidate guidance.",
+      "2. Pose it again with the guidance.",
+      "3. If the unaided answer is already right, the content is generic. Leave it out.",
+      "4. If the unaided answer misses something material, that gap is the author's unique knowledge.",
+      "",
+      "Bundle only what step 4 exposed, and keep it to that. A bundled resource is not free: it enters",
+      "the implementing agent's context, competes with the package's own intent, and its operational",
+      "weight becomes this package's problem rather than the adopter's.",
+      "",
+      "Bundled bytes travel with the package digest and can be read in full before anything consults",
+      "them (`seedspec resources <path> --show <id>`). Guidance that shapes agent behavior should be",
+      "bundled rather than referenced, so an adopter can review exactly what they are accepting."
+    ]
   }
 ]);
 

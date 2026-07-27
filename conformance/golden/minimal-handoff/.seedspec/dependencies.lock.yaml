@@ -52,17 +52,17 @@ requirements:
     status: review
 reviews:
   - code: no-declared-provider
-    severity: high
+    severity: low
     packages:
       - org.seedspec.fixtures.portable-feature
     capability: org.seedspec.core.actors
   - code: no-declared-provider
-    severity: high
+    severity: low
     packages:
       - org.seedspec.fixtures.portable-feature
     capability: org.seedspec.core.balances
   - code: no-declared-provider
-    severity: high
+    severity: low
     packages:
       - org.seedspec.fixtures.portable-feature
     capability: org.seedspec.core.transactions

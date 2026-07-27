@@ -403,13 +403,21 @@ export function analyzeCapabilityDeclarations(root, additions) {
     })
   ));
 
+  // A package that declares the host concepts it expects, with no host selected
+  // yet, is in its designed state rather than a broken one. Reporting that as a
+  // high-severity concern trains agents to ignore severity, because the healthy
+  // case and the real one look identical. A requirement only becomes a strong
+  // signal once a host was actually chosen and still does not provide it.
+  const hostSelected = orderedAdditions.length > 0;
+
   const requirementReviews = requirements.flatMap((requirement) => (
     requirement.issues.map((issue) => {
       const revisionCandidate = issue === "revision-difference"
         ? requirement.providers.find((provider) => provider.revision_status === "different-revision")
         : undefined;
+      const unjoinedExpectation = issue === "no-declared-provider" && !hostSelected;
       const severity = revisionCandidate?.review_severity
-        ?? (issue === "no-declared-provider" ? "high" : "medium");
+        ?? (unjoinedExpectation ? "low" : issue === "no-declared-provider" ? "high" : "medium");
       return {
         code: issue,
         severity,

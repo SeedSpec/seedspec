@@ -142,38 +142,14 @@ The feature may be used in household allowance, personal budgeting, classroom re
 15. A transaction failure leaves goal allocation and available balance unchanged.
 16. Changes to closed or archived goals are rejected except for permitted administrative annotation.
 
-## Implementation profile state
-
-No implementation profiles were declared. Execution remains open to the implementing agent under end-user direction.
-
 ## Completion scope
 
 Review required. No completion scope covers: org.seedspec.fixtures.portable-feature.
-
-## Technical preferences
-
-No technical preferences were supplied. The execution engine retains implementation freedom.
-
-## Package-authored task sequences
-
-No selected package declares an implementation task sequence.
 
 ## Preserved components
 
 - org.seedspec.fixtures.portable-feature/acceptance: components/org.seedspec.fixtures.portable-feature/acceptance/ — review before-completion-claim
 - org.seedspec.fixtures.portable-feature/integration: components/org.seedspec.fixtures.portable-feature/integration/ — review before-integration
-
-## Discovered artifacts
-
-No selected package declares optional artifacts.
-
-## Author-declared implementation resources
-
-No selected package declares an implementation resource.
-
-## Resolved decisions
-
-No declared decisions were answered during resolution.
 
 ## Declared capabilities
 
@@ -181,18 +157,18 @@ No declared decisions were answered during resolution.
 - org.seedspec.finance.goal-progress@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
 - org.seedspec.finance.savings-goals@1.0.0 — org.seedspec.fixtures.portable-feature@0.1.0
 
-## Capability and composition declaration review
+## Host concepts this package expects
 
-- **REVIEW** org.seedspec.fixtures.portable-feature expects org.seedspec.core.actors@1.0.0; declared candidates: no selected package declares a provider; issues: no-declared-provider.
-- **REVIEW** org.seedspec.fixtures.portable-feature expects org.seedspec.core.balances@1.0.0; declared candidates: no selected package declares a provider; issues: no-declared-provider.
-- **REVIEW** org.seedspec.fixtures.portable-feature expects org.seedspec.core.transactions@1.0.0; declared candidates: no selected package declares a provider; issues: no-declared-provider.
+Map each concept to its local equivalent before implementing. The host decides its own names for these.
 
-### Composition review records
-
-- **HIGH / no-declared-provider** — packages: org.seedspec.fixtures.portable-feature; capability: org.seedspec.core.actors
-- **HIGH / no-declared-provider** — packages: org.seedspec.fixtures.portable-feature; capability: org.seedspec.core.balances
-- **HIGH / no-declared-provider** — packages: org.seedspec.fixtures.portable-feature; capability: org.seedspec.core.transactions
+- `org.seedspec.core.actors` — expected by org.seedspec.fixtures.portable-feature, tested against 1.0.0
+- `org.seedspec.core.balances` — expected by org.seedspec.fixtures.portable-feature, tested against 1.0.0
+- `org.seedspec.core.transactions` — expected by org.seedspec.fixtures.portable-feature, tested against 1.0.0
 
 ## Unresolved solution decisions
 
 No package-declared decisions remain unresolved. An implementing agent must still surface any new semantic conflict it discovers.
+
+## Not declared by any selected package
+
+implementation profiles, technical preferences, package-authored task sequences, optional artifacts, implementation resources, answered decisions.

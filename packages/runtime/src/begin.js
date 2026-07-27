@@ -104,6 +104,22 @@ export async function beginPackage(inputPath) {
       resolution_behavior: "unselected-example-produces-needs-input"
     },
     decisions: record.manifest.decisions ?? [],
+    // The concepts a package expects from its host, and the ones it offers, are
+    // the shape of the integration work. Surfacing them at first contact means
+    // an adopter meets the seam here instead of discovering it as findings
+    // after resolution.
+    capabilities: {
+      requires: (record.manifest.requires?.capabilities ?? []).map((requirement) => ({
+        id: requirement.id,
+        tested_against: requirement.tested_against
+      })),
+      provides: record.manifest.provides.capabilities.map((capability) => ({
+        id: capability.id,
+        version: capability.version,
+        contract: capability.contract
+      })),
+      compatibility: record.manifest.compatibility ?? null
+    },
     implementation_profiles: implementationProfiles,
     components,
     artifacts,
@@ -272,6 +288,26 @@ export function formatPackageBeginning(beginning) {
         lines.push("  Tradeoffs:");
         for (const tradeoff of profile.tradeoffs) lines.push(`    - ${tradeoff}`);
       }
+    }
+  }
+
+  if (beginning.capabilities.requires.length > 0) {
+    lines.push(
+      "",
+      "## Host concepts this package expects",
+      "",
+      "This package is written to be joined to a host. An implementing agent maps each concept to whatever the host already calls it; the names will differ and that is expected.",
+      ""
+    );
+    for (const requirement of beginning.capabilities.requires) {
+      lines.push(`- \`${requirement.id}\` — tested against ${requirement.tested_against}`);
+    }
+  }
+
+  if (beginning.capabilities.provides.length > 0) {
+    lines.push("", "## Capabilities this package provides", "");
+    for (const capability of beginning.capabilities.provides) {
+      lines.push(`- \`${capability.id}@${capability.version}\` — contract: \`${capability.contract}\``);
     }
   }
 

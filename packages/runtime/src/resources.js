@@ -186,16 +186,107 @@ export async function listPackageImplementationResources(inputPath) {
   const { validatePackage } = await import("./validate.js");
   const record = await validatePackage(inputPath);
   const declaration = record.manifest.implementation_resources;
+  // A bundled skill describes itself in its own frontmatter. That text was
+  // parsed for validation and thrown away, leaving the author's 500-character
+  // blurb as the only human-visible account of guidance that will shape an
+  // agent's behavior.
+  const resources = await Promise.all((declaration?.resources ?? []).map(async (resource) => {
+    if (resource.kind !== "skill" || !resource.bundled) return resource;
+    try {
+      const entrypoint = resolvePackagePath(
+        path.join(record.root, resource.bundled.path),
+        resource.entrypoint
+      );
+      const frontmatter = parseSkillFrontmatter(
+        await readFile(entrypoint, "utf8"),
+        `${resource.id} SKILL.md`
+      );
+      return {
+        ...resource,
+        declares: { name: frontmatter.name, description: frontmatter.description }
+      };
+    } catch {
+      return resource;
+    }
+  }));
   return {
     package: {
       id: record.manifest.id,
       version: record.manifest.version,
       digest: record.digest
     },
+    root: record.root,
     additional_guidance: declaration?.additional_guidance ?? "unspecified",
     catalogs: declaration?.catalogs ?? [],
-    resources: declaration?.resources ?? []
+    resources
   };
+}
+
+/**
+ * Print exactly what a bundled resource will put into an agent's context.
+ *
+ * Bundled bytes are digest-bound and therefore reviewable — that is the whole
+ * security argument for bundling over referencing. But reviewable in principle
+ * is not reviewed in practice unless something puts the text in front of a
+ * person at the moment they decide. This is that surface.
+ */
+export async function readBundledResource(inputPath, selector) {
+  const listing = await listPackageImplementationResources(inputPath);
+  const [, resourceId] = selector.includes("/") ? selector.split("/") : [null, selector];
+  const resource = listing.resources.find(({ id }) => id === resourceId);
+  if (!resource) {
+    throw new SeedSpecError(`Unknown implementation resource: ${selector}`, {
+      code: "IMPLEMENTATION_RESOURCE_NOT_FOUND",
+      details: [`declared: ${listing.resources.map(({ id }) => id).join(", ") || "none"}`]
+    });
+  }
+  if (!resource.bundled) {
+    throw new SeedSpecError(`Implementation resource is not bundled: ${resource.id}`, {
+      code: "IMPLEMENTATION_RESOURCE_NOT_BUNDLED",
+      details: [
+        `canonical: ${resource.canonical?.manifest_url ?? "not declared"}`,
+        "Only bundled bytes can be read from the package. Resolve the resource first to inspect a canonical copy."
+      ]
+    });
+  }
+  const bundleRoot = path.join(listing.root, resource.bundled.path);
+  const entrypoint = resolvePackagePath(bundleRoot, resource.entrypoint);
+  return {
+    package: listing.package,
+    resource: {
+      id: resource.id,
+      kind: resource.kind,
+      usage: resource.usage,
+      version: resource.bundled.version,
+      digest: resource.bundled.digest,
+      entrypoint: resource.entrypoint,
+      declares: resource.declares ?? null
+    },
+    verified_digest: await computeDirectoryDigest(bundleRoot),
+    text: await readFile(entrypoint, "utf8")
+  };
+}
+
+export function formatBundledResource(result) {
+  return [
+    `# ${result.resource.id} (${result.resource.kind}) from ${result.package.id}@${result.package.version}`,
+    "",
+    `- Usage: ${result.resource.usage}`,
+    `- Version: ${result.resource.version}`,
+    `- Entrypoint: ${result.resource.entrypoint}`,
+    `- Declared digest: ${result.resource.digest}`,
+    `- Verified digest: ${result.verified_digest}`,
+    ...(result.resource.digest === result.verified_digest
+      ? ["- These bytes match the digest the package declares."]
+      : ["- **The bytes do not match the declared digest. Do not consult this resource.**"]),
+    "",
+    "This is the exact text this resource would place in an implementing agent's context.",
+    "Reading it does not install, activate, or authorize anything.",
+    "",
+    "---",
+    "",
+    result.text.trimEnd()
+  ].join("\n");
 }
 
 export function formatImplementationResourceListing(listing) {
@@ -220,6 +311,12 @@ export function formatImplementationResourceListing(listing) {
         `  Canonical: ${resource.canonical?.manifest_url ?? "not declared"}`,
         `  Bundled: ${resource.bundled?.path ?? "not included"}`
       );
+      if (resource.declares) {
+        lines.push(`  Describes itself as: "${resource.declares.name}" — ${resource.declares.description}`);
+      }
+      if (resource.bundled) {
+        lines.push(`  Read the exact text: seedspec resources <path> --show ${resource.id}`);
+      }
     }
   }
   return lines.join("\n");
