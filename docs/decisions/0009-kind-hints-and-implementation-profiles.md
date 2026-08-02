@@ -23,6 +23,9 @@ tradeoffs, and guidance.
 
 ## Decision
 
+The core kind inventory in this decision is extended with `component` by
+Decision 0016.
+
 Manifest `kind` is an author-supplied hint. Protocol 0.1 recognizes:
 
 - `solution`

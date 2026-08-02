@@ -1,4 +1,4 @@
 interface:
   display_name: "Shape Solution Intent"
-  short_description: "Clarify intent without inventing authority"
-  default_prompt: "Use $shape-solution-intent to turn this rough idea into explicit, evidence-ready solution intent."
+  short_description: "Shape a seed through natural conversation"
+  default_prompt: "Use $shape-solution-intent to co-author this seed with me."

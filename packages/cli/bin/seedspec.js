@@ -12,24 +12,44 @@ import {
 } from "../src/bundled-skills.js";
 import {
   auditPackage,
+  applyDocumentChange,
+  applyIntegrationBridgePlan,
   beginPackage,
   computeDirectoryDigest,
   createAuthoringWorkspace,
   createAuthorEvaluation,
+  createAdapterRegistry,
+  decideDocumentChange,
   discoverAuthoringWorkspace,
   discoverFeatures,
+  discoverProviders,
+  discoverFormatIntegrations,
   formatError,
   formatAdapterListing,
   formatArtifactListing,
-  formatArtifactValidation,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
+  formatAuthoringStarterPrompt,
+  answerQuestion,
+  attachSource,
+  formatAuthoringGuidance,
+  listAuthoringGuidanceTopics,
+  listAuthoringSchemas,
+  proposeDocumentChange,
+  recordObservations,
+  reviewArea,
+  readAuthoringSchema,
   formatAuthoringWorkspaceCreation,
   formatAuthoringWorkspaceSnapshot,
   formatAuthorEvaluation,
   formatCapabilityConformance,
   formatConformanceResult,
   formatFeatureDiscovery,
+  formatContextPreparation,
+  formatContextValidation,
+  formatIntegrationBridgePlan,
+  formatIntegrationDiscovery,
+  formatProviderDiscovery,
   formatPackageAgentPrompt,
   formatInspection,
   formatPackageLint,
@@ -49,11 +69,15 @@ import {
   inspectAuthoringWorkspace,
   lintPackage,
   inspectProjectCompletion,
-  listArtifactAdapters,
   listPackageArtifacts,
   listPackageImplementationResources,
+  loadIntegrationAdapter,
+  readBundledResource,
+  formatBundledResource,
   packPackage,
   preparePackage,
+  prepareContext,
+  planIntegrationBridges,
   publishCheckPackage,
   recordImplementationResourceUse,
   resolveImplementationResources,
@@ -66,9 +90,11 @@ import {
   protocolRelease,
   protocolReleaseDigest,
   protocolVersion,
+  readIntegrationDescriptor,
+  recordContextUse,
   upgradePackage,
+  validateContextModule,
   verifyProjectLock,
-  validateArtifact,
   validatePackage
 } from "@seedspec/runtime";
 
@@ -82,14 +108,25 @@ const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experime
 
 Usage:
   seedspec author
+  seedspec author prompt
   seedspec author status [package-path] [--json]
   seedspec author review [package-path] [--area <area>] [--summary]
   seedspec author questions [package-path]
+  seedspec author changes [package-path] [--json]
   seedspec author check [package-path]
   seedspec author history [package-path]
   seedspec author evaluate [package-path] [--output <directory>]
   seedspec author pack [package-path] [--output <directory>]
   seedspec author create <package-path> [--target <depth>]
+  seedspec author schema [result|changes]
+  seedspec author guidance [--topic <topic>]
+  seedspec author record [package-path] --json -
+  seedspec author answer [package-path] --json -
+  seedspec author attach-source [package-path] --json -
+  seedspec author propose [package-path] --json -
+  seedspec author decide [package-path] --json -
+  seedspec author apply [package-path] --json -
+  seedspec author reviewed [package-path] --json -
   seedspec author help
   seedspec prepare <package-path> [--state <directory>] [--status] [--json]
   seedspec review <package-path> [--area <area>] [--target <depth>] [--state <directory>] [--status|--summary] [--json]
@@ -109,23 +146,29 @@ Usage:
   seedspec inspect <path> [--json]
   seedspec lint <path> [--json]
   seedspec artifacts <path> [--json]
-  seedspec resources <path> [--json]
+  seedspec context adapters --integration <path> [--integration <path>] [--json]
+  seedspec context discover <package-path> --integration <path> [--integration <path>] [--json]
+  seedspec context validate <package-path> <module> --integration <path> [--adapter <id>] [--json]
+  seedspec context prepare <project-path> --request <yaml> --output <directory> [--integration <path>] [--json]
+  seedspec context record-use <prepared-context-path> --input <json> [--output <json>] [--json]
+  seedspec context author <package-path> --integration <path> [--write] [--state <directory>] [--json]
+  seedspec resources <path> [--show <resource-id>] [--json]
   seedspec resolve-resources <project-path> [--json]
   seedspec record-resource-use <project-path> <package-id> <resource-id> <consulted|skipped> [--reason <text>] [--json]
   seedspec resource-digest <directory>
-  seedspec adapters [--json]
-  seedspec validate-artifact <path> <artifact-id> [--json]
   seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
+  seedspec discover-providers <package-path> --catalog <path> [--catalog <path>] [--json]
   seedspec conformance [cases.yaml] [--json] [--output <report.json>]
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
   seedspec completion <project-path> [--json]
   seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
   seedspec resolve <root-package-path> [options]
-  seedspec init <solution|application|feature|workflow|automation|configuration|integration> [--output <path>]
+  seedspec init <solution|application|feature|component|workflow|automation|configuration|integration> [--output <path>]
 
 Resolve options:
   --add <path>                     Add another SeedSpec package (repeatable)
   --feature <path>                 Compatibility alias for --add
+  Bundled children declared through composition.includes are selected recursively
   -i, --implementation <profile>   Prefer an implementation profile; repeatable, package/profile for additions
   --output <path>                  Project directory; defaults to the current directory
   --configuration-selections <yaml>  Select example or complete custom configuration per package
@@ -138,24 +181,48 @@ Resolve options:
 
 const AUTHOR_HELP = `SeedSpec authoring
 
-Run this inside a SeedSpec project:
+Start a new package, then author it:
+  npx @seedspec/cli init application --output my-package
+  cd my-package
   npx @seedspec/cli author
+
+Kinds: solution, application, feature, component, workflow, automation, configuration,
+integration.
 
 Commands:
   author              Find or resume the local authoring workspace
+  author prompt       Print the short prompt to give an authoring agent
   author status       Show the draft and current review
-  author review       Start or continue the current review; add --summary for shorter output
-  author questions    Show author decisions and unresolved questions
+  author review       Print the complete versioned agent operating brief
+  author questions    Show authoring-session questions and resolutions
+  author changes      Inspect proposed, accepted, rejected, and applied changes
   author check        Check structure, guidance, and publication readiness
   author history      Show completed and current review passes
+  author schema       Print an authoring state schema (result or changes)
+  author guidance     Print one guidance topic (author guidance --topic <id>)
   author evaluate     Create an independent handoff evaluation
   author pack         Create the distributable SeedSpec archive
   author help         Show this guide
 
+Recording work. Each takes one JSON payload on stdin, so multi-sentence prose
+never has to survive shell quoting:
+  author record         Record findings, questions, inventory, contradictions
+  author answer         Record the author's answer, or decline a question
+  author attach-source  Attach source material the review may draw findings from
+  author propose        Record an inspectable document replacement
+  author decide         Record explicit author acceptance or rejection
+  author apply          Apply one accepted proposal through the engine
+  author reviewed       Close the current thread with a disposition
+
+  echo '{"entries":[{"type":"question","question":"..."}]}' \\
+    | npx @seedspec/cli author record --json -
+
 Paths are optional when the command runs inside a SeedSpec project.
 
-The complete review output is the agent's version-matched work order. The
-optional author-seedspec skill is a convenience, not a prerequisite.
+The starter prompt stays short. The complete review output supplies the
+version-matched role, context boundary, conversation behavior, private review
+model, authority rules, and durable record contract. The optional
+author-seedspec skill is a convenience, not a prerequisite.
 `;
 
 function parseArguments(args) {
@@ -178,9 +245,17 @@ function parseArguments(args) {
       continue;
     }
 
+    if (value === "--json") {
+      if (args[index + 1] === "-") {
+        index += 1;
+        options.set("json", ["-"]);
+      } else {
+        options.set("json", [true]);
+      }
+      continue;
+    }
     if (
-      value === "--json"
-      || value === "--help"
+      value === "--help"
       || value === "--status"
       || value === "--summary"
       || value === "--full"
@@ -201,6 +276,15 @@ function parseArguments(args) {
   }
 
   return { positional, options };
+}
+
+async function registryFromIntegrations(sources) {
+  const registry = createAdapterRegistry();
+  for (const source of sources) {
+    const integration = await readIntegrationDescriptor(source);
+    if (integration.descriptor.adapter) await loadIntegrationAdapter(source, registry);
+  }
+  return registry;
 }
 
 function oneOption(options, name) {
@@ -238,15 +322,44 @@ async function resolveAuthoringContext(explicitPackagePath, stateDirectory) {
   };
 }
 
+// Write operations take one JSON payload rather than a flag per field.
+// Shell-quoting multi-sentence prose into repeated --flags is exactly where
+// agents fail, so `--json -` reads the whole record from stdin.
+async function readOperationInput(options) {
+  const inline = oneOption(options, "json");
+  // `--json -` and a bare `--json` both mean "read stdin"; only a string value
+  // is treated as an inline payload.
+  const source = typeof inline === "string" && inline !== "-"
+    ? inline
+    : await new Promise((resolve, reject) => {
+      let buffer = "";
+      process.stdin.setEncoding("utf8");
+      process.stdin.on("data", (chunk) => { buffer += chunk; });
+      process.stdin.on("end", () => resolve(buffer));
+      process.stdin.on("error", reject);
+    });
+  if (!source.trim()) {
+    throw new Error("Provide the operation payload as JSON on stdin, or --json '<payload>'");
+  }
+  try {
+    return JSON.parse(source);
+  } catch (error) {
+    throw new Error(`Operation payload is not valid JSON: ${error.message}`);
+  }
+}
+
 function authorNextCommand(snapshot) {
   if (snapshot.package.status !== "valid") {
     return "Next: update the draft, then run `npx @seedspec/cli author check`.";
   }
-  if (snapshot.review.questions.open > 0) {
-    return "Next: `npx @seedspec/cli author questions`";
+  if (snapshot.review.proposals.proposed > 0 || snapshot.review.proposals.accepted > 0) {
+    return "Unsettled changes: `npx @seedspec/cli author changes`";
   }
-  if (!snapshot.review.complete) {
+  if (snapshot.review.current || !snapshot.review.complete) {
     return "Next: `npx @seedspec/cli author review`";
+  }
+  if (snapshot.review.questions.open > 0) {
+    return "Optional session questions: `npx @seedspec/cli author questions`";
   }
   return "Next: `npx @seedspec/cli author check`";
 }
@@ -265,11 +378,14 @@ function formatOptionalAuthoringSkillOffer() {
 function formatAuthoringQuestions(snapshot) {
   const questions = snapshot.review.questions.items;
   const lines = [
-    "SeedSpec authoring questions",
+    "SeedSpec authoring-session questions",
     `${snapshot.review.questions.open} open, ${snapshot.review.questions.resolved} resolved`
   ];
-  if (questions.length === 0) return [...lines, "", "No authoring questions recorded."].join("\n");
-  lines.push("");
+  if (questions.length === 0) return [...lines, "", "No authoring-session questions recorded."].join("\n");
+  lines.push(
+    "",
+    "These questions belong to the authoring conversation. They are not automatically package configuration, portable questions, or future implementation work."
+  );
   for (const question of questions) {
     lines.push(`- ${question.id} — ${question.status ?? "open"}`);
     lines.push(`  ${question.question ?? "No question text recorded."}`);
@@ -286,6 +402,36 @@ function formatAuthoringHistory(snapshot) {
   lines.push("");
   for (const pass of snapshot.review.passes) {
     lines.push(`- ${pass.id}: ${pass.area} — ${pass.outcome}`);
+  }
+  return lines.join("\n");
+}
+
+function formatAuthoringChanges(snapshot) {
+  const proposals = snapshot.review.proposals.items;
+  const lines = [
+    "SeedSpec authoring changes",
+    `${snapshot.review.proposals.proposed} proposed, ${snapshot.review.proposals.accepted} accepted, ${snapshot.review.proposals.rejected} rejected, ${snapshot.review.proposals.applied} applied`
+  ];
+  if (proposals.length === 0) return [...lines, "", "No document changes recorded."].join("\n");
+  for (const proposal of proposals) {
+    lines.push(
+      "",
+      `${proposal.id} — ${proposal.status}`,
+      `Document: ${proposal.document?.path ?? "unknown"}`,
+      `Summary: ${proposal.summary ?? "No summary recorded."}`,
+      "Before:",
+      proposal.document?.before_content ?? "[new document]",
+      "After:",
+      proposal.document?.after_content ?? ""
+    );
+    const decisions = Array.isArray(proposal.decisions) && proposal.decisions.length > 0
+      ? proposal.decisions
+      : (proposal.decision ? [proposal.decision] : []);
+    for (const [index, decision] of decisions.entries()) {
+      const label = decisions.length === 1 ? "Decision" : `Decision ${index + 1}`;
+      lines.push(`${label}: ${decision.outcome} by ${decision.by}`);
+      if (decision.rationale) lines.push(`Rationale: ${decision.rationale}`);
+    }
   }
   return lines.join("\n");
 }
@@ -312,9 +458,20 @@ async function run() {
       const supportedActions = new Set([
         "open",
         "create",
+        "prompt",
+        "schema",
+        "guidance",
+        "record",
+        "answer",
+        "attach-source",
+        "propose",
+        "decide",
+        "apply",
+        "reviewed",
         "status",
         "review",
         "questions",
+        "changes",
         "check",
         "history",
         "evaluate",
@@ -337,12 +494,81 @@ async function run() {
       } else if (action === "help") {
         rejectUnknownOptions(options, []);
         process.stdout.write(AUTHOR_HELP);
+      } else if (action === "prompt") {
+        rejectUnknownOptions(options, []);
+        process.stdout.write(`${formatAuthoringStarterPrompt()}\n`);
+      } else if (["record", "answer", "attach-source", "propose", "decide", "apply", "reviewed"].includes(action)) {
+        rejectUnknownOptions(options, ["state", "json", "pass", "revision"]);
+        const context = await resolveAuthoringContext(positional[1], oneOption(options, "state"));
+        const input = await readOperationInput(options);
+        const shared = {
+          stateRoot: context.stateRoot,
+          expectedRevision: oneOption(options, "revision") ?? input.expected_revision ?? null
+        };
+        const pass = oneOption(options, "pass") ?? input.pass;
+        const operation = action === "record"
+          ? recordObservations(context.packageRoot, { ...shared, pass, entries: input.entries })
+          : action === "answer"
+            ? answerQuestion(context.packageRoot, {
+              ...shared,
+              questionId: input.question_id ?? input.questionId,
+              answer: input.answer,
+              resolution: input.resolution ?? "resolved"
+            })
+            : action === "attach-source"
+              ? attachSource(context.packageRoot, { ...shared, source: input.source ?? input })
+              : action === "propose"
+                ? proposeDocumentChange(context.packageRoot, {
+                  ...shared,
+                  pass,
+                  proposal: input.proposal ?? input
+                })
+                : action === "decide"
+                  ? decideDocumentChange(context.packageRoot, {
+                    ...shared,
+                    proposalId: input.proposal_id ?? input.proposalId,
+                    decision: input.decision,
+                    decidedBy: input.decided_by ?? input.decidedBy ?? "author",
+                    rationale: input.rationale
+                  })
+                  : action === "apply"
+                    ? applyDocumentChange(context.packageRoot, {
+                      ...shared,
+                      proposalId: input.proposal_id ?? input.proposalId
+                    })
+                    : reviewArea(context.packageRoot, {
+                      ...shared,
+                      pass,
+                      summary: input.summary,
+                      disposition: input.disposition,
+                      outcome: input.outcome ?? "reviewed"
+                    });
+        process.stdout.write(`${JSON.stringify(await operation, null, 2)}\n`);
+      } else if (action === "guidance") {
+        rejectUnknownOptions(options, ["topic"]);
+        const topic = oneOption(options, "topic") ?? positional[1];
+        if (!topic) {
+          process.stdout.write(`${listAuthoringGuidanceTopics()
+            .map(({ id, summary }) => `  ${id.padEnd(16)} ${summary}`)
+            .join("\n")}\n`);
+        } else {
+          process.stdout.write(`${formatAuthoringGuidance(topic)}\n`);
+        }
+      } else if (action === "schema") {
+        rejectUnknownOptions(options, []);
+        const requested = positional[1];
+        if (!requested) {
+          process.stdout.write(`Available authoring schemas: ${listAuthoringSchemas().join(", ")}\n`);
+        } else {
+          process.stdout.write(`${JSON.stringify(await readAuthoringSchema(requested), null, 2)}\n`);
+        }
       } else {
         const allowedOptions = {
           open: ["state", "json"],
           status: ["state", "json"],
           review: ["area", "target", "state", "status", "summary", "json"],
           questions: ["state", "json"],
+          changes: ["state", "json"],
           check: ["state", "json"],
           history: ["state", "json"],
           evaluate: ["state", "output", "json"],
@@ -376,7 +602,9 @@ async function run() {
             target: oneOption(options, "target"),
             stateDirectory: context.stateRoot,
             toolVersion: CLI_VERSION,
-            statusOnly: options.has("status")
+            // `--summary` is a shorter human view, so it reads without
+            // starting a pass. Only a bare `review` begins work.
+            statusOnly: options.has("status") || options.has("summary")
           });
           process.stdout.write(options.has("json")
             ? `${JSON.stringify(result, null, 2)}\n`
@@ -384,20 +612,24 @@ async function run() {
               statusOnly: options.has("status"),
               summary: options.has("summary")
             })}\n`);
-        } else if (action === "questions" || action === "history") {
+        } else if (action === "questions" || action === "changes" || action === "history") {
           const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
             stateDirectory: context.stateRoot,
             toolVersion: CLI_VERSION
           });
           process.stdout.write(options.has("json")
             ? `${JSON.stringify(
-              action === "questions" ? snapshot.review.questions : snapshot.review.passes,
+              action === "questions"
+                ? snapshot.review.questions
+                : action === "changes" ? snapshot.review.proposals : snapshot.review.passes,
               null,
               2
             )}\n`
             : `${action === "questions"
               ? formatAuthoringQuestions(snapshot)
-              : formatAuthoringHistory(snapshot)}\n`);
+              : action === "changes"
+                ? formatAuthoringChanges(snapshot)
+                : formatAuthoringHistory(snapshot)}\n`);
         } else if (action === "check") {
           const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
             stateDirectory: context.stateRoot,
@@ -668,9 +900,99 @@ async function run() {
         : `${formatArtifactListing(listing)}\n`);
       break;
     }
+    case "context": {
+      const action = requirePositional(positional, 0, "context action");
+      const integrations = options.get("integration") ?? [];
+      if (action === "adapters") {
+        rejectUnknownOptions(options, ["integration", "json"]);
+        const registry = await registryFromIntegrations(integrations);
+        const adapters = registry.list();
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(adapters, null, 2)}\n`
+          : `${formatAdapterListing(adapters)}\n`);
+        break;
+      }
+      if (action === "discover") {
+        rejectUnknownOptions(options, ["integration", "json"]);
+        const packagePath = requirePositional(positional, 1, "package path");
+        const discovery = await discoverFormatIntegrations(packagePath, integrations);
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(discovery, null, 2)}\n`
+          : `${formatIntegrationDiscovery(discovery)}\n`);
+        break;
+      }
+      if (action === "validate") {
+        rejectUnknownOptions(options, ["integration", "adapter", "json"]);
+        const packagePath = requirePositional(positional, 1, "package path");
+        const module = requirePositional(positional, 2, "context module");
+        const registry = await registryFromIntegrations(integrations);
+        const result = await validateContextModule(packagePath, module, {
+          registry,
+          adapterId: oneOption(options, "adapter")
+        });
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${formatContextValidation(result)}\n`);
+        if (!result.valid) process.exitCode = 1;
+        break;
+      }
+      if (action === "prepare") {
+        rejectUnknownOptions(options, ["request", "output", "integration", "json"]);
+        const projectPath = requirePositional(positional, 1, "resolved project path");
+        const request = oneOption(options, "request");
+        if (!request) throw new Error("Option --request is required");
+        const output = oneOption(options, "output");
+        if (!output) throw new Error("Option --output is required");
+        const registry = await registryFromIntegrations(integrations);
+        const result = await prepareContext(projectPath, request, output, { registry });
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${formatContextPreparation(result)}\n`);
+        if (result.bundle.modules.some((module) => module.validation.status === "invalid")) {
+          process.exitCode = 1;
+        }
+        break;
+      }
+      if (action === "record-use") {
+        rejectUnknownOptions(options, ["input", "output", "json"]);
+        const preparedPath = requirePositional(positional, 1, "prepared context path");
+        const inputPath = oneOption(options, "input");
+        if (!inputPath) throw new Error("Option --input is required");
+        const usage = JSON.parse(readFileSync(path.resolve(inputPath), "utf8"));
+        const output = oneOption(options, "output")
+          ?? path.join(path.resolve(preparedPath), "context-use-receipt.json");
+        const result = await recordContextUse(preparedPath, usage, output);
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `Recorded context use: ${result.receipt_id}\nReceipt: ${path.resolve(output)}\n`);
+        break;
+      }
+      if (action === "author") {
+        rejectUnknownOptions(options, ["integration", "write", "dry-run", "state", "json"]);
+        const packagePath = requirePositional(positional, 1, "package path");
+        if (integrations.length === 0) throw new Error("Supply at least one --integration source");
+        const plan = await planIntegrationBridges(packagePath, integrations);
+        const result = options.has("write")
+          ? await applyIntegrationBridgePlan(plan, { stateRoot: oneOption(options, "state") })
+          : null;
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result ?? plan, null, 2)}\n`
+          : `${formatIntegrationBridgePlan(plan)}${result ? `\nApplied package digest: ${result.digest}` : "\nDry run. Add --write to apply."}\n`);
+        break;
+      }
+      throw new Error(`Unknown context action: ${action}`);
+    }
     case "resources": {
-      rejectUnknownOptions(options, ["json"]);
+      rejectUnknownOptions(options, ["json", "show"]);
       const packagePath = requirePositional(positional, 0, "package path");
+      const show = oneOption(options, "show");
+      if (show) {
+        const bundled = await readBundledResource(packagePath, show);
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(bundled, null, 2)}\n`
+          : `${formatBundledResource(bundled)}\n`);
+        break;
+      }
       const listing = await listPackageImplementationResources(packagePath);
       process.stdout.write(options.has("json")
         ? `${JSON.stringify(listing, null, 2)}\n`
@@ -709,20 +1031,12 @@ async function run() {
       process.stdout.write(`${await computeDirectoryDigest(resourcePath)}\n`);
       break;
     }
-    case "adapters": {
-      const adapterList = listArtifactAdapters();
+    case "discover-providers": {
+      const consumerPath = requirePositional(positional, 0, "package path");
+      const providerResult = await discoverProviders(consumerPath, options.get("catalog") ?? []);
       process.stdout.write(options.has("json")
-        ? `${JSON.stringify(adapterList, null, 2)}\n`
-        : `${formatAdapterListing(adapterList)}\n`);
-      break;
-    }
-    case "validate-artifact": {
-      const packagePath = requirePositional(positional, 0, "package path");
-      const artifactId = requirePositional(positional, 1, "artifact ID");
-      const result = await validateArtifact(packagePath, artifactId);
-      process.stdout.write(options.has("json")
-        ? `${JSON.stringify(result, null, 2)}\n`
-        : `${formatArtifactValidation(result)}\n`);
+        ? `${JSON.stringify(providerResult, null, 2)}\n`
+        : `${formatProviderDiscovery(providerResult)}\n`);
       break;
     }
     case "discover-features": {

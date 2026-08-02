@@ -1,36 +1,31 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.seedspec.fixtures.comprehensive-application
 name: Comprehensive Application Fixture
-version: "0.1.0"
+version: 0.1.0
 kind: application
-description: Exercise a complete application package whose primary intent uses the ProductSpec format.
-
+description: Exercise a complete application package with unified primary intent and supporting context.
 metadata:
   license: Apache-2.0
-
 definition:
-  entrypoint: intent/allowance-tracker.product-spec.md
-  artifact: product-spec
-
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
   guide: configuration/guide.md
-
 provides:
   capabilities:
     - id: org.seedspec.core.households
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/households.md
     - id: org.seedspec.core.actors
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/actors.md
     - id: org.seedspec.core.chores
-      version: "1.1.0"
+      version: 1.1.0
       contract: capabilities/chores.md
       change_history:
-        - from: "1.0.0"
-          to: "1.1.0"
+        - from: 1.0.0
+          to: 1.1.0
           changes:
             - id: local-terminology
               type: additive
@@ -41,36 +36,39 @@ provides:
       conformance:
         suite: capabilities/conformance/chores.suite.yaml
     - id: org.seedspec.core.assignments
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/assignments.md
     - id: org.seedspec.core.approvals
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/approvals.md
     - id: org.seedspec.core.balances
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/balances.md
     - id: org.seedspec.core.transactions
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/transactions.md
-
 components:
   acceptance: acceptance/
   reference: reference/
-
 tasks: tasks.yaml
-
 artifacts:
-  - id: product-spec
-    type: org.seedspec.artifact.product-spec
-    path: intent/allowance-tracker.product-spec.md
-    label: Allowance Tracker ProductSpec
-    description: The package author's primary expression of the application's product intent.
+  - id: chore-reference
+    type: org.example.artifact.reference-markdown
+    path: reference/capabilities/chores-1.0.0.md
+    label: Chore capability reference
+    description: Supporting reference material for an earlier chore capability revision.
     media_type: text/markdown
-    format_version: "0.1"
-    conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/SPEC.md
     concerns:
-      - org.seedspec.concern.intent
-
+      - org.seedspec.concern.design
 extensions:
   org.seedspec.fixtures.catalog:
     audience: families
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: allowance-tracker.md
+      source:
+        kind: package
+        path: intent/allowance-tracker.md

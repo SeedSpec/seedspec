@@ -5,6 +5,69 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.3.0 — 2026-08-02
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.3` |
+| Exact protocol release / `@seedspec/protocol` | `0.3.0` |
+| Conformance suite | `0.3.0` |
+| `@seedspec/runtime` | `0.3.0` |
+| `@seedspec/cli` | `0.3.0` |
+
+Protocol 0.3 makes the unified context lifecycle the breaking interoperability
+change. The coordinated runtime and CLI release also advances guided authoring
+as a separate first-party product surface.
+
+### Guided authoring
+
+- Add revision-checked authoring operations for findings, questions, answers,
+  source attachments, and review closure.
+- Add digest-bound text-document proposals, explicit author acceptance or
+  rejection, and recoverable engine application. Accepted but unapplied changes
+  block packing; undecided proposals remain visible advisories. Authors can
+  retract accepted but unapplied changes without losing decision history.
+- Keep authoring reads side-effect free and report stale or unreadable history
+  as recoverable notices instead of command blockers.
+- Publish the authoring result contract and keep CLI and future web frontends on
+  one headless operation layer with replaceable storage boundaries.
+- Publish the separate authoring change-proposal contract outside Protocol
+  conformance and expose the complete lifecycle through structured CLI output.
+- Shorten the human entry prompt while preserving the complete version-matched
+  agent work order behind the CLI.
+- Add an authoring quickstart, worked example, error model, and bundled
+  documentation surfaces.
+- Improve implementation handoff discovery for declared providers and bundled
+  resources without turning discovery into activation.
+
+### Unified context lifecycle
+
+- Make `context.modules` the required semantic-input collection and
+  `definition.module` the primary intent reference.
+- Replace ambiguous source shapes with explicit `package`, `artifact`, and
+  `resource` discriminators.
+- Nest bridge bindings on target modules and keep bridge Skills as independent
+  modules.
+- Replace `context-modules.yaml` with digest-bound `context-index.yaml`.
+- Add request, bundle, preparation-receipt, use-receipt, and integration-
+  descriptor schemas.
+- Add instance-scoped adapter registration, inert integration discovery,
+  explicit native validation, verified bridge authoring, and atomic context
+  preparation.
+- Bind adapter files and bridge directories by digest. Never load adapter code
+  during discovery.
+- Keep artifacts passive. Primary intent is no longer an artifact disposition.
+- Treat Protocol 0.3 as a clean cut. Retired package shapes require re-authoring.
+
+### Composition carried forward
+
+- Preserve purpose- and audience-aware modules with logical identity and
+  namespaced native formats.
+- Add explicit bridge Skill bindings as a portable fallback for Skill-aware
+  harnesses while preserving native adapters and plain Markdown use.
+- Add recursively bundled child packages and explicit parent-to-child
+  integration seams.
+
 ## 0.2.3
 
 | Surface | Version |
@@ -92,8 +155,8 @@ distinct identities but use one coordinated first-party release version; see
   first real source migration must follow.
 - Distinguish the package-author primary intent source from end-user applied
   intent and agent proposals.
-- Allow a declared external intent format, including ProductSpec, to serve as
-  the primary definition without activating its native workflow.
+- Allow a declared external intent format to serve as the primary definition
+  without activating its native workflow.
 - Add explicit package-fit dispositions, project-local intent contributions,
   and an intent readiness gate before implementation-profile choice.
 - Distinguish package evidence, verification plans, baseline evidence,

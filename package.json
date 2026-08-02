@@ -1,6 +1,6 @@
 {
   "name": "seedspec",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "description": "Authoring tools, package protocol, runtime, and CLI for portable agent-ready seeds",
   "type": "module",
@@ -10,7 +10,7 @@
   "scripts": {
     "test": "npm run test --workspace @seedspec/runtime",
     "conformance:goldens": "node ./scripts/generate-conformance-goldens.mjs",
-    "release:protocol": "node ./scripts/generate-protocol-release.mjs && node ./scripts/generate-conformance-goldens.mjs && node ./scripts/generate-protocol-release.mjs",
+    "release:protocol": "node ./scripts/generate-protocol-release.mjs && node ./scripts/generate-conformance-goldens.mjs && node ./scripts/generate-protocol-release.mjs && node ./scripts/generate-conformance-goldens.mjs",
     "release:verify": "node ./scripts/verify-release.mjs",
     "release:pack": "npm pack --workspace @seedspec/protocol --dry-run && npm pack --workspace @seedspec/runtime --dry-run && npm pack --workspace @seedspec/cli --dry-run",
     "check:names": "node ./scripts/check-clean-names.mjs",

@@ -1,93 +1,96 @@
 ---
 name: author-seedspec
-description: Guide collaborative SeedSpec creation, review, and preparation by driving the version-matched `npx @seedspec/cli author` workflow beside a human author. Use when an agent is asked to create, co-author, review, improve, harden, or prepare a SeedSpec package while preserving explicit author authority over proposed document changes.
+description: Co-author, review, or prepare a SeedSpec with the version-matched CLI, keeping the review structure private, the conversation concise, findings limited to active authored material, and every package edit under explicit human acceptance. This is the default authoring skill whenever the SeedSpec CLI can be run; use shape-solution-intent only when it cannot.
 ---
 
 # Author a SeedSpec
 
-Use this skill as an optional convenience layer over the SeedSpec CLI. The CLI's
-current work order is authoritative and sufficient by itself; never make this
-skill a prerequisite for authoring.
+The CLI operating brief is authoritative. This skill routes you to it and
+carries the few habits that matter most; when the two ever differ, the brief
+wins.
 
 ## Begin or resume
 
-From the project containing the SeedSpec package, run:
-
-```sh
-npx @seedspec/cli author
-```
-
-Follow the `Next:` command it returns. Usually this is:
+From the SeedSpec project, run:
 
 ```sh
 npx @seedspec/cli author review
 ```
 
-Read the complete output before proposing work. It contains the
-version-matched instructions and current package state. Use `--summary` only
-when the user explicitly wants a shorter human-facing status; it intentionally
-hides instructions the agent needs.
+Follow the complete operating brief it returns. Do not search online guidance
+or inspect the SeedSpec implementation to supplement that brief.
 
-If the CLI cannot locate the package, inspect the reported candidates or pass
-the package directory once. Do not require the user to modify their PATH or
-install the package globally.
-
-## Preserve author authority
-
-Treat the human as the author and the agent as a co-author.
-
-- Inspect the supplied sources and current package before recommending changes.
-- Clearly distinguish supplied source material, author decisions, mechanical
-  transformations, and agent-proposed content.
-- Ask no more than three material questions at a time.
-- Explain the consequence of each unresolved decision.
-- Do not write agent-proposed document changes until the author explicitly
-  accepts them.
-- Keep speculative candidates outside the deliverable package.
-- Never imply that silence, continued conversation, or approval of one change
-  accepts unrelated changes.
-
-Mechanical state updates required by the CLI are not authored content. Keep
-them narrowly scoped and do not use them to smuggle in document changes.
-
-## Work through the CLI
-
-Use the command named by the current work order. The authoring surface includes:
+For a copyable starter, run:
 
 ```sh
-npx @seedspec/cli author
-npx @seedspec/cli author review
-npx @seedspec/cli author questions
-npx @seedspec/cli author check
-npx @seedspec/cli author history
-npx @seedspec/cli author evaluate
-npx @seedspec/cli author pack
-npx @seedspec/cli author help
+npx @seedspec/cli author prompt
 ```
 
-Do not substitute remembered procedures for the instructions emitted by the
-installed CLI version. When a command asks for a pass result, record decisions,
-evidence, accepted changes, open questions, and the resulting state in that
-result. Validate the package after accepted edits.
+Do not require a global install, PATH change, exact version, `--yes`, or
+explicit path in the ordinary human flow.
 
-The package is the durable source of truth. Conversation context may help make
-decisions, but it does not replace recorded artifacts.
+## Keep the process behind the conversation
 
-## Use specialized guidance only when available
+The review threads are private navigation and durable state. Do not announce
+areas, explain the framework, enumerate the package, narrate tool activity, or
+produce an audit report.
 
-Some projects may also provide skills for shaping intent or creating particular
-package kinds. Use those when relevant and already available. Their absence
-must not block the CLI-led authoring workflow.
+Default to a short reflection of the product meaning and one question. Surface
+one grounded concern at a time. Keep filenames, citations, inventory, and
+record fields in the workspace unless they are needed to discuss an exact
+change.
 
-Do not install skills, run package-provided executable material, upload package
-contents, or invoke external model services unless the user has separately
-authorized that action.
+Before responding, remove process narration and every mention of review-thread
+names or counts, current focus, durable state, the operating brief, or the CLI.
+The author-facing message should contain only the natural conversation.
 
-## Hand back clearly
+`Source-bound` limits what may become a finding; it does not require searching
+for sources. Use only the active package, active workspace, and explicitly
+declared sources. Ignore archives, backups, old workspaces, git history, sibling
+documents, and engine source unless the author directs otherwise.
 
-At the end of a working session, tell the author:
+## Preserve the seed and author authority
 
-- what was inspected;
-- which changes they accepted and were written;
-- which decisions remain open;
-- the exact next `npx @seedspec/cli author ...` command.
+Absence is not a gap. Do not use kind or domain checklists to introduce missing
+requirements. Broader ideation happens only when the author asks for it.
+
+When a concern is grounded:
+
+1. explain it briefly in product language;
+2. ask whether the author wants to address it;
+3. after they say yes, record the exact replacement with `author propose`;
+4. show the proposal ID, path, and exact wording;
+5. wait for explicit acceptance or rejection;
+6. record that decision with `author decide`; and
+7. apply only an accepted proposal with `author apply`.
+
+Do not treat silence or continued conversation as acceptance. Declining an
+improvement does not create configuration, a portable question, a task, or
+future implementation work. Before application, the author can reject a
+previously accepted proposal. The workspace retains both decisions.
+
+## Record through the commands
+
+Never hand-edit workspace files. Each command takes one JSON payload on stdin
+and reports the new state:
+
+```sh
+npx @seedspec/cli author record --json -         # findings, questions, inventory
+npx @seedspec/cli author answer --json -         # the author's answer, or a decline
+npx @seedspec/cli author attach-source --json -  # material the review may cite
+npx @seedspec/cli author propose --json -        # exact before and after text
+npx @seedspec/cli author decide --json -         # explicit author decision
+npx @seedspec/cli author apply --json -          # apply one accepted proposal
+npx @seedspec/cli author reviewed --json -       # close the thread
+```
+
+`author reviewed` refuses to close a thread with an unsettled proposal, then
+runs validation, linting, and the digest itself. Run `author schema result` and
+`author schema changes` to inspect the durable shapes.
+
+Keep that bookkeeping out of the conversation.
+
+The result summary is substantive state, not an activity log. Keep it empty
+while awaiting the author. Record the current question under `questions.asked`;
+when the thread is reviewed, summarize the product direction, clarification, or
+choice the author confirmed—not the agent actions that produced it.

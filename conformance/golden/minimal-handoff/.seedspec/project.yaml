@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 status: ready
 configuration_status: selected
 intent_status: affirmed
@@ -9,13 +9,15 @@ implementation_profile_status: not-declared
 root:
   id: org.seedspec.fixtures.portable-feature
   version: 0.1.0
-  digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+  digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
 additions: []
+composition: []
 configuration: resolved-config.yaml
 resolved_intent: resolved-intent.yaml
 task_index: tasks.yaml
 component_index: components.yaml
 artifact_index: artifacts.yaml
+context_index: context-index.yaml
 implementation_resource_index: implementation-resources.yaml
 implementation_resource_state: implementation-resource-state.yaml
 implementation_profile_state: implementation-profile-state.yaml

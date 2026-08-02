@@ -8,6 +8,8 @@ import {
   AUTHORING_TARGETS,
   resolveAuthoringStateDirectory
 } from "./authoring.js";
+import { isResolvedQuestion } from "./authoring/core/entries.js";
+import { AUTHORING_CHANGE_PROPOSAL_FORMAT } from "./authoring/core/proposals.js";
 import { SeedSpecError } from "./errors.js";
 import { resolvePackageLocation } from "./files.js";
 import { computeDirectoryDigest } from "./integrity.js";
@@ -17,8 +19,9 @@ export const AUTHORING_WORKSPACE_SNAPSHOT_FORMAT = "1";
 export const AUTHORING_WORKSPACE_OPERATION_FORMAT = "1";
 export const AUTHORING_WORKSPACE_REVISION_ALGORITHM = "seedspec-authoring-workspace-sha256-v1";
 
-const TERMINAL_OUTCOMES = new Set(["completed", "abandoned", "superseded"]);
-const RESOLVED_QUESTION_STATUSES = new Set(["resolved", "closed", "rejected"]);
+const TERMINAL_OUTCOMES = new Set(["reviewed", "completed", "abandoned", "superseded"]);
+const SATISFIED_OUTCOMES = new Set(["reviewed", "completed"]);
+
 
 function lexicalCompare(left, right) {
   return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
@@ -153,9 +156,22 @@ export async function discoverAuthoringWorkspace(startPath = process.cwd()) {
     const candidates = await discoveryCandidates(directory);
     if (candidates.length === 1) return candidates[0];
     if (candidates.length > 1) {
+      // A live workspace beside an unstarted suggestion is not ambiguous; the
+      // started one is the answer. Only two real workspaces need the author.
+      const started = candidates.filter((candidate) => candidate.stateExists);
+      if (started.length === 1) return started[0];
+      if (started.length === 0 && candidates.length > 0) {
+        const preferred = candidates.find(
+          (candidate) => path.basename(candidate.packageRoot) === "seedspec"
+        );
+        if (preferred) return preferred;
+      }
       throw new SeedSpecError("More than one SeedSpec authoring workspace was found", {
         code: "AMBIGUOUS_AUTHORING_WORKSPACE",
-        details: candidates.map(({ packageRoot }) => packageRoot)
+        details: [
+          ...candidates.map(({ packageRoot }) => packageRoot),
+          "Pass an explicit package path, or add --state <directory> to choose one."
+        ]
       });
     }
     const parent = path.dirname(directory);
@@ -166,8 +182,11 @@ export async function discoverAuthoringWorkspace(startPath = process.cwd()) {
   throw new SeedSpecError("No SeedSpec authoring project was found here", {
     code: "AUTHORING_WORKSPACE_NOT_FOUND",
     details: [
-      "Run this command inside a SeedSpec project.",
-      "To start a package explicitly, use `seedspec author create <package-path>`."
+      "To start a new package, run: seedspec init application --output <path>",
+      "  (kinds: solution, application, feature, component, workflow, automation, configuration, integration)",
+      "Then change into that directory and run: seedspec author",
+      "To add authoring state to a draft you already have, run: seedspec author create <package-path>",
+      "Discovery looks in the current directory and its parents; it does not search subdirectories."
     ]
   });
 }
@@ -251,6 +270,7 @@ async function inspectReviewState(stateRoot, stateExists) {
       passes: [],
       current: null,
       questions: { total: 0, open: 0, resolved: 0, items: [] },
+      proposals: { total: 0, proposed: 0, accepted: 0, rejected: 0, applied: 0, items: [] },
       diagnostics: []
     };
   }
@@ -288,6 +308,20 @@ async function inspectReviewState(stateRoot, stateExists) {
       code: "INVALID_AUTHORING_STATE",
       resource: "open-questions.yaml",
       message: "open-questions.yaml must contain a questions array",
+      details: []
+    });
+  }
+  const proposalState = await readYamlState(
+    path.join(stateRoot, "change-proposals.yaml"),
+    "change-proposals.yaml",
+    diagnostics
+  );
+  const proposalItems = Array.isArray(proposalState?.proposals) ? proposalState.proposals : [];
+  if (proposalState && !Array.isArray(proposalState.proposals)) {
+    diagnostics.push({
+      code: "INVALID_AUTHORING_STATE",
+      resource: "change-proposals.yaml",
+      message: "change-proposals.yaml must contain a proposals array",
       details: []
     });
   }
@@ -351,9 +385,17 @@ async function inspectReviewState(stateRoot, stateExists) {
     current,
     questions: {
       total: questionItems.length,
-      open: questionItems.filter((question) => !RESOLVED_QUESTION_STATUSES.has(question?.status)).length,
-      resolved: questionItems.filter((question) => RESOLVED_QUESTION_STATUSES.has(question?.status)).length,
+      open: questionItems.filter((question) => !isResolvedQuestion(question)).length,
+      resolved: questionItems.filter((question) => isResolvedQuestion(question)).length,
       items: questionItems
+    },
+    proposals: {
+      total: proposalItems.length,
+      proposed: proposalItems.filter(({ status }) => status === "proposed").length,
+      accepted: proposalItems.filter(({ status }) => status === "accepted").length,
+      rejected: proposalItems.filter(({ status }) => status === "rejected").length,
+      applied: proposalItems.filter(({ status }) => status === "applied").length,
+      items: proposalItems
     },
     diagnostics,
     workspace
@@ -366,6 +408,23 @@ function revisionDigest(packageDigest, stateDigest) {
   hash.update(`package:${packageDigest}\n`, "utf8");
   hash.update(`state:${stateDigest ?? "not-created"}\n`, "utf8");
   return `sha256:${hash.digest("hex")}`;
+}
+
+/**
+ * The one place a workspace revision is computed.
+ *
+ * Mutating operations compare against this value, and `author status` reports
+ * it, so the two must agree exactly. Computing it a second way anywhere else
+ * silently breaks optimistic concurrency: a caller would send back the revision
+ * it was given and always be told the workspace had changed.
+ */
+export async function computeWorkspaceRevision(packageRoot, stateRoot) {
+  const [draftDigest, stateInfo] = await Promise.all([
+    computeDirectoryDigest(packageRoot),
+    pathStatus(stateRoot)
+  ]);
+  const stateDigest = stateInfo ? await computeDirectoryDigest(stateRoot) : null;
+  return revisionDigest(draftDigest, stateDigest);
 }
 
 function bestEffortManifest(source) {
@@ -466,8 +525,12 @@ export async function inspectAuthoringWorkspace(inputPath, {
         ...review.questions,
         items: sanitizeValue(review.questions.items, replacements)
       },
+      proposals: {
+        ...review.proposals,
+        items: sanitizeValue(review.proposals.items, replacements)
+      },
       diagnostics: review.diagnostics,
-      complete: review.areas.every((area) => area.status === "completed")
+      complete: review.areas.every((area) => SATISFIED_OUTCOMES.has(area.status))
     }
   };
 }
@@ -537,6 +600,10 @@ export async function createAuthoringWorkspace(inputPath, {
     writeIfMissing(path.join(stateRoot, "open-questions.yaml"), stringifyYaml({
       authoring_state_version: AUTHORING_STATE_FORMAT,
       questions: []
+    })),
+    writeIfMissing(path.join(stateRoot, "change-proposals.yaml"), stringifyYaml({
+      authoring_change_proposals_version: AUTHORING_CHANGE_PROPOSAL_FORMAT,
+      proposals: []
     }))
   ]);
 
@@ -562,12 +629,18 @@ export function formatAuthoringWorkspaceSnapshot(snapshot) {
   const packageName = snapshot.package.id
     ? `${snapshot.package.id}${snapshot.package.version ? `@${snapshot.package.version}` : ""}`
     : "unidentified draft";
+  const proposals = snapshot.review.proposals ?? {
+    proposed: 0,
+    accepted: 0,
+    applied: 0
+  };
   const lines = [
     "SeedSpec authoring",
     `Draft: ${packageName}`,
     `Status: ${snapshot.package.status}`,
     `Documents: ${snapshot.documents.length}`,
-    `Questions: ${snapshot.review.questions.open} open, ${snapshot.review.questions.resolved} resolved`
+    `Questions: ${snapshot.review.questions.open} open, ${snapshot.review.questions.resolved} resolved`,
+    `Changes: ${proposals.proposed} proposed, ${proposals.accepted} accepted, ${proposals.applied} applied`
   ];
   if (snapshot.review.current) {
     const area = snapshot.review.areas.find(({ id }) => id === snapshot.review.current.area);
@@ -578,10 +651,10 @@ export function formatAuthoringWorkspaceSnapshot(snapshot) {
   } else if (snapshot.review.complete) {
     lines.push("Review: complete");
   } else if (snapshot.review.passes.length > 0) {
-    const completed = snapshot.review.areas.filter(({ status }) => status === "completed").length;
-    const next = snapshot.review.areas.find(({ status }) => status !== "completed");
+    const completed = snapshot.review.areas.filter(({ status }) => SATISFIED_OUTCOMES.has(status)).length;
+    const next = snapshot.review.areas.find(({ status }) => !SATISFIED_OUTCOMES.has(status));
     lines.push(
-      `Review: ${completed} of ${snapshot.review.areas.length} complete`,
+      `Review: ${completed} of ${snapshot.review.areas.length} reviewed`,
       `Next review: ${next?.id ?? "available"}`
     );
   } else {

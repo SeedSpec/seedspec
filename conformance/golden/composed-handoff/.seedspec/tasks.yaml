@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 packages:
   - package: org.seedspec.fixtures.comprehensive-application
     source_path: tasks.yaml
@@ -8,8 +8,8 @@ packages:
           behavior, and constraints that overlap this package before making
           changes.
         references:
-          - source_path: intent/allowance-tracker.product-spec.md
-            path: task-references/org.seedspec.fixtures.comprehensive-application/intent/allowance-tracker.product-spec.md
+          - source_path: intent/allowance-tracker.md
+            path: task-references/org.seedspec.fixtures.comprehensive-application/intent/allowance-tracker.md
       - id: review-author-context
         instruction: Review the supplied reference context and note where the existing
           solution requires an adaptation rather than a direct translation.

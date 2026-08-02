@@ -1,18 +1,27 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.example.revision-review
 name: Revision Review
-version: "0.1.0"
+version: 0.1.0
 kind: feature
 definition:
-  entrypoint: definition/feature.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
 requires:
   capabilities:
     - id: org.seedspec.core.actors
-      tested_against: "2.0.0"
+      tested_against: 2.0.0
 provides:
   capabilities: []
 compatibility:
   scope: generic
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: feature.md
+      source:
+        kind: package
+        path: definition/feature.md

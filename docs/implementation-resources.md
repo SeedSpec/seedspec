@@ -116,6 +116,95 @@ successful, but it cannot require an agent to obey—or even mechanically prove
 that it understood—the resource. The observable use boundary is `consulted` or
 `skipped`, with an optional reason.
 
+## Link, bundle, or use both
+
+Authors can make reference material available in three materially different
+ways:
+
+| Delivery choice | Main benefit | Main caveat |
+| --- | --- | --- |
+| A URL in profile guidance or instructions | Very lightweight and useful for visual direction, discovery, or human-readable documentation | It is not a verified SeedSpec resource. The page may drift, disappear, require an account, or expose documentation without reusable source. |
+| A declared canonical implementation resource | Keeps the package small while letting the resolver acquire a versioned, digest-verified resource | It still requires network access and must satisfy the implementing environment's trust policy. Resolution makes bytes available; it does not require an agent to use them. |
+| A bundled implementation resource | Gives every consumer the same package-local bytes, protected by the package and resource digests | It increases package size and can preserve stale or target-incompatible material unless the author maintains it. |
+
+Linking works well when current upstream material is more valuable than exact
+repeatability, the source is stable and publicly reachable, and a realization
+can degrade honestly if the material is unavailable. A link can still steer an
+agent strongly: the agent may inspect public documentation and reproduce the
+design language or implementation approach without copying source.
+
+The linked website may also expose new components, tools, or integration
+surfaces after the package is published. Those are implementation-time
+opportunities, not guaranteed capabilities of the SeedSpec or resulting
+realization; any behavior the package promises still belongs in its capability
+and acceptance material independently.
+
+Linking does not guarantee reuse. An agent or its environment may decline to
+download code from an unfamiliar location, lack network permission, encounter
+authentication or subscription boundaries, or find only examples and
+documentation rather than the referenced implementation units. A bare URL in
+Markdown is especially nondeterministic because SeedSpec cannot verify what the
+agent saw. Prefer a canonical resource manifest with an exact version and digest
+when the author expects remote code or guidance to be acquired rather than
+merely inspected.
+
+Bundling improves deterministic availability. The author chooses the exact
+units, versions, tokens, mappings, adapters, tests, and supporting guidance that
+travel with the package. Implementing agents can inspect those local bytes
+without first trusting or authenticating to an unrelated host, and future
+consumers can resolve the same material even when the upstream source changes.
+Bundling still does not make content trusted executable code, authorize its
+execution, prove compatibility, or force an agent to use every included unit.
+
+Package size is normally a secondary concern. A CDN can distribute and cache a
+package containing a few megabytes of reference material easily. Size becomes
+more consequential when an author bundles large generated assets, duplicated
+dependency trees, or hundreds of speculative components. That increases
+transfer, storage, digest, review, licensing, dependency, and integration cost,
+even when an agent consults only a small subset. Authors should normally bundle
+a curated, product-relevant set rather than an entire ecosystem merely because
+it is available.
+
+When practical, declaring both a canonical source and a bundled copy gives the
+strongest operational shape:
+
+1. the canonical resource can supply the requested current or pinned version;
+2. the bundled copy preserves known-good bytes when remote resolution is
+   unavailable; and
+3. resolution state records which source was actually used.
+
+This is not always necessary. Link-only profiles are appropriate for
+replaceable design direction, while bundled-only resources are appropriate for
+offline use, long-lived reproducibility, controlled environments, or exact
+author-curated implementation kits.
+
+### The digest is what carries trust, not the location
+
+Resolution prefers the canonical source so an adopter can receive a current or
+pinned version, and `resolution_status` records `bundled-fallback` when it does
+not. That ordering is about freshness. It is not a statement that remote bytes
+are more trustworthy than bundled ones.
+
+Every path verifies the same way. Canonical downloads are checked per file and
+in aggregate against the published manifest, and against the package-pinned
+digest when the author declared one. Bundled bytes are verified against
+`bundled.digest` at validation time and re-verified before they are promoted for
+use. A resource whose bytes do not match its digest is never consulted,
+regardless of where it came from.
+
+The practical consequence favors bundling for anything consequential. Bundled
+bytes are fixed at publication, travel with the package digest, and can be read
+in full before anything consults them:
+
+```bash
+seedspec resources <package-path> --show <resource-id>
+```
+
+A canonical-only resource cannot be reviewed that way until it is resolved, and
+what arrives can differ from what the author reviewed. Both are safe against
+tampering; only one is reviewable in advance. Authors distributing guidance that
+shapes agent behavior should bundle it.
+
 ## Tooling recommendations
 
 Package declarations express the package author's guidance. SeedSpec authoring

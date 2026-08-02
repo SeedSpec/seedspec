@@ -165,20 +165,6 @@ export function validateManifestSemantics(manifest) {
     if (artifactIds.has(artifact.id)) details.push(`artifacts repeats ${artifact.id}`);
     artifactIds.add(artifact.id);
   }
-  if (manifest.definition.artifact) {
-    const primaryArtifact = (manifest.artifacts ?? [])
-      .find((artifact) => artifact.id === manifest.definition.artifact);
-    if (!primaryArtifact) {
-      details.push(`definition.artifact references unknown artifact ${manifest.definition.artifact}`);
-    } else {
-      if (!primaryArtifact.path || primaryArtifact.path !== manifest.definition.entrypoint) {
-        details.push("definition.artifact must reference the same package-local path as definition.entrypoint");
-      }
-      if (!(primaryArtifact.concerns ?? []).includes("org.seedspec.concern.intent")) {
-        details.push("definition.artifact must declare org.seedspec.concern.intent");
-      }
-    }
-  }
   for (const relationship of manifest.relationships ?? []) {
     if (!artifactIds.has(relationship.from)) {
       details.push(`relationships references unknown source artifact ${relationship.from}`);
@@ -403,13 +389,21 @@ export function analyzeCapabilityDeclarations(root, additions) {
     })
   ));
 
+  // A package that declares the host concepts it expects, with no host selected
+  // yet, is in its designed state rather than a broken one. Reporting that as a
+  // high-severity concern trains agents to ignore severity, because the healthy
+  // case and the real one look identical. A requirement only becomes a strong
+  // signal once a host was actually chosen and still does not provide it.
+  const hostSelected = orderedAdditions.length > 0;
+
   const requirementReviews = requirements.flatMap((requirement) => (
     requirement.issues.map((issue) => {
       const revisionCandidate = issue === "revision-difference"
         ? requirement.providers.find((provider) => provider.revision_status === "different-revision")
         : undefined;
+      const unjoinedExpectation = issue === "no-declared-provider" && !hostSelected;
       const severity = revisionCandidate?.review_severity
-        ?? (issue === "no-declared-provider" ? "high" : "medium");
+        ?? (unjoinedExpectation ? "low" : issue === "no-declared-provider" ? "high" : "medium");
       return {
         code: issue,
         severity,

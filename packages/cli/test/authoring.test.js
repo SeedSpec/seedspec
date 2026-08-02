@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp } from "node:fs/promises";
+import { cp, mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -15,11 +15,16 @@ const fixture = path.join(
   repositoryRoot,
   "conformance/fixtures/comprehensive-application"
 );
+const bundledFixture = path.join(
+  repositoryRoot,
+  "conformance/fixtures/bundled-family-hub"
+);
 
-function run(arguments_, cwd) {
+function run(arguments_, cwd, input) {
   return spawnSync(process.execPath, [cli, ...arguments_], {
     cwd,
-    encoding: "utf8"
+    encoding: "utf8",
+    input
   });
 }
 
@@ -59,7 +64,7 @@ test("author discovers and resumes a conventional workspace without paths", asyn
   assert.doesNotMatch(nested.stdout, /Optional authoring skill/u);
 });
 
-test("author exposes review, questions, history, check, and help under one namespace", async () => {
+test("author exposes prompt, review, questions, history, check, and help under one namespace", async () => {
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
   const projectRoot = path.join(temporaryRoot, "project");
   const packageRoot = path.join(projectRoot, "seedspec");
@@ -68,12 +73,20 @@ test("author exposes review, questions, history, check, and help under one names
   assert.equal(run(["author"], projectRoot).status, 0);
   const review = run(["author", "review", "--status"], projectRoot);
   assert.equal(review.status, 0, review.stderr);
-  assert.match(review.stdout, /SeedSpec authoring audit/u);
+  assert.match(review.stdout, /SeedSpec authoring agent brief/u);
   assert.doesNotMatch(review.stdout, /## Area objective/u);
+
+  const prompt = run(["author", "prompt"], projectRoot);
+  assert.equal(prompt.status, 0, prompt.stderr);
+  assert.equal(
+    prompt.stdout.trim(),
+    "Co-author the SeedSpec in this directory with me. Run `npx @seedspec/cli author review` and follow the complete operating brief it returns. Do not change package documents without my explicit approval."
+  );
+  assert.doesNotMatch(prompt.stdout, /source-bound|review area|configuration|success material/iu);
 
   const questions = run(["author", "questions"], projectRoot);
   assert.equal(questions.status, 0, questions.stderr);
-  assert.match(questions.stdout, /No authoring questions recorded/u);
+  assert.match(questions.stdout, /No authoring-session questions recorded/u);
 
   const history = run(["author", "history"], projectRoot);
   assert.equal(history.status, 0, history.stderr);
@@ -86,6 +99,45 @@ test("author exposes review, questions, history, check, and help under one names
   const help = run(["author", "help"], projectRoot);
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /npx @seedspec\/cli author/u);
+
+  const guidance = run(["author", "guidance"], projectRoot);
+  assert.equal(guidance.status, 0, guidance.stderr);
+  assert.match(guidance.stdout, /composition\s+shaping prose for a declared parent-to-child integration seam/u);
+
+  const compositionGuidance = run(
+    ["author", "guidance", "--topic", "composition"],
+    projectRoot
+  );
+  assert.equal(compositionGuidance.status, 0, compositionGuidance.stderr);
+  assert.match(compositionGuidance.stdout, /## Responsibility boundary/u);
+  assert.match(compositionGuidance.stdout, /Delete unused sections/u);
+
+  const changesSchema = run(["author", "schema", "changes"], projectRoot);
+  assert.equal(changesSchema.status, 0, changesSchema.stderr);
+  assert.match(changesSchema.stdout, /authoring-change-proposals/u);
+});
+
+test("author review exposes recursive bundled composition and optional seam prompts", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
+  const projectRoot = path.join(temporaryRoot, "project");
+  const packageRoot = path.join(projectRoot, "seedspec");
+  await cp(bundledFixture, packageRoot, { recursive: true });
+
+  assert.equal(run(["author"], projectRoot).status, 0);
+  const review = run([
+    "author",
+    "review",
+    "--area",
+    "supporting-material",
+    "--target",
+    "compose"
+  ], projectRoot);
+
+  assert.equal(review.status, 0, review.stderr);
+  assert.match(review.stdout, /shared-agenda-widget/u);
+  assert.match(review.stdout, /responsibility boundaries, concept mapping, state ownership/u);
+  assert.match(review.stdout, /prompts, not required headings/u);
+  assert.match(review.stdout, /author guidance --topic composition/u);
 });
 
 test("author review emits the agent work order by default and shortens it only on request", async () => {
@@ -97,8 +149,23 @@ test("author review emits the agent work order by default and shortens it only o
   assert.equal(run(["author"], fullProjectRoot).status, 0);
   const full = run(["author", "review"], fullProjectRoot);
   assert.equal(full.status, 0, full.stderr);
-  assert.match(full.stdout, /## Area objective/u);
-  assert.match(full.stdout, /## Operating contract/u);
+  assert.match(full.stdout, /# SeedSpec authoring agent operating brief/u);
+  assert.match(full.stdout, /## How to talk to the author/u);
+  assert.match(full.stdout, /## Current focus/u);
+  assert.match(full.stdout, /Absence is not a gap/u);
+  assert.doesNotMatch(full.stdout, /Current source documentation|github\.com\/SeedSpec\/seedspec\/blob/u);
+
+  // Every command the brief prints must run for someone with no global
+  // install, so the brief may never emit a bare `seedspec` invocation.
+  const bareInvocations = full.stdout.match(/(?:^|[|(\s])seedspec [a-z]/gmu) ?? [];
+  assert.deepEqual(bareInvocations, [], "brief must invoke the CLI through npx");
+  for (const operation of ["record", "answer", "attach-source", "propose", "decide", "apply", "reviewed"]) {
+    assert.match(
+      full.stdout,
+      new RegExp(`npx @seedspec/cli author ${operation}`, "u"),
+      `${operation} must appear as a runnable command`
+    );
+  }
 
   const summaryProjectRoot = path.join(temporaryRoot, "summary-project");
   const summaryPackageRoot = path.join(summaryProjectRoot, "seedspec");
@@ -108,14 +175,119 @@ test("author review emits the agent work order by default and shortens it only o
   const summary = run(["author", "review", "--summary"], summaryProjectRoot);
   assert.equal(summary.status, 0, summary.stderr);
   assert.match(summary.stdout, /SeedSpec authoring summary/u);
-  assert.match(summary.stdout, /Review progress: 0 of 7 areas completed/u);
+  assert.match(summary.stdout, /Review progress: 0 of 4 areas reviewed/u);
   assert.match(summary.stdout, /rerun this review without `--summary`/u);
-  assert.doesNotMatch(summary.stdout, /## Area objective|## Operating contract/u);
+  assert.doesNotMatch(summary.stdout, /## How to talk to the author|## Current focus/u);
 
+  // `--summary` is a shorter human view, so peeking must not start work.
+  const afterSummary = run(["author", "history"], summaryProjectRoot);
+  assert.equal(afterSummary.status, 0, afterSummary.stderr);
+  assert.match(afterSummary.stdout, /No review passes recorded/u);
+
+  // A bare review is what begins a thread.
+  assert.equal(run(["author", "review"], summaryProjectRoot).status, 0);
   const history = run(["author", "history"], summaryProjectRoot);
   assert.equal(history.status, 0, history.stderr);
   assert.doesNotMatch(history.stdout, /No review passes recorded/u);
   assert.match(history.stdout, /in-progress/u);
+});
+
+test("author proposal commands keep package writes behind explicit acceptance", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
+  const projectRoot = path.join(temporaryRoot, "project");
+  const packageRoot = path.join(projectRoot, "seedspec");
+  await cp(fixture, packageRoot, { recursive: true });
+  assert.equal(run(["author"], projectRoot).status, 0);
+  assert.equal(run(["author", "review"], projectRoot).status, 0);
+
+  const documentPath = path.join(packageRoot, "definition", "app.md");
+  const beforeContent = await readFile(documentPath, "utf8");
+  const afterContent = `${beforeContent}\n\nThe author accepted this clarification.\n`;
+  const proposed = run(
+    ["author", "propose", "--json", "-"],
+    projectRoot,
+    JSON.stringify({
+      path: "definition/app.md",
+      summary: "Add the accepted clarification",
+      content: afterContent,
+      basis: { kind: "author-answer", references: [] }
+    })
+  );
+  assert.equal(proposed.status, 0, proposed.stderr);
+  const proposal = JSON.parse(proposed.stdout).proposal;
+  assert.equal(proposal.status, "proposed");
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const changes = run(["author", "changes"], projectRoot);
+  assert.equal(changes.status, 0, changes.stderr);
+  assert.match(changes.stdout, new RegExp(proposal.id, "u"));
+  assert.match(changes.stdout, /Before:[\s\S]*After:/u);
+
+  const decided = run(
+    ["author", "decide", "--json", "-"],
+    projectRoot,
+    JSON.stringify({ proposal_id: proposal.id, decision: "accept" })
+  );
+  assert.equal(decided.status, 0, decided.stderr);
+  assert.equal(JSON.parse(decided.stdout).proposal.status, "accepted");
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const applied = run(
+    ["author", "apply", "--json", "-"],
+    projectRoot,
+    JSON.stringify({ proposal_id: proposal.id })
+  );
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.equal(JSON.parse(applied.stdout).proposal.status, "applied");
+  assert.equal(await readFile(documentPath, "utf8"), afterContent);
+});
+
+test("a generated operation command preserves apostrophes in author prose", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
+  const projectRoot = path.join(temporaryRoot, "author's project");
+  const packageRoot = path.join(projectRoot, "seedspec");
+  await cp(fixture, packageRoot, { recursive: true });
+
+  assert.equal(run(["author"], projectRoot).status, 0);
+  const review = run(["author", "review"], projectRoot);
+  assert.equal(review.status, 0, review.stderr);
+
+  const recorded = run(
+    ["author", "record", packageRoot, "--json", "-"],
+    projectRoot,
+    JSON.stringify({ entries: [{ type: "question", question: "Is that the direction?" }] })
+  );
+  assert.equal(recorded.status, 0, recorded.stderr);
+  const questionId = JSON.parse(recorded.stdout).recorded[0].id;
+
+  const generated = review.stdout.match(
+    /npx @seedspec\/cli author answer[^\n]+--json - <<'SEEDSPEC_JSON_ANSWER'\n[\s\S]*?\nSEEDSPEC_JSON_ANSWER/u
+  );
+  assert.ok(generated, "the brief must contain the complete answer command");
+
+  const command = generated[0]
+    .replace(
+      "npx @seedspec/cli",
+      `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}`
+    )
+    .replace(
+      '{"question_id":"...","answer":"...","resolution":"resolved"}',
+      JSON.stringify({
+        question_id: questionId,
+        answer: "That's right — don't change it.",
+        resolution: "resolved"
+      })
+    );
+  const answered = spawnSync("/bin/sh", ["-c", command], {
+    cwd: projectRoot,
+    encoding: "utf8"
+  });
+  assert.equal(answered.status, 0, answered.stderr);
+
+  const result = JSON.parse(answered.stdout);
+  assert.equal(result.snapshot.review.questions.open, 0);
+  assert.equal(result.snapshot.review.questions.resolved, 1);
+  assert.equal(result.snapshot.review.questions.items[0].answer, "That's right — don't change it.");
 });
 
 test("the bundled authoring skill can be listed and exported project-locally", async () => {

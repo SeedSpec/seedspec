@@ -1,12 +1,21 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.example.invalid-path
 name: Invalid Path
-version: "0.1.0"
+version: 0.1.0
 kind: application
 definition:
-  entrypoint: ../outside.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
 provides:
   capabilities: []
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: outside.md
+      source:
+        kind: package
+        path: ../outside.md

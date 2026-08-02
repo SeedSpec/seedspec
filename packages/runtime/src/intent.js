@@ -4,25 +4,23 @@ import { readYamlFile } from "./files.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 
 function packageIntentSource(record, applied) {
-  const artifact = record.manifest.definition.artifact
-    ? (record.manifest.artifacts ?? []).find(
-        (candidate) => candidate.id === record.manifest.definition.artifact
-      )
-    : null;
-  const format = artifact
-    ? {
-        type: artifact.type,
-        artifact: artifact.id,
-        ...(artifact.format_version ? { format_version: artifact.format_version } : {}),
-        ...(artifact.conforms_to ? { conforms_to: artifact.conforms_to } : {})
-      }
-    : { type: "org.seedspec.intent.native" };
+  const module = record.manifest.context.modules.find(
+    (candidate) => candidate.id === record.manifest.definition.module
+  );
+  const format = {
+    id: module.format,
+    ...(module.format_version ? { version: module.format_version } : {}),
+    ...(module.conforms_to ? { conforms_to: module.conforms_to } : {})
+  };
 
   return {
     package: record.manifest.id,
     version: record.manifest.version,
     digest: record.digest,
-    entrypoint: record.manifest.definition.entrypoint,
+    module: module.id,
+    entrypoint: module.source.kind === "package" && !module.source.path.endsWith("/")
+      ? module.source.path
+      : `${module.source.path ?? ""}${module.entrypoint}`,
     provenance: "package-author",
     format,
     use: applied?.use ?? "unreviewed",
@@ -93,7 +91,7 @@ export async function resolveAppliedIntent(inputPath, records) {
   }
 
   const resolved = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     status: unresolved.length > 0 ? "review" : "affirmed",
     packages: records.map((record) => packageIntentSource(
       record,
@@ -116,7 +114,7 @@ export function formatResolvedIntentSummary(intent) {
   const lines = [
     `Applied intent: ${intent.status}`,
     ...intent.packages.map((item) => (
-      `- ${item.package}: ${item.use}; primary source ${item.format.type} at ${item.entrypoint}`
+      `- ${item.package}: ${item.use}; primary module ${item.module} (${item.format.id}) at ${item.entrypoint}`
     ))
   ];
   if (intent.contributions.length > 0) {

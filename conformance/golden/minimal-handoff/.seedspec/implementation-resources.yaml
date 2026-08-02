@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 policies:
   - package: org.seedspec.fixtures.portable-feature
     additional_guidance: unspecified

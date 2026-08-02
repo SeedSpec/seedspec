@@ -1,10 +1,10 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.example.chain-provider
 name: Chain Provider
-version: "0.1.0"
+version: 0.1.0
 kind: feature
 definition:
-  entrypoint: definition/feature.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
@@ -13,10 +13,19 @@ requires:
 provides:
   capabilities:
     - id: org.example.chain.ready
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/ready.md
 compatibility:
   scope: generic
 extensions:
   org.example.conformance-marker:
     preserved: true
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: feature.md
+      source:
+        kind: package
+        path: definition/feature.md

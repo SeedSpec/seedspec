@@ -1,11 +1,11 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.example.verification-methods
 name: Verification Methods
 version: 0.1.0
 kind: solution
 description: Exercises core and experimental implementation-profile condition verification methods.
 definition:
-  entrypoint: definition/solution.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
@@ -49,3 +49,12 @@ implementation_profiles:
           guidance: Follow package documentation or request user direction when the method is unsupported.
     tradeoffs:
       - Exists only to exercise interoperable verification declarations.
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: solution.md
+      source:
+        kind: package
+        path: definition/solution.md

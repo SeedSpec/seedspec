@@ -1,5 +1,24 @@
 import { validatePackage } from "./validate.js";
 
+function inspectComposition(record, edges = [], visited = new Set()) {
+  const key = `${record.manifest.id}\0${record.digest}`;
+  if (visited.has(key)) return edges;
+  visited.add(key);
+  for (const edge of record.composition.includes) {
+    edges.push({
+      parent: record.manifest.id,
+      id: edge.id,
+      path: edge.path,
+      package: edge.package,
+      version: edge.version,
+      digest: edge.digest,
+      integration: edge.integration
+    });
+    inspectComposition(edge.record, edges, visited);
+  }
+  return edges;
+}
+
 export async function inspectPackage(inputPath) {
   const record = await validatePackage(inputPath);
   const { manifest } = record;
@@ -15,8 +34,8 @@ export async function inspectPackage(inputPath) {
     description: manifest.description ?? null,
     metadata: manifest.metadata ?? {},
     definition: {
-      entrypoint: manifest.definition.entrypoint,
-      artifact: manifest.definition.artifact ?? null
+      module: manifest.definition.module,
+      context: manifest.context.modules.find((module) => module.id === manifest.definition.module)
     },
     configuration: {
       schema: manifest.configuration.schema,
@@ -29,12 +48,14 @@ export async function inspectPackage(inputPath) {
     decisions: manifest.decisions ?? [],
     implementationProfiles: manifest.implementation_profiles ?? [],
     components: manifest.components ?? {},
+    composition: inspectComposition(record),
     artifacts: manifest.artifacts ?? [],
     relationships: manifest.relationships ?? [],
     tasks: record.taskRunbook
       ? { path: manifest.tasks, items: record.taskRunbook.tasks }
       : null,
     implementationResources: manifest.implementation_resources ?? null,
+    contextModules: manifest.context.modules,
     compatibility: manifest.compatibility ?? null,
     extensions: manifest.extensions ?? {}
   };
@@ -48,13 +69,16 @@ export function formatInspection(inspection) {
     `Digest: ${inspection.digest}`,
     `Description: ${inspection.description ?? "not declared"}`,
     `Metadata: ${Object.keys(inspection.metadata).length ? Object.keys(inspection.metadata).sort().join(", ") : "none"}`,
-    `Definition: ${inspection.definition.entrypoint}${inspection.definition.artifact ? ` (primary intent artifact: ${inspection.definition.artifact})` : " (native SeedSpec intent)"}`,
+    `Definition: ${inspection.definition.module} (${inspection.definition.context.format}; ${inspection.definition.context.entrypoint})`,
     `Configuration: ${inspection.configuration.schema} (example: ${inspection.configuration.example})`,
     `Requires: ${inspection.requires.length ? inspection.requires.map((requirement) => (
       `${requirement.id} (tested against ${requirement.tested_against})`
     )).join(", ") : "none"}`,
     `Provides: ${inspection.provides.length ? inspection.provides.map((capability) => `${capability.id}@${capability.version}${capability.change_history?.length ? ` (${capability.change_history.length} revision transition(s))` : ""}${capability.conformance ? ` (conformance: ${capability.conformance.suite})` : ""}`).join(", ") : "none"}`,
     `Components: ${Object.keys(inspection.components).length ? Object.keys(inspection.components).sort().join(", ") : "none"}`,
+    `Bundled composition: ${inspection.composition.length
+      ? inspection.composition.map((edge) => `${edge.parent}/${edge.id} -> ${edge.package}@${edge.version}`).join(", ")
+      : "none"}`,
     `Artifacts: ${inspection.artifacts.length ? inspection.artifacts.map((artifact) => `${artifact.id} (${artifact.type})`).join(", ") : "none"}`,
     `Tasks: ${inspection.tasks ? `${inspection.tasks.items.length} ordered task(s) at ${inspection.tasks.path}` : "none"}`,
     `Implementation profiles: ${inspection.implementationProfiles.length
@@ -63,6 +87,10 @@ export function formatInspection(inspection) {
     `Implementation resources: ${inspection.implementationResources?.resources.length
       ? inspection.implementationResources.resources.map((resource) => `${resource.id} (${resource.kind}; ${resource.usage})`).join(", ")
       : "none"}`,
+    `Context modules: ${inspection.contextModules.length
+      ? inspection.contextModules.map((module) => `${module.id} (${module.format})`).join(", ")
+      : "none"}`,
+    `Context bridges: ${inspection.contextModules.reduce((count, module) => count + (module.bridges?.length ?? 0), 0)}`,
     `Additional guidance: ${inspection.implementationResources?.additional_guidance ?? "unspecified"}`,
     `Extensions: ${Object.keys(inspection.extensions).length ? Object.keys(inspection.extensions).sort().join(", ") : "none"}`
   ];

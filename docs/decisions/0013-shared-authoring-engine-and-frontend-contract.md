@@ -1,14 +1,24 @@
 # Decision 0013: Build CLI and web authoring on one headless engine
 
-- Status: accepted for the 0.2 authoring product
+- Status: accepted for the first-party authoring product
 - Date: 2026-07-24
+
+Implementation note, 2026-08-02: the 0.3 staging state now implements workspace
+creation and inspection, observations, questions, answers, source attachment,
+review closure, text-document proposals, explicit author decisions, and engine
+application. The replaceable storage adapter and workspace archive remain.
+
+The frontend and engine boundary remains accepted. Decision
+[0014](0014-source-bound-authoring.md) replaces the seven-pass default and
+review-gated packing behavior with four source-bound conversations and a
+minimal success-material gate.
 
 ## Context
 
 SeedSpec 0.2 has a useful headless authoring-review kernel. The runtime can
 scaffold a valid package, validate and lint it, create versioned review passes,
 track their outcomes outside the distributable package, inspect an independent
-handoff, and gate packing on durable review state.
+handoff, and report durable review state alongside publication readiness.
 
 It is not yet a complete authoring engine. Creating intent from source
 material, managing an invalid draft, recording questions and answers, proposing
@@ -84,9 +94,11 @@ The authoring engine owns:
 
 - workspace identity, revision, and lifecycle;
 - draft package documents and attached source-material records;
-- authoring target depth and kind-aware review state;
-- findings, material questions, author answers, and deferred questions;
-- proposed, accepted, rejected, and superseded changes with attribution;
+- authoring target depth and source-bound review state;
+- factual inventory, grounded findings, contradictions, optional suggestions,
+  session questions, and author answers;
+- proposed, accepted, rejected, and applied changes with attribution and
+  retained author-decision histories;
 - deterministic validation, lint, digest, publish-check, and export results;
 - version stamps for the protocol, engine, instruction, and state formats; and
 - durable transitions between drafting, review, author resolution, final
@@ -95,10 +107,11 @@ The authoring engine owns:
 A replaceable agent host owns semantic work:
 
 - interpreting source material;
-- identifying material gaps and ambiguities;
+- identifying contradictions and ambiguities triggered by authored material;
 - drafting questions, findings, and package changes;
 - explaining consequences and alternatives; and
-- recommending when a review area is ready to complete.
+- recommending whether an area is already good enough or has a small useful
+  improvement.
 
 The engine validates and records those proposals. It does not treat model
 output as trusted state, silently turn an agent proposal into author intent, or
@@ -122,7 +135,8 @@ Every consequential package mutation must be:
   agent proposal;
 - based on a known workspace revision and package digest;
 - accepted explicitly when it introduces or resolves material intent; and
-- followed by fresh deterministic results before a review pass can complete.
+- followed by fresh deterministic results before a review area can be marked
+  reviewed.
 
 Every agent-proposed document change requires explicit author acceptance.
 Deterministic mechanical work may apply as part of an already authorized engine
@@ -130,8 +144,8 @@ operation, but the resulting mutation must remain visible, attributable, and
 revision-bound.
 
 Drafting must tolerate temporarily invalid package content. Package validity is
-a checkpoint for completed review passes, publish checks, and export; it is not
-a precondition for reading status, editing a draft, or recovering a workspace.
+a checkpoint for reviewed areas, publish checks, and export; it is not a
+precondition for reading status, editing a draft, or recovering a workspace.
 
 Hosted operations use opaque workspace and document identifiers rather than
 server filesystem paths. Mutations require an expected workspace revision and
@@ -154,17 +168,19 @@ The first stable vertical slice will support:
    invalid;
 3. validate, lint, and digest the current valid draft;
 4. start or resume one review area;
-5. record findings and material questions;
-6. record an author answer or defer a question;
+5. record inventory, grounded findings, contradictions, suggestions, and
+   session questions;
+6. record an author answer or decline a suggestion without creating future
+   package work;
 7. propose a document change and inspect its diff;
 8. accept or reject the proposal against an expected workspace revision;
-9. complete, abandon, or supersede a review pass with verified results; and
+9. mark a review area improved, good enough, not relevant, abandoned, or
+   superseded with verified results; and
 10. explicitly export the portable package and run the publication gate.
 
-The current seven review areas remain reusable lenses. The default preparation
-workflow may order them, but the operation contract will not assume that every
-future frontend must render seven wizard pages or that every author must reach
-the deepest target.
+Review areas are engine-owned, versioned conversations rather than
+frontend-owned wizard pages. Their current source-bound form is defined by
+Decision 0014.
 
 ### Delivery sequence
 
@@ -192,7 +208,7 @@ This decision does not:
 - make authoring state part of a distributable SeedSpec package;
 - require identical CLI and web screen flow;
 - require identical CLI and web capabilities;
-- turn the seven review areas into protocol conformance or a quality score;
+- turn guided review areas into protocol conformance or a quality score;
 - require real-time multi-user editing in the first workbench;
 - make a hosted account necessary to author or consume a package; or
 - authorize publishing, external access, or tool execution from discovered

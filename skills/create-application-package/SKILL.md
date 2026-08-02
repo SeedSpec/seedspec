@@ -1,154 +1,116 @@
 ---
 name: create-application-package
-description: Turn a rough software product idea into a portable, implementation-agnostic SeedSpec application package with explicit actors, workflows, domain concepts, permissions, configuration, edge cases, and acceptance criteria. Use when creating or substantially revising an application package that must conform to the SeedSpec Protocol and validate with the seedspec CLI.
+description: Turn supplied software-product intent into a valid, portable SeedSpec application seed with separate observable success. Use when creating or substantially revising an application package without inventing product requirements or aiming for specification completeness.
 ---
 
-# Create SeedSpec application package
+# Create a SeedSpec application package
 
-Create durable core intent, not an implementation plan. Accept starting material ranging from one sentence to a detailed specification or working application. Keep frameworks, databases, cloud providers, and repository layouts out of the package unless the intended outcome genuinely depends on them. The runtime supplies general coding-agent handoff guidance separately.
+Create a useful starting seed, not a finished product design or implementation
+plan. Starting material may be one sentence, a detailed document, or an
+existing application.
 
-## 1. Select authoring depth
+## Source boundary
 
-Infer the appropriate depth from the request:
+Use only intent the author supplied or explicitly accepts.
 
-- **Capture**: preserve a rough idea in a minimal valid package without inventing details.
-- **Shape**: develop actors, outcomes, concepts, workflows, and meaningful variation.
-- **Harden**: add permissions, invariants, failures, edge cases, and observable acceptance.
-- **Compose**: declare mature capabilities and related artifacts for reuse.
+- Absence is not a gap.
+- Do not add actors, permissions, workflows, failures, policies, edge cases,
+  or technical requirements merely because applications often have them.
+- An authored claim may be clarified or compared with another authored claim.
+- A domain concept the author introduces may be evaluated with relevant
+  expertise.
+- Broader product ideation happens only when the author asks for it. Keep those
+  ideas optional until accepted.
 
-Do not force a sparse idea through every stage. If depth is ambiguous, capture what is known, record consequential unknowns, and offer deeper authoring as a later step.
+If two authored claims conflict, cite both and help the author resolve them.
+Do not hide the contradiction behind implementation freedom.
 
-## 2. Establish context
-
-Read `docs/protocol.md` and `packages/protocol/schemas/v0.2/seedspec.schema.json` from the SeedSpec repository. If a related package or product document exists, inspect it before asking questions.
-
-Extract only what the supplied material supports:
-
-- intended users and their desired outcomes;
-- actor roles and authority boundaries;
-- core domain concepts and their relationships;
-- fundamental workflows and state transitions;
-- permissions, invariants, failures, and edge cases;
-- behaviors likely to vary between installations;
-- observable success claims and credible verification plans;
-- non-goals, forbidden states, and genuine constraints; and
-- choices fixed by the author, reserved for the end user, or delegated to the
-  implementing agent.
-
-Separate required core behavior from optional features. Do not fold optional ideas into the application merely because they were mentioned. For capture-only work, an empty capability list and empty-object configuration are valid.
-
-## 3. Resolve only material ambiguity
-
-Ask a targeted question only when different answers would materially change product behavior, permissions, accounting, irreversible data treatment, or package portability. Group closely related decisions. Continue with clearly recorded, reversible example values for routine details; the example is not automatically an end-user-selected default.
-
-Never ask the user to choose manifest syntax, directories, schema mechanics, or implementation technology as part of product discovery.
-
-## 4. Design configuration
-
-Turn meaningful product variations into a small configuration surface. Include a choice when multiple reasonable installations need different behavior. Keep invariants fixed when varying them would undermine the product's identity or safety.
-
-For every option:
-
-- use product language;
-- define allowed values and validation in JSON Schema;
-- select a coherent example value;
-- explain prospective versus historical effects when relevant;
-- avoid technical preferences such as framework or hosting.
-
-## 5. Create the package
-
-Run `seedspec init application --output <package-path>` when the CLI is available, then replace the starter content. Otherwise reproduce the same protocol shape.
-
-Write:
-
-- `seedspec.yaml` with a reverse-DNS identity, application kind, entrypoints, versioned provided capabilities, and discoverable components;
-- one contract file for every provided capability;
-- one primary intent source with clear **Purpose**, **Obligations and
-  boundaries**, **Success and evidence**, and **Decision latitude** semantics;
-- `configuration/schema.json`, `configuration/example.yaml`, and a guide when options need explanation;
-- `acceptance/criteria.md` with numbered, observable behaviors covering success, authorization, state, configuration, idempotency, and failure paths.
-
-When sequence itself adds implementation value, optionally declare a `tasks`
-runbook. Keep it to ordered agent reminders with only stable `id`,
-`instruction`, and optional package-file `references`. Do not restate features,
-add checkpoints or dependency fields, or put mutable progress in the package.
-Array order is the task order, and completing it never proves acceptance.
-
-Use Markdown as the expressive center. Structured capability change history and optional conformance material may add machine-operable severity, data-shape, scenario, and eval evidence without replacing the behavioral contract.
-
-Declare capabilities as namespaced, versioned product contracts such as `org.seedspec.core.actors`, not screens, classes, endpoints, or infrastructure.
-For every revised capability, declare a contiguous change-history transition
-tagged breaking, additive, or clarifying consistently with its version bump.
-When useful, attach a version-bound conformance suite and label its coverage
-`partial` unless its checks credibly exercise the entire contract.
-
-Use native SeedSpec Markdown for the primary intent unless the author already
-uses a recognized external intent format. To make an external document such as
-ProductSpec the primary source, declare it as an intent artifact, set
-`definition.entrypoint` to its path, and set `definition.artifact` to its ID.
-Do not duplicate a weaker native definition merely to satisfy the package. This
-selects the document's intent role, not its parser, skills, or workflow.
-
-Preserve other useful specifications, designs, plans, infrastructure material,
-or package evidence as supporting artifacts with namespaced types and concerns.
-For package evidence, use `evidence_for` to name the package claim it supports.
-Do not imply that package evidence proves a future user realization, and do not
-manufacture artifacts merely to fill a category.
-
-At packaging time, inspect the available versioned implementation-resource
-catalogs. Offer tested SeedSpec resources as defaults, but let the author remove
-them, change `expected`, `recommended`, or `available` usage, and choose
-`additional_guidance: none` or `agent-delegated`. Prefer compact skills whose
-frontmatter lets the implementing agent decide relevance. Do not include generic
-advice merely to make the package appear more complete.
-
-Treat a bundled skill as package-scoped guidance. It will be explicitly
-consulted from the resolved handoff, not installed or automatically invoked by
-frontmatter. Keep supporting references relative to the skill root, and keep
-solution behavior and success criteria in the SeedSpec rather than the skill.
-
-For a bundled failsafe, compute its exact bytes with
-`seedspec resource-digest <directory>`. Keep capability and target applicability advisory; it helps
-resource discovery but never claims that the resulting application implements
-the capability or supports the target.
-
-When the same core intent has multiple materially different implementation
-directions, preserve them as `implementation_profiles` rather than product
-configuration or solution decisions. Describe prerequisites and blockers as
-verifiable conditions, keep profile-specific guidance separate from the core
-definition, and do not imply that an author preference overrides the end user.
-
-## 6. Validate and review
+## Create the practical minimum
 
 Run:
 
 ```bash
-seedspec validate <package-path>
-seedspec inspect <package-path>
-seedspec artifacts <package-path>
-seedspec resources <package-path>
+npx @seedspec/cli init application --output <package-path>
 ```
 
-If the author deliberately included a recognized native format and wants its conformance checked, invoke `seedspec validate-artifact <package-path> <artifact-id>` separately. Successful package validation must not be presented as native artifact validation, or vice versa.
+Then replace the scaffold with:
 
-Repair every schema, path, configuration, and capability error. Then review the package directly:
+- `seed.md`, stating what should exist or change, who it is for, and why it
+  matters; and
+- `success.md`, stating at least one observable result supported by the seed.
 
-- Can a reader recognize the same product when implementation details vary?
-- Are role boundaries and state transitions explicit?
-- Can retries or concurrent decisions duplicate consequential actions?
-- Are accounting or history rules auditable where relevant?
-- Does each configuration choice have defined behavior?
-- Are acceptance criteria observable rather than architectural?
-- Are non-goals distinguishable from states the realization must forbid?
-- Does each success claim distinguish a future verification plan from actual
-  package, baseline, realization, or outcome evidence?
-- Is decision latitude explicit enough that an end user and agent know which
-  choices require affirmation?
-- Did distribution-service policy or publisher commercial language leak into
-  the protocol artifact?
+The protocol also requires the generated manifest and configuration schema and
+example. Keep the configuration surface empty unless the author deliberately
+offers product variation.
 
-Continue with `seedspec prepare <package-path>` so the author and agent work
-through the versioned review areas. Before distribution, require
-`seedspec publish-check <package-path>` and use `seedspec pack <package-path>`
-to create the digest-bound archive and receipt. A completed review is a
-preparation record, not a certification.
+A sparse seed is valid. Do not manufacture capabilities, tasks, profiles,
+artifacts, skills, or reference code to make the package appear mature.
+
+## Add only authored structure
+
+When the supplied intent already introduces a concern, represent it in the
+smallest appropriate place:
+
+- fixed product intent or boundaries stay in the primary seed;
+- deliberately selectable product behavior belongs in configuration;
+- optional composable behavior may be an addition;
+- materially different realization directions may be implementation profiles;
+- useful native source material may be an artifact;
+- agent guidance or code may be an implementation resource; and
+- ordered implementation reminders may be a task runbook.
+
+Configuration is not a destination for unresolved questions. For each declared
+option, make its meaning, effect, valid values, and relevant success observation
+clear.
+
+Do not ask the author to decide manifest syntax, directories, schema mechanics,
+frameworks, databases, hosting, or other implementation choices unless their
+supplied intent makes one a genuine outcome constraint.
+
+## Co-author through private review threads
+
+Use the version-matched work order:
+
+```bash
+npx @seedspec/cli author review
+```
+
+Treat the four threads as private navigation, not a visible conversation
+outline. Do not announce areas, explain the framework, enumerate the package,
+or present an audit report. Start with a short reflection of the intended
+application and one question. Surface one grounded concern at a time.
+
+`Source-bound` limits findings to the active package and declared sources; it
+does not require searching archives, history, sibling files, or implementation
+code for more context.
+
+After the author agrees to address a concern, record the exact replacement with
+`author propose` and show its ID, path, and wording. Record explicit acceptance
+or rejection with `author decide`. Apply only an accepted proposal with
+`author apply`. Before application, the author can reject a previously accepted
+proposal without losing its earlier decision record.
+
+Questions recorded in the local authoring workspace belong to this conversation.
+Declining a suggestion does not create configuration, a portable question, a
+future task, or an implementation obligation.
+
+## Validate and package
+
+Run:
+
+```bash
+npx @seedspec/cli validate <package-path>
+npx @seedspec/cli lint <package-path>
+npx @seedspec/cli digest <package-path>
+npx @seedspec/cli publish-check <package-path>
+```
+
+Repair protocol, path, schema, configuration, and broken-reference errors.
+Treat lint as source-bound advice, not a missing-feature checklist.
+
+Publish readiness requires stable valid bytes and a declared, non-placeholder
+success component. Completing all guided review threads is useful evidence of
+co-authoring, but is not required and does not certify quality or completeness.
+
+Use `npx @seedspec/cli pack <package-path>` to create the digest-bound archive and
+receipt when the publish check is ready.

@@ -1,41 +1,43 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.seedspec.fixtures.revision-feature
 name: Revision Feature Fixture
-version: "0.1.0"
+version: 0.1.0
 kind: feature
 description: Exercise feature requirements whose tested revisions differ from a selected provider.
-
 metadata:
   license: Apache-2.0
-
 definition:
-  entrypoint: definition/feature.md
-
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
-
 requires:
   capabilities:
     - id: org.seedspec.core.actors
-      tested_against: "1.0.0"
+      tested_against: 1.0.0
     - id: org.seedspec.core.chores
-      tested_against: "1.0.0"
+      tested_against: 1.0.0
     - id: org.seedspec.core.assignments
-      tested_against: "1.0.0"
+      tested_against: 1.0.0
     - id: org.seedspec.core.approvals
-      tested_against: "1.0.0"
-
+      tested_against: 1.0.0
 provides:
   capabilities:
     - id: org.seedspec.engagement.chore-streaks
-      version: "1.0.0"
+      version: 1.0.0
       contract: capabilities/chore-streaks.md
-
 compatibility:
   scope: domain
   domain: org.seedspec.domain.household-work
-
 components:
   integration: integration/
   acceptance: acceptance/
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: feature.md
+      source:
+        kind: package
+        path: definition/feature.md

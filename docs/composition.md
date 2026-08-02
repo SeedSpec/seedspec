@@ -4,11 +4,15 @@
 > state requirements are defined in `docs/protocol.md` and the conformance suite.
 
 The normative algorithm is `declaration-review-v1` in `docs/protocol.md`.
-Resolution begins with one root package and an unordered user selection of
-additions. Manifest kind hints do not constrain either position.
+Resolution begins with one root package, an unordered user selection of
+explicit additions, and every recursively bundled child declared by those
+packages. Manifest kind hints do not constrain either position.
 
 ```text
 validated package bytes
+          |
+          v
+recursive bundled children + authored integration seams
           |
           v
 deterministic package-ID order
@@ -36,8 +40,9 @@ agent inspects actual realization and decides integration
 ```
 
 Resolution fails for structural problems: invalid packages or references, unsafe
-content, duplicate IDs within a manifest, and selecting the
-same package ID twice.
+content, duplicate IDs within a manifest, mismatched bundled identity,
+conflicting versions or digests for one selected package ID, and selecting the
+same explicit package ID twice.
 
 Resolution does not fail merely because:
 
@@ -70,6 +75,56 @@ required decision answers, or an ambiguous implementation-profile preference
 produce a valid project
 with `status: needs-input`; they do not disappear into implementation
 assumptions.
+
+## Bundled package edges
+
+A parent can carry complete child SeedSpecs under its own package root:
+
+```yaml
+components:
+  integration: integrations/
+
+composition:
+  includes:
+    - id: shared-agenda-widget
+      path: bundled/widget
+      package: org.example.components.widget
+      version: 1.2.0
+      digest: sha256:<child-package-digest>
+      integration: integrations/shared-agenda-widget.md
+```
+
+The edge identifies the exact child and one Markdown seam. The integration file
+is ordinary prose with a declared semantic role. The protocol does not require
+headings or fields inside it.
+
+Authoring tools can offer a structure when it helps. Useful topics include:
+
+- responsibility split;
+- parent and child concept mapping;
+- state ownership;
+- actions and events crossing the seam;
+- configuration mapping;
+- loading, empty, and failure states;
+- excluded responsibilities; and
+- observable integration checks.
+
+These are prompts, not a completeness checklist. Only topics made material by
+the authored parent-child relationship belong in the seam.
+
+Children can declare their own children. Resolution walks the full tree,
+selects each exact child identity once, and preserves every edge. The resolved
+`project.yaml` points each edge at the copied integration Markdown so an agent
+can inspect the package as the author intended.
+
+Bundling and an integration seam do not prove compatibility. The implementing
+agent still maps both authored intents to the actual environment. It may adapt
+the realization, but it should not silently narrow either package's behavioral
+contract.
+
+The protocol does not search a component catalog or decide what to bundle.
+SeedSpec Library and Authoring products can make those discovery and
+recommendation decisions before they produce this portable package structure.
 
 Resolution compares package-author and end-user applied intent before profile
 evaluation. A package may apply as authored, require adaptation, be only

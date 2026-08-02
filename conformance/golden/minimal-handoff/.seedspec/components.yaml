@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 components:
   - package: org.seedspec.fixtures.portable-feature
     name: acceptance

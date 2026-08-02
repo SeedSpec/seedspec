@@ -15,7 +15,7 @@ npx @seedspec/cli author
 npx @seedspec/cli version
 ```
 
-Human-facing commands use npm's current release and allow npm to ask before its
+Human-facing commands use npm's `latest` tag and allow npm to ask before the
 first download. Pin the package version and add `--yes` for unattended tests or
 automation.
 
@@ -30,8 +30,10 @@ Common entry points:
 
 ```bash
 seedspec author
+seedspec author prompt
 seedspec author status
 seedspec author review [--summary]
+seedspec author guidance [--topic <topic>]
 seedspec author questions
 seedspec author check
 seedspec author history
@@ -46,12 +48,12 @@ seedspec eval <package-path> [--output <directory>]
 seedspec pack <package-path> [--output <directory>]
 seedspec skills list
 seedspec skills export --output .agents/skills
-seedspec upgrade <package-path> --to 0.2.0 --dry-run
+seedspec upgrade <package-path> --to 0.3.0 --dry-run
 seedspec validate <package-path>
 seedspec version --json
 seedspec doctor [--full] [--json]
 seedspec audit <package-path>
-seedspec audit <package-path> --area material-ambiguity
+seedspec review <package-path> --area coherence
 seedspec audit <package-path> --status
 seedspec docs authoring
 seedspec inspect <package-path> --json
@@ -59,14 +61,26 @@ seedspec begin <package-path-or-github-url>
 seedspec digest <package-path>
 seedspec capability-conformance <package-path> <capability-id> [--result <yaml>]
 seedspec conformance [cases.yaml] [--json] [--output <report.json>]
+seedspec context discover <package-path> --integration <path> [--json]
+seedspec context validate <package-path> <module> --integration <path> [--adapter <id>] [--json]
+seedspec context author <package-path> --integration <path> [--write] [--json]
+seedspec context prepare <project-path> --request <yaml> --output <directory> [--integration <path>] [--json]
+seedspec context record-use <prepared-context-path> --input <json> [--output <json>] [--json]
 seedspec docs implementing
 seedspec prompt [package-path-or-github-url]
 ```
 
 `seedspec begin` is the read-only agent handoff. It validates the package and
 surfaces package-author intent, applied-intent, configuration,
-implementation-profile, ordered-task, supporting-material, trust, and verification-plan choices
-before implementation begins.
+implementation-profile, context-module, ordered-task, supporting-material,
+trust, and verification-plan choices before implementation begins.
+
+The `context` commands expose the Protocol 0.3 integration lifecycle.
+`discover` reads inert integration descriptors. `validate` loads an adapter
+only from an explicitly supplied integration. `author` proposes bridge Skills
+and changes package files only with `--write`. `prepare` creates a
+request-specific digest-bound bundle. `record-use` records consumer-reported
+consultation separately.
 
 `begin` and the root package input to `resolve` also accept public GitHub
 repository URLs and GitHub `/tree/<ref>/<package-path>` URLs:
@@ -91,15 +105,30 @@ mentions the bundled `author-seedspec` skill and tells the agent to ask before
 exporting it into the project. The skill is optional; declining it or using an
 agent without skill support does not change the workflow.
 
-The `status`, `review`, `questions`, `check`, `history`, `evaluate`, and `pack`
-actions place existing authoring capabilities under one discoverable namespace.
-Exact paths, state directories, revisions, and JSON are available for agents
-and automation without defining the beginner experience.
+`seedspec author prompt` prints the short, copyable prompt for a person to give
+an agent. `author review` prints the complete self-contained operating brief:
+role, active context boundary, natural conversation behavior, private review
+model, change authority, and durable record rules. The agent does not need to
+find current documentation or inspect runtime source to learn how to co-author.
+`author guidance` lists optional depth topics. The `composition` topic supplies
+a removable Markdown shape for a declared parent-to-child integration seam; it
+does not make those headings protocol requirements.
 
-`seedspec prepare` moves a package through deterministic baseline checks,
-guided agent review, author resolution, publish checking, an optional
-fresh-agent evaluation, and packing. The command is resumable from durable
-state and explains every phase.
+The `status`, `review`, `questions`, `changes`, `check`, `history`, `evaluate`,
+and `pack` actions place existing authoring capabilities under one discoverable
+namespace. Exact paths, state directories, revisions, and JSON are available
+for agents and automation without defining the beginner experience.
+
+The `propose`, `decide`, and `apply` actions keep document mutation behind an
+inspectable before/after record and explicit author authority. Applying a stale,
+rejected, or undecided proposal fails without changing package bytes. An author
+can reject an accepted but unapplied proposal without losing its earlier
+decision record.
+
+`seedspec prepare` reports deterministic baseline checks, optional guided
+review, publish readiness, an optional fresh-agent evaluation, and packing. The
+command is resumable from durable state and does not require review completion
+or local question closure before a valid seed can be packed.
 
 `seedspec author create` assigns an opaque workspace identity and initializes
 portable authoring state around an existing, empty, or invalid draft directory.
@@ -113,16 +142,21 @@ deterministic package status, questions, and review passes. It remains readable
 while ordinary draft content is invalid. Human text omits opaque IDs and
 digests unless they are needed; `--json` retains the complete machine contract.
 
-`seedspec review` (also available as `seedspec audit`) creates or continues an authoring review outside the
-distributable package and prints versioned Markdown instructions for a capable
-agent. The same command advances after a completed pass; `--area` targets one
-of the seven review areas. The complete work order is the default output.
+`seedspec review` (also available as the compatibility name `seedspec audit`)
+creates or continues a source-bound authoring review outside the distributable
+package and prints versioned Markdown instructions for a capable agent. Its
+four review threads are private scaffolding, not author-facing wizard steps or
+report headings. The same command advances after a reviewed thread; `--area`
+targets seed, coherence, success, or supporting-material state. The complete
+operating brief is the default output.
 `--summary` starts or continues the same pass but emits a shorter human-facing
 view, while `--status` is read-only. The CLI does not embed a model or modify
 package content. See `seedspec docs authoring` for guidance bundled with the
 installed version.
 
-`seedspec publish-check` enforces the blocking preparation gates.
+`seedspec publish-check` blocks only on protocol integrity, stable bytes, and a
+separate non-placeholder success component. Guided review and local session
+questions are advisories.
 `seedspec eval` creates a digest-bound independent-handoff workspace and agent
 instructions without running a model. `seedspec pack` emits the source archive,
 versioned inspection and publish-check records, and a digest-bound receipt.
@@ -138,9 +172,10 @@ version-matched package-to-handoff workflow bundled with the CLI.
 human to paste into a tool-capable agent. The prompt directs the agent to run
 `npx @seedspec/cli begin ...`; no global install or SeedSpec skill is required.
 
-Protocol `0.2` is experimental. Discovery or validation never authorizes
+The protocol is experimental. Discovery or validation never authorizes
 package activation or execution.
 
 - Documentation: [seedspec.dev](https://seedspec.dev)
 - Why semantic structure matters: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/semantic-structure.md)
+- Context modules: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/context-modules.md)
 - Source: [SeedSpec/seedspec](https://github.com/SeedSpec/seedspec)

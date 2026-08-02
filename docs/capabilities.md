@@ -127,8 +127,11 @@ may include:
   interpreted by a named runner; and
 - `eval-suite` bundles interpreted by a named runner.
 
+Replace `<protocol-family>` with the family from the selected
+`protocol-release.json`.
+
 ```yaml
-protocol_version: "0.2"
+protocol_version: "<protocol-family>"
 capability:
   id: org.example.product.transactions
   version: "1.2.0"

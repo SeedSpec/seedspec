@@ -14,23 +14,29 @@
   integrity, resolution, handoff state, and verification state.
 - **SeedSpec package**: a portable directory rooted at `seedspec.yaml`. The
   package is the container for core intent, optional implementation profiles,
-  optional ordered task runbooks, optional implementation resources, and
-  related artifacts.
+  optional bundled child packages, optional ordered task runbooks, optional
+  implementation resources, optional context modules, and related artifacts.
 - **core intent**: the intended outcome expressed collectively by a package's
   definition, configuration surface, decisions, capability contracts,
   constraints, and acceptance material. Core intent is a logical part of the
   package, not a required file named `core-spec`.
-- **primary intent source**: the package author's principal intent document,
-  referenced by `definition.entrypoint`. It may use native SeedSpec Markdown or
-  a declared external format such as ProductSpec. When `definition.artifact`
-  identifies that same file, the artifact's format is first-class core intent;
-  its native workflow is still not activated automatically.
+- **primary intent module**: the package author's principal intent context
+  module, referenced by `definition.module`. It can use native SeedSpec
+  Markdown or another declared format. Its format-specific workflow is not
+  activated automatically.
 - **kind hint**: author-supplied metadata describing the likely realization
   shape. It guides tooling but does not determine composition role or required
   fields.
 - **root package**: the first package selected for one resolution.
-- **addition**: any other package selected into that resolution. Root and
-  addition are resolution roles, not package kinds.
+- **addition**: any other package selected explicitly or through recursive
+  bundling into that resolution. Root and addition are resolution roles, not
+  package kinds.
+- **composition edge**: one parent-to-child relationship declared through
+  `composition.includes`, with an exact bundled child identity and one
+  integration seam.
+- **integration seam**: parent-authored Markdown explaining how one bundled
+  child is intended to participate in that parent. The role is semantic; the
+  prose has no required headings or structured compatibility language.
 - **semantic role**: the recognized responsibility of package or project
   material, such as product intent, adopter configuration, implementation
   guidance, or evidence. A semantic role identifies how material participates
@@ -74,6 +80,41 @@ the normative protocol specification, or a resolved project specification.
   `SKILL.md` may be explicitly consulted from the resolved handoff, with use
   recorded as `consulted` or `skipped`. SeedSpec resolution does not install it
   into a native skill registry or invoke it automatically.
+- **context module**: one package-declared semantic input with a stable local
+  identity, native format, entrypoint, source, description, and optional
+  applicability. Resolution qualifies the identity with its package.
+- **module root**: the source directory containing one module entrypoint and
+  its supporting references, scripts, assets, or other files. Loading the
+  entrypoint does not load every source file.
+- **context bundle**: the request-specific files and module metadata prepared
+  for one consumer. It is distinct from every package module root.
+- **task Skill**: a Skill used to perform domain work. This is a usage role, not
+  a separate Skill format.
+- **bridge Skill**: a separately declared Skill module that explains how to
+  consume another context module in a Skill-aware environment. It cannot alter
+  the target format or grant authority.
+- **native adapter**: format-specific tooling that validates or prepares a
+  context module directly. A native adapter is preferred when available; core
+  protocol validity does not depend on it.
+- **context preparation**: the planned request-specific process that selects
+  relevant modules and supporting content for a consumer. Module
+  materialization alone is not context preparation.
+- **context index**: the resolved `context-index.yaml` inventory of qualified
+  modules, sources, availability, applicability, bridge bindings, exact
+  digests, and digest scope.
+- **context request**: consumer input describing the request, intended use,
+  requested module identities, and explicit exclusions used for context
+  preparation.
+- **context preparation receipt**: the digest-bound record of module selection,
+  preparation mechanism, copied files, and output bundle.
+- **context use receipt**: a record bound to one preparation receipt in which a
+  consumer reports each prepared module as consulted, partially consulted, or
+  skipped. It is not proof of compliance or outcome.
+- **format integration**: an external package containing an inert descriptor,
+  optional native adapter code, and zero or more default bridge Skills for
+  declared context formats.
+- **adapter registry**: runtime-local registrations loaded from explicitly
+  trusted integration sources. Discovery does not populate the registry.
 - **artifact**: related material preserved in its native format. Discovery,
   materialization, and disposition do not activate the artifact's workflow.
 
@@ -83,10 +124,12 @@ may reference one or more skills without turning them into core intent.
 
 ## Authoring
 
-- **authoring review**: an informative, tool-supported examination of concern
-  separation, kind-specific coverage, material ambiguity, decision provenance,
-  consistency, progressive depth, and handoff quality. Completing a review does
-  not certify package completeness or realization quality.
+- **authoring review**: an informative, source-bound co-authoring conversation.
+  Private review threads cover the supplied seed, coherence, observable
+  success, and declared configuration or supporting material without becoming
+  user-facing steps. A finding must be triggered by authored material; absence
+  alone is not a gap. A reviewed thread does not certify completeness or
+  realization quality.
 - **authoring state**: sources, candidates, questions, instructions, results,
   and provenance kept outside the distributable package while it is being
   shaped. Authoring state does not become package authority implicitly.
@@ -99,12 +142,13 @@ may reference one or more skills without turning them into core intent.
   baseline observations. Agent proposals remain labeled and non-authoritative
   until affirmed.
 - **resolved intent**: the provenance-preserving combination of package-author
-  primary intent sources and applied intent used for one resolved handoff.
+  primary intent modules and applied intent used for one resolved handoff.
 
 - **resolved project specification** or **resolved handoff**: the project-local
   output created from selected packages and explicit end-user inputs. It
   includes resolved intent, configuration, profile state, resource state,
-  ordered tasks, artifacts, locks, guidance, and verification scaffolding.
+  context index, ordered tasks, artifacts, locks, guidance, and verification
+  scaffolding.
 - **realization**: the software, configured external state, workflow,
   automation, operational artifact, or composite outcome produced from the
   resolved core intent.

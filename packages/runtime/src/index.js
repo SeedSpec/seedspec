@@ -12,16 +12,43 @@ export {
 } from "@seedspec/protocol";
 export { SeedSpecError, formatError } from "./errors.js";
 export { beginPackage, formatPackageAgentPrompt, formatPackageBeginning } from "./begin.js";
-export { discoverFeatures, formatFeatureDiscovery } from "./discovery.js";
 export {
-  PRODUCTSPEC_ARTIFACT_TYPE,
-  formatAdapterListing,
+  discoverFeatures,
+  discoverProviders,
+  formatFeatureDiscovery,
+  formatProviderDiscovery
+} from "./discovery.js";
+export {
   formatArtifactListing,
-  formatArtifactValidation,
-  listArtifactAdapters,
-  listPackageArtifacts,
-  validateArtifact
+  listPackageArtifacts
 } from "./artifacts.js";
+export {
+  ADAPTER_API_VERSION,
+  AdapterRegistry,
+  createAdapterRegistry,
+  formatAdapterListing
+} from "./adapters.js";
+export {
+  discoverFormatIntegrations,
+  formatIntegrationDiscovery,
+  loadIntegrationAdapter,
+  readIntegrationDescriptor
+} from "./integrations.js";
+export {
+  applyIntegrationBridgePlan,
+  formatIntegrationBridgePlan,
+  planIntegrationBridges
+} from "./integration-authoring.js";
+export {
+  formatContextValidation,
+  validateContextModule
+} from "./context-validation.js";
+export {
+  contextApplies,
+  formatContextPreparation,
+  prepareContext,
+  recordContextUse
+} from "./context-preparation.js";
 export { inspectPackage, formatInspection } from "./inspect.js";
 export { formatPackageLint, lintPackage } from "./lint.js";
 export { initPackage } from "./init.js";
@@ -33,12 +60,41 @@ export {
   AUTHORING_TARGETS,
   auditPackage,
   formatAuthoringAudit,
-  formatAuthoringDocumentation
+  formatAuthoringDocumentation,
+  formatAuthoringStarterPrompt,
+  formatAuthoringGuidance,
+  listAuthoringGuidanceTopics
 } from "./authoring.js";
+export {
+  QUESTION_RESOLUTIONS,
+  isResolvedQuestion
+} from "./authoring/core/entries.js";
+export {
+  AUTHORING_CHANGE_BASIS_KINDS,
+  AUTHORING_CHANGE_DECISIONS,
+  AUTHORING_CHANGE_PROPOSAL_FORMAT,
+  AUTHORING_CHANGE_STATUSES
+} from "./authoring/core/proposals.js";
+export {
+  AUTHORING_OPERATION_FORMAT,
+  applyDocumentChange,
+  answerQuestion,
+  attachSource,
+  decideDocumentChange,
+  proposeDocumentChange,
+  recordObservations,
+  reviewArea
+} from "./authoring/operations.js";
+export {
+  AUTHORING_SCHEMA_FORMAT,
+  listAuthoringSchemas,
+  readAuthoringSchema
+} from "./authoring-schemas.js";
 export {
   AUTHORING_WORKSPACE_OPERATION_FORMAT,
   AUTHORING_WORKSPACE_REVISION_ALGORITHM,
   AUTHORING_WORKSPACE_SNAPSHOT_FORMAT,
+  computeWorkspaceRevision,
   createAuthoringWorkspace,
   discoverAuthoringWorkspace,
   formatAuthoringWorkspaceCreation,
@@ -61,6 +117,8 @@ export {
   formatImplementationResourceResolution,
   implementationResourceIndexDigest,
   listPackageImplementationResources,
+  readBundledResource,
+  formatBundledResource,
   materializeImplementationResources,
   reconcileImplementationResourceState,
   recordImplementationResourceUse,

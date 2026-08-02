@@ -156,6 +156,10 @@ const release = {
     "validate",
     "digest",
     "resolve",
+    "discover-integrations",
+    "validate-context-module",
+    "prepare-context",
+    "record-context-use",
     "resolve-resources",
     "capability-conformance"
   ],
@@ -179,13 +183,14 @@ const release = {
   source,
   compatibility: [
     {
+      from_release: "0.2.3",
+      status: "unsupported",
+      notes: "Protocol 0.3 is a clean authoring cut. Reauthor the package with a required primary context module and regenerate all resolved handoffs."
+    },
+    {
       from_release: "0.1.0-alpha.6",
-      status: "migrate",
-      notes: "Set protocol_version to 0.2, revalidate package source, and regenerate resolved handoffs to receive exact 0.2.3 release binding and resolution receipts.",
-      migration: {
-        id: "protocol-0-2",
-        guide: "documents/migrations.md"
-      }
+      status: "unsupported",
+      notes: "Protocol 0.3 does not provide an automatic migration from design-preview packages. Reauthor against the 0.3 schemas."
     }
   ]
 };

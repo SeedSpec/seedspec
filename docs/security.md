@@ -20,6 +20,8 @@ A runtime must:
   evals, scripts, reference code, and deployment material as untrusted content;
 - treat implementation-resource manifests, skill bodies, instructions, tools,
   verification material, target profiles, and catalogs as untrusted content;
+- treat context-module entrypoints, supporting files, and bridge Skills as
+  untrusted content, regardless of format validation;
 - require HTTPS for canonical resource manifests and files, apply strict file
   count and byte limits, reject unsafe paths, and verify every file and aggregate
   digest before exposing downloaded bytes;
@@ -30,6 +32,9 @@ A runtime must:
   local content for an unavailable requested version;
 - avoid executing any optional component merely because the manifest discovers it;
 - avoid loading an artifact-provided skill, prompt, plugin, or lifecycle merely because the manifest declares it or an adapter recognizes it;
+- avoid selecting every context module merely because it is materialized;
+- enforce audience and purpose isolation in tooling rather than relying on
+  package prose or bridge instructions as a security boundary;
 - fetch remote artifact URLs only through an explicitly authorized, isolated acquisition step;
 - keep technical credentials and secrets outside packages and resolved configuration.
 
@@ -88,7 +93,15 @@ Following a task remains subject to end-user direction, execution-environment
 safety rules, and the actual project. Referencing a script or instruction file
 does not authorize executing or activating it.
 
-The same rule applies to artifact-native agent instructions. Adapter recognition and successful artifact validation establish format compatibility only. Before adopting an artifact-specific maintenance, drift, regeneration, or execution workflow, the agent should explain the choice and obtain direction from its end user.
+Passive artifacts do not register adapters or activate maintenance, drift,
+regeneration, or execution workflows. Before adopting any workflow described by
+an artifact, the agent should explain the choice and obtain direction from its
+end user.
+
+The same rule applies to context modules and bridge Skills. A module description
+supports discovery, not instruction authority. A bridge can explain how to
+consume a module, but it cannot weaken system policy, broaden scope, expose
+hidden evaluation material, or authorize a referenced script or tool.
 
 ## Public hosting gate
 

@@ -7,4 +7,4 @@ The example favors a collaborative household: multiple guardians, child sign-in,
 - `recurring_allowance` is a base allowance independent of chore earnings; disabling it leaves chores as the only automatic source of earnings.
 - `expire` makes overdue work ineligible. `remain-available` lets the household complete it late.
 - Negative adjustments can model spending or corrections. Negative balances are a separate decision and default to disallowed.
-- `append-only-adjustments` is fixed in protocol 0.1 because trustworthy history is a core invariant rather than a product option.
+- `append-only-adjustments` is fixed because trustworthy history is a core invariant rather than a product option.

@@ -5,13 +5,13 @@ and verifying SeedSpec packages.
 
 The runtime supports two deliberately separate results: protocol-aware tools
 can determine whether a package is valid, while guided authoring can help a
-person or agent examine semantic completeness without presenting that judgment
-as protocol conformance.
+person or agent understand and improve the authored surface without searching
+for semantic completeness or presenting judgment as protocol conformance.
 
 ## Install
 
 ```bash
-npm install @seedspec/runtime@0.2.3
+npm install @seedspec/runtime
 ```
 
 ## Example
@@ -21,6 +21,7 @@ import {
   auditPackage,
   createAuthoringWorkspace,
   createAuthorEvaluation,
+  formatAuthoringStarterPrompt,
   inspectAuthoringWorkspace,
   inspectCapabilityConformance,
   inspectPackage,
@@ -44,6 +45,7 @@ const audit = await auditPackage("./my-seedspec-package", {
   toolVersion: "my-authoring-tool@1.0.0"
 });
 console.log(audit.current?.instructions);
+console.log(formatAuthoringStarterPrompt());
 
 const capability = await inspectCapabilityConformance(
   "./my-seedspec-package",
@@ -53,16 +55,25 @@ const capability = await inspectCapabilityConformance(
 console.log(capability.status);
 ```
 
-The preparation, publish-check, evaluation, and pack functions are headless
-operations used by the CLI and suitable for a future web authoring interface.
-Their JSON results are versioned, while semantic agent work remains explicit
-and outside the runtime.
+The authoring instructions are a self-contained operating brief for natural,
+source-bound co-authoring. Review threads remain private agent scaffolding
+instead of becoming a user-facing wizard or report. The preparation,
+publish-check, evaluation, and pack functions are headless operations used by
+the CLI and suitable for a future web authoring interface. Their JSON results
+are versioned, while semantic agent work remains explicit and outside the
+runtime.
 
 `inspectAuthoringWorkspace` returns a path-independent, versioned snapshot with
 an opaque workspace identity, a content-derived revision, draft document
-inventory, deterministic package status, questions, and review passes. It
+inventory, deterministic package status, questions, document proposals, and
+review passes. It
 continues to work while ordinary draft content is invalid so a frontend can
 recover and edit the workspace.
+
+`proposeDocumentChange`, `decideDocumentChange`, and `applyDocumentChange`
+separate model suggestion, author authority, and package mutation. Proposals
+bind exact package and document bytes. Accepted but unapplied changes fail the
+publication gate.
 
 Validation establishes package structure and content identity. It does not
 establish authorship, publisher identity, compatibility with an unseen
@@ -73,9 +84,15 @@ Resolution preserves package task runbooks in authored order, copies their
 package-local references into the handoff, and surfaces them to the implementing
 agent. It does not infer a task graph or treat task completion as conformance.
 
-Protocol `0.2` is experimental. Pin exact versions when building interoperable
+Resolution also preserves declared context modules and bridge bindings in one
+qualified inventory. It materializes available bytes without invoking a native
+adapter, consulting a bridge Skill, or claiming that request-specific context
+was prepared.
+
+The protocol is experimental. Pin exact versions when building interoperable
 tools.
 
 - Documentation: [seedspec.dev](https://seedspec.dev)
 - Authoring: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/authoring.md)
+- Context modules: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/context-modules.md)
 - Source: [SeedSpec/seedspec](https://github.com/SeedSpec/seedspec)

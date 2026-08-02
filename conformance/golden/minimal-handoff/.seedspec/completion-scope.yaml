@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 status: review
 items: []
 uncovered_packages:

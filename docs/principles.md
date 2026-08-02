@@ -111,10 +111,10 @@ solution.
 ## Agentically composable, user directed
 
 SeedSpec is agentically composable: an agent can compare and combine packages,
-capabilities, artifacts, implementation profiles, and implementation resources
-against the actual environment. Composition is a reasoning affordance, not a
-claim of deterministic execution or autonomous authority. Consequential
-direction still belongs to the end user.
+capabilities, artifacts, implementation profiles, implementation resources,
+and context modules against the actual environment. Composition is a reasoning
+affordance, not a claim of deterministic execution or autonomous authority.
+Consequential direction still belongs to the end user.
 
 Manifest `kind` values are strong hints that help authoring and implementation
 tools choose useful questions and communicate expected scope. Resolution
@@ -124,7 +124,7 @@ agent's plan without becoming a structural gate.
 ## Package ideas, not one universal specification
 
 A SeedSpec does not require one document format to completely define a
-solution. Product definitions, ProductSpecs, designs, API contracts,
+solution. Product definitions, external intent formats, designs, API contracts,
 implementation plans, reference realizations, runbooks, evaluations, and
 infrastructure material may coexist as separate artifacts.
 
@@ -146,7 +146,7 @@ A tool may derive one concern from another, but derivation does not make them th
 
 ## Discovery is not activation
 
-Declaring an artifact makes it discoverable. It does not:
+Declaring an artifact or context module makes it discoverable. It does not:
 
 - execute the artifact;
 - load an artifact-provided skill or prompt;
@@ -154,12 +154,13 @@ Declaring an artifact makes it discoverable. It does not:
 - make the artifact authoritative to an implementing agent;
 - authorize changes to the artifact, codebase, or external system.
 
-When an artifact is also named by `definition.artifact`, its content is the
-package's primary intent and is read as core intent. This does not activate the
-artifact format's parser, skills, MCP server, synchronization loop, or other
-native workflow.
+The module named by `definition.module` supplies the package's primary intent.
+Reading it as core intent does not activate its format adapter, bridge Skills,
+scripts, synchronization loop, or other native workflow.
 
-Runtimes may inspect descriptive metadata needed to explain an artifact and locate compatible tooling. Behavior-changing tooling requires an explicit user action.
+Runtimes may inspect descriptive metadata needed to explain material and locate
+compatible tooling. Integration discovery reads inert descriptors. Loading
+adapter code requires an explicit trusted integration source.
 
 Author-selected implementation resources use a narrower lifecycle. The runtime
 may resolve and verify their declared bytes through an explicit first-party
@@ -173,6 +174,12 @@ from its frontmatter. The implementing agent may explicitly consult the
 verified `SKILL.md` when relevant and records `consulted` or `skipped`. The
 skill supplies reusable implementation knowledge; it does not become solution
 intent or a success criterion.
+
+Context modules generalize discovery and progressive disclosure without
+flattening semantic formats. A native adapter can interpret a supported format
+directly. An explicit bridge Skill can teach a Skill-aware harness how to use
+another format. Neither path grants execution authority or proves that context
+was prepared, consulted, followed, or satisfied.
 
 ## The end user directs the implementing agent
 
@@ -237,12 +244,15 @@ sparse but honest idea is preferable to invented completeness.
 
 Authoring tools may help a user progressively:
 
-1. capture the source idea;
-2. shape actors, outcomes, workflows, and concepts;
-3. harden permissions, invariants, failures, and acceptance behavior;
-4. analyze feature candidates, capability context, and related artifacts.
-5. select or decline reusable implementation resources and decide whether
-   additional discovery is delegated to the implementing agent.
+1. understand and clarify the source idea without enlarging its subject;
+2. resolve contradictions created by authored claims;
+3. define observable success aligned with the seed; and
+4. understand and refine configuration or supporting material the package
+   actually declares.
+
+The absence of a common domain topic is not a gap. Broader product exploration
+is available when the author explicitly requests it and remains optional until
+accepted.
 
 Not every author must complete every stage before using or sharing a SeedSpec.
 
@@ -280,8 +290,6 @@ mechanism unless the intended outcome genuinely depends on one.
 New artifact types, adapters, publishers, catalogs, and implementation environments should be able to participate without changing the core protocol. Namespaced identifiers and extensions prevent accidental collisions while keeping ecosystem policy outside the package format.
 
 ## Influences, not dependencies
-
-[ProductSpec](https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/docs/vision.md) sharpens the distinction between durable product intent and downstream engineering specs, tasks, code, and evidence. Its drift model also shows why divergence should lead to an explicit decision instead of silently treating either document or code as automatically correct. SeedSpec adopts the separation and the value of traceability; it leaves continuous reconciliation to an optional user-chosen workflow.
 
 [Kiro Specs](https://kiro.dev/docs/specs/) demonstrate the practical value of distinct requirements, design, and task artifacts; cross-requirement analysis; traceability into implementation; and workflows that can start requirements-first, design-first, or with a faster one-pass plan. SeedSpec applies these lessons to progressive authoring, artifact relationships, linters, and implementation skills. It does not require the Kiro file set, phase order, approval gates, or execution engine.
 

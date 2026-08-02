@@ -89,7 +89,7 @@ export async function resolveCompletionScope(scopePath, records) {
     .map((record) => record.manifest.id)
     .filter((id) => !coveredPackages.has(id));
   const scope = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     status: uncoveredPackages.length > 0 ? "review" : "recorded",
     items,
     uncovered_packages: uncoveredPackages
@@ -106,7 +106,7 @@ export async function resolveCompletionScope(scopePath, records) {
 
 export function createInitialVerificationState(scope) {
   return {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     scope_digest: completionScopeDigest(scope),
     status: "not-started",
     items: scope.items

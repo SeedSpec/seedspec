@@ -1,0 +1,61 @@
+protocol_version: "0.3"
+id: org.seedspec.fixtures.context-modules
+name: Context Modules
+version: 0.1.0
+kind: solution
+description: Exercises native context modules and an explicit bridge Skill.
+definition:
+  module: primary-intent
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: solution.md
+      source:
+        kind: package
+        path: definition/solution.md
+    - id: refund-safety
+      format: org.example.context.behavior
+      format_version: 1.0.0
+      description: Expected refund-agent conduct for review and evaluation.
+      entrypoint: BEHAVIOR.md
+      source:
+        kind: package
+        path: context/refund-safety/
+      applies_to:
+        purposes:
+          - review
+          - evaluate
+        audiences:
+          - reviewer
+          - evaluator
+      bridges:
+        - skill: review-behavior
+          applies_to:
+            purposes:
+              - review
+              - evaluate
+            audiences:
+              - reviewer
+              - evaluator
+          description: Use the Skill when no native Agent Behavior adapter is available.
+    - id: review-behavior
+      format: io.agentskills.skill
+      description: Instructions for consuming the refund Behavior in a Skill-aware harness.
+      entrypoint: SKILL.md
+      source:
+        kind: package
+        path: context/review-behavior/
+      applies_to:
+        purposes:
+          - review
+          - evaluate
+        audiences:
+          - reviewer
+          - evaluator
