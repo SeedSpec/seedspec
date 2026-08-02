@@ -14,9 +14,22 @@ strict protocol-aware operations with informative authoring workflows while
 keeping their results distinct. It does not depend on distribution-service
 policy or any particular agent prompt format.
 
+Authoring document changes use three separate operations. `author propose`
+records exact before and after UTF-8 text without changing package bytes.
+`author decide` records explicit author acceptance or rejection. `author apply`
+is the only operation that writes an accepted replacement. Workspace revisions,
+package digests, and document digests reject stale decisions. Accepted but
+unapplied changes block packing; undecided proposals remain visible advisories.
+The author can reject an accepted but unapplied proposal, and the workspace
+retains both decisions.
+
 ## Commands
 
 ```text
+seedspec author
+seedspec author status|review|questions|changes|check|history [package-path] [--json]
+seedspec author record|answer|attach-source|propose|decide|apply|reviewed [package-path] --json -
+seedspec author schema [result|changes]
 seedspec version [--json]
 seedspec doctor [--full] [--json]
 seedspec docs <authoring [area]|implementing>
@@ -30,11 +43,15 @@ seedspec resources <path> [--json]
 seedspec resource-digest <directory>
 seedspec resolve-resources <project-path> [--json]
 seedspec record-resource-use <project-path> <package-id> <resource-id> <consulted|skipped> [--reason <text>] [--json]
-seedspec adapters [--json]
-seedspec validate-artifact <path> <artifact-id> [--json]
+seedspec context adapters --integration <path> [--integration <path>] [--json]
+seedspec context discover <package-path> --integration <path> [--json]
+seedspec context validate <package-path> <module> --integration <path> [--adapter <id>] [--json]
+seedspec context author <package-path> --integration <path> [--write] [--state <directory>] [--json]
+seedspec context prepare <project-path> --request <yaml> --output <directory> [--integration <path>] [--json]
+seedspec context record-use <prepared-context-path> --input <json> [--output <json>] [--json]
 seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
 seedspec resolve <root-package-path> [--add <package-path>] [--applied-intent <yaml>] [-i <profile>] [--configuration-selections <yaml>] [--completion-scope <yaml>] [--artifact-selections <yaml>] [--technical-preferences <yaml>] [--output <path>]
-seedspec init <solution|application|feature|workflow|automation|configuration|integration> [--output <path>]
+seedspec init <solution|application|feature|component|workflow|automation|configuration|integration> [--output <path>]
 seedspec conformance [cases.yaml] [--json] [--output <report.json>]
 seedspec verify-lock <project-path> --package <path> [--package <path>]
 seedspec completion <project-path> [--json]
@@ -66,16 +83,24 @@ instructions are not an author-selectable implementation resource. The 0.1
 reference CLI currently uses its bundled instructions; a separate online core
 instruction channel and resolver are outside the current reference runtime.
 
-`begin` is the read-only entry point for an agent that has received a root package. It validates the package, identifies its primary intent source and format, inventories configuration, decisions, implementation profiles, components, artifacts, acceptance material, and early planning guidance, explains the optional-content trust boundary, and prints the ordered steps that precede resolution. It does not write a project, affirm applied intent, select configuration or an implementation profile, execute package content, fetch remote artifacts, or activate an artifact workflow.
+`begin` is the read-only entry point for an agent that has received a root
+package. It validates the full bundled tree; identifies the primary intent
+source and format; inventories configuration, decisions, implementation
+profiles, composition edges, components, artifacts, acceptance material, and
+early planning guidance; lists context modules and bridge bindings; explains
+the optional-content trust boundary; and prints the ordered steps that precede
+resolution. It does not write a project, affirm applied intent, select
+configuration or an implementation profile, execute package content, prepare
+request context, fetch remote artifacts, or activate an artifact workflow.
 
 `begin` marks `configuration.example` as review-required. The example is author material, not a selected default.
 
 `inspect` validates the package and returns package-derived identity, name,
 description, metadata, kind, configuration, capabilities, conflicts, decisions,
-implementation profiles, components, artifacts, relationships, implementation
-resources, compatibility, extensions, and canonical digest. JSON output is a
-read-only indexing surface; it does not add registry claims or activate package
-content.
+implementation profiles, components, bundled composition, artifacts,
+relationships, implementation resources, context modules, bridge bindings,
+compatibility, extensions, and canonical digest. JSON output is a read-only
+indexing surface; it does not add registry claims or activate package content.
 
 `resources` lists author-selected implementation resources, usage levels,
 version policy, canonical locations, bundled fallback locations, applicability,
@@ -83,7 +108,16 @@ and additional-guidance policy without fetching or consulting content.
 `resource-digest` computes the content digest authors place on a bundled
 resource directory.
 
-`resolve` accepts repeated `--add` options, with `--feature` retained as a legacy compatibility alias; one `--applied-intent` document covering every selected package; one `--configuration-selections` document covering every selected package; an optional `--completion-scope`; product-decision answers through `--decisions`; separate `--technical-preferences`; and `--artifact-selections` for selected, declined, or deferred supporting artifacts. Package kind is a hint and does not constrain root or addition position.
+`resolve` accepts repeated `--add` options, with `--feature` retained as a
+legacy compatibility alias. It also selects recursively bundled children
+declared by the root or any addition. The resolved project preserves every
+parent-to-child edge and its copied integration Markdown. Other inputs include
+one `--applied-intent` document covering every selected package; one
+`--configuration-selections` document covering every selected package; an
+optional `--completion-scope`; product-decision answers through `--decisions`;
+separate `--technical-preferences`; and `--artifact-selections` for selected,
+declined, or deferred supporting artifacts. Package kind is a hint and does not
+constrain root or addition position.
 
 Applied intent is resolved before implementation-profile choice. It records
 whether the end user wants each package as authored, adapted, or partially
@@ -94,10 +128,11 @@ them. If the input is omitted, `intent_status` is `review` and project status is
 `needs-input`; the resolved handoff still preserves the package-author intent so
 that an agent can help produce the missing input.
 
-Example applied-intent input:
+Example applied-intent input. Replace `<protocol-family>` with the family from
+the selected `protocol-release.json`:
 
 ```yaml
-protocol_version: "0.2"
+protocol_version: "<protocol-family>"
 packages:
   - package: com.example.sales-dashboard
     use: adapted
@@ -124,12 +159,13 @@ contributions:
         source: tool
 ```
 
-A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Completion scope is independent: uncovered selected packages produce `completion_scope_status: review` but do not change input readiness. A primary intent artifact is selected automatically as core intent; supporting artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
+A configuration entry chooses the exact author example or supplies a complete custom object; custom values are never merged with the example. If the document is omitted, examples are retained as `example-unreviewed`, `configuration_status` is `review`, and project status is `needs-input`. Completion scope is independent: uncovered selected packages produce `completion_scope_status: review` but do not change input readiness. The primary intent module is core input. Supporting artifacts omitted from their selection file remain visibly `unreviewed`. Selection never authorizes execution or adapter invocation.
 
-An included project-local completion criterion names its proof before work:
+An included project-local completion criterion names its proof before work.
+Use the same protocol-family value:
 
 ```yaml
-protocol_version: "0.2"
+protocol_version: "<protocol-family>"
 items:
   - kind: criterion
     id: daily-summary-delivered
@@ -193,14 +229,29 @@ or cause frontmatter-based automatic invocation.
 local digest-bound state. `consulted` means the verified guidance was considered,
 not necessarily followed. Core does not export this telemetry.
 
-Addition argument order is not semantic. `declaration-review-v1` records additions in deterministic package-ID order and preserves all capability candidates, revision comparisons, conflicts, and cycles as author-supplied review context. Missing or multiple declarations do not reject an addition because the runtime cannot observe the real implementation. `digest` emits the same canonical package digest recorded during resolution. `verify-lock` recomputes package identities, deterministic order, declaration candidates, and review records from explicitly supplied package directories.
+Addition argument order is not semantic. `declaration-review-v1` records
+additions in deterministic package-ID order and preserves all capability
+candidates, revision comparisons, conflicts, and cycles as author-supplied
+review context. Missing or multiple declarations do not reject an addition
+because the runtime cannot observe the real implementation. `digest` emits the
+same canonical package digest recorded during resolution. `verify-lock`
+recomputes package identities, deterministic order, declaration candidates,
+and review records from explicitly supplied package directories and any
+children bundled within them.
 
 Revision comparisons preserve provider-newer/provider-older direction, the
 major/minor/patch difference, low/medium/high review severity, and applicable
 structured provider change history. These fields prioritize integration review
 without becoming compatibility verdicts.
 
-`artifacts` lists declarations and registered adapters without invoking them. `adapters` lists the runtime's known artifact integrations. `validate-artifact` is an explicit request to run the registered format-specific validator. The official `org.seedspec.adapter.product-spec` adapter recognizes `org.seedspec.artifact.product-spec` and invokes `@productspec/parser`; ProductSpec is an optional dependency rather than a core package requirement.
+`artifacts` lists passive supporting material. Format-specific behavior belongs
+to context modules. `context discover` reads integration metadata without
+loading code. `context adapters` lists adapters loaded from explicitly supplied
+integration sources. `context validate` invokes one registered validator.
+`context author` proposes bridge installation and requires `--write` to mutate a
+package. `context prepare` selects request-specific context and writes a bundle
+and receipt. `context record-use` binds reported consultation to that bundle.
+The core runtime bundles no external-format adapter.
 
 `discover-features` recursively inspects local catalog directories and reports each valid feature as `candidate` or `review`. It may show capability, revision, compatibility-scope, and conflict declarations, but it never makes a compatibility verdict or selects a feature. Remote registry search and package acquisition remain separate catalog responsibilities.
 
@@ -228,6 +279,8 @@ The resulting workspace is:
 ├── implementation-resources.yaml
 ├── implementation-resource-state.yaml
 ├── implementation-resources/
+├── context-index.yaml
+├── context/
 ├── implementation-profile-state.yaml
 ├── implementation-profiles/
 ├── implementation-notes.md
@@ -245,6 +298,14 @@ The runtime supplies implementation guidance and project-memory scaffolding,
 but the end user directs how the agent uses optional artifact workflows and
 whether it may make consequential changes. SeedSpec does not choose or change
 application code, external systems, or user data.
+
+`context-index.yaml` preserves qualified module identities, roles, native
+formats, applicability, sources, availability, content digests, and bridge
+bindings. Resolution copies locally available module bytes. Context preparation
+then selects modules for one request, prefers an explicitly loaded adapter,
+falls back to bound bridge Skills, and finally preserves plain Markdown. The
+prepared bundle, preparation receipt, and reported use receipt remain separate
+from the resolved project.
 
 When a package declares `tasks`, `tasks.yaml` preserves its ordered reminders
 and maps every package-relative reference to a copied file under

@@ -1,0 +1,19 @@
+{
+  "consumer": {
+    "name": "org.seedspec.fixtures.review-agent",
+    "version": "1.0.0"
+  },
+  "modules": [
+    {
+      "module": "org.seedspec.fixtures.context-modules/primary-intent",
+      "status": "consulted",
+      "evidence": ["review-notes://primary-intent"]
+    },
+    {
+      "module": "org.seedspec.fixtures.context-modules/refund-safety",
+      "status": "partially-consulted",
+      "reason": "Trace details were not required for this review.",
+      "evidence": ["review-notes://refund-safety"]
+    }
+  ]
+}

@@ -1,7 +1,12 @@
 # Decision 0013: Build CLI and web authoring on one headless engine
 
-- Status: accepted for the 0.2 authoring product
+- Status: accepted for the first-party authoring product
 - Date: 2026-07-24
+
+Implementation note, 2026-08-02: the 0.3 staging state now implements workspace
+creation and inspection, observations, questions, answers, source attachment,
+review closure, text-document proposals, explicit author decisions, and engine
+application. The replaceable storage adapter and workspace archive remain.
 
 The frontend and engine boundary remains accepted. Decision
 [0014](0014-source-bound-authoring.md) replaces the seven-pass default and
@@ -92,7 +97,8 @@ The authoring engine owns:
 - authoring target depth and source-bound review state;
 - factual inventory, grounded findings, contradictions, optional suggestions,
   session questions, and author answers;
-- proposed, accepted, rejected, and superseded changes with attribution;
+- proposed, accepted, rejected, and applied changes with attribution and
+  retained author-decision histories;
 - deterministic validation, lint, digest, publish-check, and export results;
 - version stamps for the protocol, engine, instruction, and state formats; and
 - durable transitions between drafting, review, author resolution, final

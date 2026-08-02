@@ -1,86 +1,155 @@
-# Artifact adapters
+# Format integrations and context adapters
 
-> **Informative guidance.** This document explains optional adapter behavior;
-> it does not add requirements to the SeedSpec Protocol.
+> **Informative guidance.** Normative integration and adapter boundaries are
+> defined in `docs/protocol.md` and the release-bound schemas.
 
-SeedSpec can officially integrate with an external artifact format without making that format part of the protocol. The package manifest identifies and locates the artifact; a separately versioned adapter provides format-specific inspection, validation, or transformation.
+SeedSpec integrates external semantic formats through independently versioned
+format integrations. The protocol preserves module identity and lifecycle. The
+integration supplies deeper format knowledge.
 
-This split is intentional:
+This keeps four claims separate:
 
-- core validation answers whether the SeedSpec package is structurally valid and its local references are present;
-- adapter validation answers whether one declared artifact conforms to its native format;
-- an implementation workflow remains a choice made with the end user.
+- package validation establishes SeedSpec structure;
+- native validation establishes external-format conformance;
+- context preparation selects content for one request; and
+- a harness or user authorizes any later execution or external effect.
 
-Use `seedspec artifacts <package>` to discover artifacts and `seedspec adapters` to inspect registered integrations. Running `seedspec validate-artifact <package> <artifact-id>` is an explicit adapter invocation.
+## Integration descriptor
 
-## ProductSpec
+An integration root contains `seedspec-integration.json`.
 
-The official adapter recognizes:
-
-```yaml
-definition:
-  entrypoint: intent/product.product-spec.md
-  artifact: product-spec
-
-artifacts:
-  - id: product-spec
-    type: org.seedspec.artifact.product-spec
-    path: intent/product.product-spec.md
-    media_type: text/markdown
-    format_version: "0.1"
-    conforms_to: https://github.com/gokulrajaram/ProductSpec/blob/97b90b6288bbcd159bbec0f75fac9bf8212d2dc8/SPEC.md
-    concerns:
-      - org.seedspec.concern.intent
+```json
+{
+  "integration_descriptor_version": "1",
+  "id": "org.example.agent-behavior-integration",
+  "version": "1.2.0",
+  "formats": [
+    {
+      "id": "dev.agentbehavior.behavior",
+      "versions": ["1.0.0"],
+      "entrypoints": ["BEHAVIOR.md"]
+    }
+  ],
+  "adapter": {
+    "id": "org.example.agent-behavior-adapter",
+    "version": "1.2.0",
+    "adapter_api_version": "1",
+    "entrypoint": "adapter.mjs",
+    "digest": "sha256:<64-lowercase-hex>",
+    "capabilities": ["inspect", "validate", "prepare"]
+  },
+  "bridges": []
+}
 ```
 
-`org.seedspec.adapter.product-spec` uses the official `@productspec/parser`
-package to validate the Markdown and compare its `spec_format_version` with the
-manifest metadata. ProductSpec remains optional: native SeedSpec intent remains
-valid without it.
+The descriptor is metadata. Discovery validates its schema, checks duplicate
+claims, verifies adapter and bridge digests, and reports compatibility. It does
+not import adapter code.
 
-The same ProductSpec may occupy either of two roles:
+## Registry boundary
 
-- When its artifact ID is named by `definition.artifact` and its path matches
-  `definition.entrypoint`, it is the package author's primary intent source.
-  Resolution reads and preserves its content as core intent and labels its
-  artifact `intent_role: primary`.
-- When it is declared only under `artifacts`, it is supporting intent material
-  whose use remains subject to an explicit artifact disposition.
+An adapter registry belongs to one runtime or command invocation. It is not a
+package field or process-wide global.
 
-Format does not establish provenance. A ProductSpec in a published package is
-package-author intent because of its package role. A future project-local
-ProductSpec derived and affirmed by an end user would be applied intent. Agent-
-generated ProductSpec content remains a proposal until affirmed.
+The host decides which integration sources it trusts. It then loads adapters
+explicitly. Loading verifies:
 
-ProductSpec's product summary, scope, acceptance criteria, AI evals, success
-metrics, evidence links, Agent Run receipts, and Decision Traces provide a
-deeper product-intent lifecycle than SeedSpec's minimal native vocabulary. A
-primary ProductSpec supplies that depth without making ProductSpec a dependency
-of the SeedSpec Protocol.
+- adapter file digest;
+- adapter API version;
+- adapter ID and version;
+- advertised capabilities; and
+- advertised format coverage.
 
-Reading a primary ProductSpec as intent does not automatically begin a
-ProductSpec session, load its skills or MCP server, create an Agent Run, enforce
-drift policy, or revise the document. A discovered ProductSpec is neither the
-complete current state of the application nor a command to revert later code
-changes. The implementing agent should explain any native ProductSpec workflow
-it proposes and obtain end-user direction before activation.
+Duplicate adapter IDs fail. Ambiguous matches fail unless the context request
+selects one adapter for the module.
 
-Deployment mechanics such as building and running on Vercel normally belong to a separate infrastructure or deployment artifact, technical preferences, or implementation plan. They are not implied by a ProductSpec intent document or by this adapter. A ProductSpec may mention a hosting constraint when that constraint materially affects the product, but the adapter does not turn it into a deployment system.
+## Adapter contract
 
-The adapter currently exposes inspection and validation only. Future tooling
-may help an end user derive a project-local ProductSpec from the author's source
-or convert one into native applied intent. Any conversion must preserve the
-source, revision, provenance, and a report of lost or changed semantics; it must
-not mutate the published package.
+An adapter entrypoint is an ECMAScript module. Its relative path must end in
+`.mjs`, which makes module loading independent of ambient package metadata.
+Adapter API version 1 uses this shape:
 
-## Adding adapters
+```js
+export const adapter = {
+  adapter_api_version: "1",
+  id: "org.example.agent-behavior-adapter",
+  version: "1.2.0",
+  formats: [{
+    id: "dev.agentbehavior.behavior",
+    versions: ["1.0.0"]
+  }],
+  capabilities: ["inspect", "validate", "prepare"],
 
-An adapter should:
+  async inspect(input) {},
+  async validate(input) {},
+  async prepare(input) {}
+};
+```
 
-1. claim one namespaced artifact type and one namespaced adapter ID;
-2. point to the native format documentation and pin compatible versions;
-3. expose its capabilities without running them during discovery;
-4. use the format's official parser or clearly document any divergence;
-5. report native conformance separately from SeedSpec package conformance;
-6. require explicit invocation for parsing, validation, transformation, generation, or workflow activation;
-7. avoid redefining core manifest fields or implying authority over an implementing agent.
+The runtime passes verified package or resolved module paths. An adapter must
+stay inside the supplied module root.
+
+`validate` returns:
+
+```js
+{
+  valid: true,
+  issues: [],
+  summary: {}
+}
+```
+
+`prepare` returns:
+
+```js
+{
+  text: "# Prepared context\n",
+  supporting_files: ["references/example.md"]
+}
+```
+
+Supporting files must resolve inside the module root. The bundle copies them
+and records each digest.
+
+## Bridge packages
+
+An integration can publish default bridge Skills without an adapter. Each
+bridge declares compatible formats, applicability, a `SKILL.md` directory, and
+an exact directory digest.
+
+Authoring discovery proposes compatible defaults. It never mutates a package.
+Applying a plan copies selected bridge bytes and writes explicit module
+bindings. Existing author-selected bridges suppress default proposals.
+
+The resulting SeedSpec package no longer depends on the integration source for
+resolution. The integration repository remains provenance for authoring and
+future updates.
+
+## CLI surfaces
+
+```text
+seedspec context adapters --integration <path>
+seedspec context discover <package> --integration <path>
+seedspec context validate <package> <module> --integration <path>
+seedspec context author <package> --integration <path> [--write]
+seedspec context prepare <project> --request <yaml> --output <directory> [--integration <path>]
+seedspec context record-use <prepared-context> --input <json>
+```
+
+`context author` is dry-run first. `--write` applies verified bridge assets.
+`context prepare` loads only adapters from explicitly supplied integration
+sources. Omitting integrations permits bridge or plain-Markdown fallback.
+
+## Security requirements
+
+- Treat integration descriptors and adapter code as untrusted input.
+- Keep discovery inert.
+- Verify code bytes before import.
+- Reject symbolic-link integration sources, descriptors, adapter entrypoints,
+  bridge roots, and bridge entrypoints.
+- Keep adapter registration instance-scoped.
+- Reject ambiguous adapter selection.
+- Recheck the resolution receipt, protocol-owned handoff bytes, module digests,
+  and prepared bundle files at their use boundaries.
+- Do not treat validation or preparation as execution authority.
+- Do not grant network, credentials, tools, or external effects implicitly.

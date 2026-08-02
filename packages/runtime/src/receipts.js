@@ -29,6 +29,8 @@ const PROTOCOL_OWNED_RESOLUTION_PATHS = Object.freeze([
   "components",
   "artifacts.yaml",
   "artifacts",
+  "context-index.yaml",
+  "context",
   "implementation-profile-state.yaml",
   "implementation-profiles",
   "implementation-resources.yaml",

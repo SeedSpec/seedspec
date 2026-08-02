@@ -1,12 +1,12 @@
-# SeedSpec Protocol 0.2 conformance suite
+# SeedSpec conformance suite
 
 > **Normative conformance contract.** Together with the protocol specification
-> and versioned schemas, the indexed cases and fixtures form the exact Protocol
-> 0.2 release bundle.
+> and versioned schemas, the indexed cases and fixtures form the exact protocol
+> release bundle.
 
-The suite is indexed by `conformance/cases.yaml`, validated by
-`packages/protocol/schemas/v0.2/conformance.schema.json`, and bound to the
-declared `protocol_version` and `suite_version`. The exact protocol release
+The suite is indexed by `conformance/cases.yaml`, validated by the release-bound
+`conformance.schema.json`, and bound to the declared `protocol_version` and
+`suite_version`. The exact protocol release
 records both the index-file digest and the canonical aggregate digest of the
 complete conformance directory, including fixtures and golden handoffs.
 Golden `resolution-receipt.json` envelopes are excluded from the bundle digest
@@ -30,7 +30,10 @@ Resolved-state checks include `resolved-intent.yaml`, `artifacts.yaml`, and
 `implementation-profile-state.yaml`; task cases cover ordered runbook
 validation, package-local references, and resolved `tasks.yaml` preservation.
 
-Core SeedSpec conformance and adapter conformance are separate. The core suite verifies artifact declaration, references, relationships, materialization, and schema-valid indexing. Adapter tests verify native formats such as ProductSpec by invoking their upstream validators explicitly.
+Core SeedSpec conformance and format-integration conformance are separate. The
+core suite verifies module and artifact declaration, references, relationships,
+materialization, context preparation, receipt binding, and schema-valid
+indexing. An integration's own tests verify native adapter behavior.
 
 ## What to record
 
@@ -70,11 +73,11 @@ A behavioral correction that changes whether an artifact passes, its error class
 
 Fixtures should isolate one rule where practical. Negative cases assert stable error codes rather than implementation-specific prose.
 
-## Operations in suite 0.2.0
+## Operations
 
 - `validate` checks structural, referenced-file, configuration, task-runbook,
-  artifact-reference, relationship, semantic, and content-safety behavior
-  without invoking artifact adapters.
+  module, artifact-reference, relationship, semantic, and content-safety
+  behavior without loading integration code.
 - `digest-stability` checks repeated calculation over identical package bytes.
 - `resolve` checks deterministic declaration analysis, applied-intent
   readiness, review records, preserved task order and references, and resolved
@@ -82,6 +85,11 @@ Fixtures should isolate one rule where practical. Negative cases assert stable e
 - `capability-conformance` checks that a realization result is bound to the
   exact capability revision, contract and suite digests, complete check set,
   evidence, and derived status without conflating it with project completion.
+- `integration-discovery` checks inert descriptor discovery and integrity.
+- `context-validation` checks explicit native adapter registration and module
+  validation.
+- `context-preparation` checks deterministic selection, mechanism choice,
+  copied bytes, receipts, and reported-use binding.
 
 Corrections increment the coordinated release and may change expected results.
 A conformance report is incomplete unless it identifies the exact suite version

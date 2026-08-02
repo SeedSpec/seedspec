@@ -92,6 +92,20 @@ export async function publishCheckPackage(inputPath, {
         : `${review.questions.open} open authoring-session question(s); these are not automatically package content or future work`
     ),
     check(
+      "accepted-authoring-changes",
+      review.proposals.accepted === 0 ? "passed" : "failed",
+      review.proposals.accepted === 0
+        ? "No accepted document change is waiting for application"
+        : `${review.proposals.accepted} accepted document change(s) must be applied or explicitly rejected before packing`
+    ),
+    check(
+      "proposed-authoring-changes",
+      review.proposals.proposed === 0 ? "passed" : "advisory",
+      review.proposals.proposed === 0
+        ? "No undecided document changes"
+        : `${review.proposals.proposed} document change(s) await an explicit author decision`
+    ),
+    check(
       "lint-advisories",
       lint.diagnostics.length === 0 ? "passed" : "advisory",
       lint.diagnostics.length === 0
@@ -118,7 +132,9 @@ export async function publishCheckPackage(inputPath, {
     review: {
       state: review.state,
       complete: review.complete,
-      open_questions: review.questions.open
+      open_questions: review.questions.open,
+      proposed_changes: review.proposals.proposed,
+      accepted_changes: review.proposals.accepted
     },
     limitations: [
       "Publish readiness confirms protocol integrity, stable bytes, and separate success material; it does not certify package quality or completeness.",

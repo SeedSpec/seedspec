@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { stringify as stringifyYaml } from "yaml";
 import {
   PROTOCOL_OWNED_RESOLUTION_PATHS,
+  protocolVersion,
   resolveProject,
   validatePackage
 } from "@seedspec/runtime";
@@ -53,14 +54,14 @@ for (const scenario of scenarios) {
     );
     const appliedIntentPath = path.join(temporaryRoot, "applied-intent.yaml");
     await writeFile(configurationSelectionsPath, stringifyYaml({
-      protocol_version: "0.2",
+      protocol_version: protocolVersion,
       packages: records.map((record) => ({
         package: record.manifest.id,
         selection: "example"
       }))
     }), "utf8");
     await writeFile(appliedIntentPath, stringifyYaml({
-      protocol_version: "0.2",
+      protocol_version: protocolVersion,
       packages: records.map((record) => ({
         package: record.manifest.id,
         use: "as-authored"

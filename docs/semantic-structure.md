@@ -21,7 +21,7 @@ can preserve those distinctions instead of repeatedly inferring them.
 
 ### Product intent: what must be true
 
-The primary intent source records the desired outcome, actors, obligations,
+The primary intent module records the desired outcome, actors, obligations,
 invariants, constraints, forbidden states, non-goals, success, and decision
 latitude. It is the package author's reusable baseline, not an implementation
 plan or a record of one adopter's choices.

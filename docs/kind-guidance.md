@@ -64,6 +64,7 @@ The core hints remain:
 - `solution` — a compound outcome or neutral general seed;
 - `application` — a user-facing software system or product;
 - `feature` — behavior extending or changing an existing solution;
+- `component` — a bounded reusable part of a larger solution;
 - `workflow` — a coordinated process across participants;
 - `automation` — scheduled or event-driven behavior;
 - `configuration` — desired state inside an existing system; and

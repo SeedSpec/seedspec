@@ -27,6 +27,8 @@ For adopters and implementing agents.
 - [Composition](composition.md) — combining packages.
 - [Implementation profiles](implementation-profiles.md) and
   [implementation resources](implementation-resources.md).
+- [Context modules and bridge Skills](context-modules.md) — shared discovery,
+  native formats, progressive disclosure, and Skill-aware fallback.
 - [Capabilities](capabilities.md) — declarations, versions, and conformance
   material.
 
@@ -37,7 +39,7 @@ conformance contract.
 
 - [Language definition](01-language.md) — concepts, authority model, lifecycle,
   and claim boundaries. Read this first.
-- [Protocol 0.2 specification](protocol.md) — field-level rules.
+- [Protocol specification](protocol.md) — field-level rules.
 - [Operations](operations.md) — operation contracts.
 - [Conformance](conformance.md) — what a conformance result establishes.
 - [Versioning](versioning.md) and [migrations](migrations.md).

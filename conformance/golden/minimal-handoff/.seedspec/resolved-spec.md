@@ -5,17 +5,19 @@
 ## Project summary
 
 - Root package: org.seedspec.fixtures.portable-feature@0.1.0
-- Root package digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+- Root package digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
 - Root kind hint: feature
 - Additions: none
-- Protocol: 0.2
+- Bundled composition edges: 0
+- Protocol: 0.3
 - Applied intent: affirmed
+- Context modules: 1
 
 ## Applied intent and provenance
 
 Package definitions below are package-author intent. Project-local contributions are end-user intent or explicitly labeled agent proposals; format alone does not determine authority.
 
-- org.seedspec.fixtures.portable-feature: as-authored; `org.seedspec.intent.native` at `definition/feature.md`
+- org.seedspec.fixtures.portable-feature: as-authored; module `primary-intent` in format `org.seedspec.intent.markdown` at `definition/feature.md`
 
 ## Solution configuration
 
@@ -120,6 +122,13 @@ Archived and closed goals keep their allocation history. A target increase may m
 ## Portability boundary
 
 The feature may be used in household allowance, personal budgeting, classroom rewards, fundraising, or virtual-point products. Host-specific names, routes, components, storage, notifications, and authentication remain integration choices.
+
+## Context modules
+
+Context modules remain separate semantic inputs. Their discovery does not activate native workflows, bridge Skills, scripts, tools, or remote sources.
+
+Context modules:
+- org.seedspec.fixtures.portable-feature/primary-intent (org.seedspec.intent.markdown; primary-intent; materialized)
 
 ## Root acceptance
 

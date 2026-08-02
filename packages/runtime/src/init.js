@@ -33,6 +33,7 @@ export async function initPackage(kind, outputDirectory) {
     "solution",
     "application",
     "feature",
+    "component",
     "workflow",
     "automation",
     "configuration",
@@ -45,14 +46,26 @@ export async function initPackage(kind, outputDirectory) {
   const root = path.resolve(outputDirectory);
   const title = titleFromDirectory(root);
   const manifest = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     id: idFromDirectory(root),
     name: title,
     version: "0.1.0",
     kind,
     description: `Describe the ${kind}'s intended outcome.`,
     definition: {
-      entrypoint: "seed.md"
+      module: "primary-intent"
+    },
+    context: {
+      modules: [{
+        id: "primary-intent",
+        format: "org.seedspec.intent.markdown",
+        description: "The package author's primary intent.",
+        entrypoint: "seed.md",
+        source: {
+          kind: "package",
+          path: "seed.md"
+        }
+      }]
     },
     configuration: {
       schema: "configuration/schema.json",
@@ -83,7 +96,7 @@ export async function initPackage(kind, outputDirectory) {
   ]);
   await Promise.all([
     writeFile(path.join(root, "seedspec.yaml"), stringifyYaml(manifest), "utf8"),
-    writeFile(path.join(root, manifest.definition.entrypoint), definition, "utf8"),
+    writeFile(path.join(root, "seed.md"), definition, "utf8"),
     writeFile(path.join(root, "configuration/schema.json"), `${JSON.stringify(configurationSchema, null, 2)}\n`, "utf8"),
     writeFile(path.join(root, "configuration/example.yaml"), "{}\n", "utf8"),
     writeFile(path.join(root, "success.md"), starterSuccess(title), "utf8")

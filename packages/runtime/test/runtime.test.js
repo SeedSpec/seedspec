@@ -20,6 +20,7 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
+  AUTHORING_CHANGE_PROPOSAL_FORMAT,
   QUESTION_RESOLUTIONS,
   discoverProviders,
   readBundledResource,
@@ -35,18 +36,24 @@ import {
   AUTHORING_RESULT_FORMAT,
   AUTHORING_WORKSPACE_OPERATION_FORMAT,
   AUTHORING_WORKSPACE_SNAPSHOT_FORMAT,
+  applyIntegrationBridgePlan,
+  applyDocumentChange,
   auditPackage,
   beginPackage,
   capabilityConformanceBinding,
   classifyCapabilityRevision,
   completionScopeDigest,
   conformanceSuiteVersion,
+  createAdapterRegistry,
   createAuthoringWorkspace,
   computeDirectoryDigest,
+  computeFileDigest,
   createAuthorEvaluation,
+  decideDocumentChange,
   discoverAuthoringWorkspace,
   formatAuthoringWorkspaceSnapshot,
   discoverFeatures,
+  discoverFormatIntegrations,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
   formatAuthoringStarterPrompt,
@@ -58,23 +65,32 @@ import {
   inspectAuthoringWorkspace,
   inspectProjectCompletion,
   initPackage,
-  listArtifactAdapters,
   listPackageArtifacts,
   listPackageImplementationResources,
+  loadIntegrationAdapter,
   lintPackage,
   packPackage,
+  planIntegrationBridges,
+  prepareContext,
   preparePackage,
+  proposeDocumentChange,
   publishCheckPackage,
+  readIntegrationDescriptor,
   recordImplementationResourceUse,
+  recordContextUse,
   resolveImplementationResources,
   resolveProject,
   runConformanceSuite,
   upgradePackage,
-  validateArtifact,
+  validateContextModule,
   verifyProjectLock,
   validatePackage
 } from "../src/index.js";
-import { compileProtocolSchema, formatSchemaErrors } from "../src/schema.js";
+import {
+  compileConfigurationSchema,
+  compileProtocolSchema,
+  formatSchemaErrors
+} from "../src/schema.js";
 
 const execFileAsync = promisify(execFile);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -82,6 +98,9 @@ const root = path.resolve(packageRoot, "../..");
 const allowance = path.join(root, "conformance/fixtures/comprehensive-application");
 const savings = path.join(root, "conformance/fixtures/portable-feature");
 const resourcesFixture = path.join(root, "conformance/fixtures/implementation-resources");
+const contextIntegration = path.join(root, "conformance/integrations/example-context");
+const contextRequest = path.join(root, "conformance/fixtures/context-request-review.yaml");
+const contextUse = path.join(root, "conformance/fixtures/context-use-review.json");
 const streaks = path.join(root, "conformance/fixtures/revision-feature");
 const hubspotMetric = path.join(root, "conformance/fixtures/profiled-workflow");
 const fixtures = path.join(packageRoot, "test/fixtures");
@@ -123,7 +142,7 @@ async function writeExampleConfigurationSelections(directory, packagePaths, name
   const records = await Promise.all(packagePaths.map(validatePackage));
   const selectionPath = path.join(directory, name);
   await writeFile(selectionPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: records.map((record) => ({
       package: record.manifest.id,
       selection: "example"
@@ -136,7 +155,7 @@ async function writeAffirmedAppliedIntent(directory, packagePaths, name = "appli
   const records = await Promise.all(packagePaths.map(validatePackage));
   const intentPath = path.join(directory, name);
   await writeFile(intentPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: records.map((record) => ({
       package: record.manifest.id,
       use: "as-authored"
@@ -215,6 +234,142 @@ Inspect actual actors, protected resources, and target constraints before choosi
   return { packagePath, resourcePath, skillSource, digest, output };
 }
 
+async function createContextModulePackage(t) {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "context-module-package");
+  await cp(allowance, packagePath, { recursive: true });
+
+  const behaviorRoot = path.join(packagePath, "context/refund-safety");
+  const bridgeRoot = path.join(packagePath, "context/review-behavior");
+  await mkdir(behaviorRoot, { recursive: true });
+  await mkdir(bridgeRoot, { recursive: true });
+  await writeFile(
+    path.join(behaviorRoot, "BEHAVIOR.md"),
+    `---\nname: refund-safety\ndescription: Review refund decisions for clear evidence and escalation.\n---\n\n# Refund safety\n`,
+    "utf8"
+  );
+  await writeFile(
+    path.join(bridgeRoot, "SKILL.md"),
+    `---\nname: review-behavior\ndescription: Use when reviewing a trace against a BEHAVIOR.md module.\n---\n\n# Review behavior\n\nRead the selected behavior and compare it with trace evidence.\n`,
+    "utf8"
+  );
+
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.context.modules.push(
+    {
+      id: "refund-safety",
+      format: "org.example.context.behavior",
+      format_version: "1.0.0",
+      description: "Expected refund-agent conduct for review and eval design.",
+      entrypoint: "BEHAVIOR.md",
+      source: { kind: "package", path: "context/refund-safety/" },
+      applies_to: {
+        purposes: ["review", "evaluate"],
+        audiences: ["reviewer", "evaluator"]
+      },
+      bridges: [{
+        skill: "review-behavior",
+        applies_to: {
+          purposes: ["review", "evaluate"],
+          audiences: ["reviewer", "evaluator"]
+        }
+      }]
+    },
+    {
+      id: "review-behavior",
+      format: "io.agentskills.skill",
+      description: "Bridge Skill for consuming Agent Behavior modules.",
+      entrypoint: "SKILL.md",
+      source: { kind: "package", path: "context/review-behavior/" },
+      applies_to: {
+        purposes: ["review", "evaluate"]
+      }
+    }
+  );
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+
+  return { output, packagePath };
+}
+
+async function createNestedCompositionPackage(t) {
+  const output = await temporaryDirectory(t);
+  const parentPath = path.join(output, "family-hub");
+  const widgetPath = path.join(parentPath, "bundled/widget");
+  const controlPath = path.join(widgetPath, "bundled/control");
+
+  await initPackage("application", parentPath);
+  await initPackage("component", widgetPath);
+  await initPackage("component", controlPath);
+  await writeFile(
+    path.join(parentPath, "success.md"),
+    "# Family hub success\n\nA household member can use the shared widget from the family hub.\n",
+    "utf8"
+  );
+  await writeFile(
+    path.join(widgetPath, "success.md"),
+    "# Widget success\n\nThe widget presents the supplied selection and accepts a requested change.\n",
+    "utf8"
+  );
+  await writeFile(
+    path.join(controlPath, "success.md"),
+    "# Control success\n\nThe control exposes every supplied selection option.\n",
+    "utf8"
+  );
+
+  const control = await validatePackage(controlPath);
+  await mkdir(path.join(widgetPath, "integrations"), { recursive: true });
+  await writeFile(
+    path.join(widgetPath, "integrations/control.md"),
+    "# Widget to control\n\nThe widget owns selection state. The control emits a requested selection change.\n",
+    "utf8"
+  );
+  const widgetManifestPath = path.join(widgetPath, "seedspec.yaml");
+  const widgetManifest = parseYaml(await readFile(widgetManifestPath, "utf8"));
+  widgetManifest.components.integration = "integrations/";
+  widgetManifest.composition = {
+    includes: [{
+      id: "selection-control",
+      path: "bundled/control",
+      package: control.manifest.id,
+      version: control.manifest.version,
+      digest: control.digest,
+      integration: "integrations/control.md"
+    }]
+  };
+  await writeFile(widgetManifestPath, stringifyYaml(widgetManifest), "utf8");
+  const widget = await validatePackage(widgetPath);
+
+  await mkdir(path.join(parentPath, "integrations"), { recursive: true });
+  await writeFile(
+    path.join(parentPath, "integrations/widget.md"),
+    "# Family hub to widget\n\nThe family hub supplies household events. The widget presents them without owning the household record.\n",
+    "utf8"
+  );
+  const parentManifestPath = path.join(parentPath, "seedspec.yaml");
+  const parentManifest = parseYaml(await readFile(parentManifestPath, "utf8"));
+  parentManifest.components.integration = "integrations/";
+  parentManifest.composition = {
+    includes: [{
+      id: "shared-widget",
+      path: "bundled/widget",
+      package: widget.manifest.id,
+      version: widget.manifest.version,
+      digest: widget.digest,
+      integration: "integrations/widget.md"
+    }]
+  };
+  await writeFile(parentManifestPath, stringifyYaml(parentManifest), "utf8");
+
+  return {
+    output,
+    parentPath,
+    parentManifestPath,
+    widget,
+    control
+  };
+}
+
 test("representative protocol fixtures validate", async () => {
   const application = await validatePackage(allowance);
   const feature = await validatePackage(savings);
@@ -234,9 +389,9 @@ test("representative protocol fixtures validate", async () => {
       "org.seedspec.core.transactions"
     ]
   );
-  assert.equal(application.manifest.artifacts[0].type, "org.seedspec.artifact.product-spec");
-  assert.equal(application.manifest.definition.artifact, "product-spec");
-  assert.equal(application.manifest.definition.entrypoint, application.manifest.artifacts[0].path);
+  assert.equal(application.manifest.artifacts[0].type, "org.example.artifact.reference-markdown");
+  assert.equal(application.manifest.definition.module, "primary-intent");
+  assert.equal(application.manifest.context.modules[0].source.path, "intent/allowance-tracker.md");
   assert.deepEqual(
     application.taskRunbook.tasks.map((task) => task.id),
     ["inspect-current-state", "review-author-context", "realize-package", "verify-realization"]
@@ -258,6 +413,96 @@ test("kind is a tooling hint rather than a composition gate", async (t) => {
   assert.equal(featureAsRoot.lock.root.kind, "feature");
   assert.equal(workflow.manifest.kind, "workflow");
   assert.equal(customKind.manifest.kind, "com.example.kind.agent");
+});
+
+test("bundled composition resolves recursively and preserves every integration seam", async (t) => {
+  const fixture = await createNestedCompositionPackage(t);
+  const parent = await validatePackage(fixture.parentPath);
+  assert.equal(parent.composition.includes[0].record.manifest.id, fixture.widget.manifest.id);
+  assert.equal(
+    parent.composition.includes[0].record.composition.includes[0].record.manifest.id,
+    fixture.control.manifest.id
+  );
+
+  const inspection = await inspectPackage(fixture.parentPath);
+  assert.equal(inspection.composition[0].id, "shared-widget");
+  assert.equal(inspection.composition[1].id, "selection-control");
+  const beginning = await beginPackage(fixture.parentPath);
+  assert.equal(beginning.composition.length, 2);
+  assert.ok(beginning.notices.some(
+    (notice) => notice.code === "BUNDLED_COMPOSITION_REQUIRES_REVIEW"
+  ));
+
+  const projectOutput = path.join(fixture.output, "resolved");
+  const result = await resolveProject(fixture.parentPath, {
+    outputDirectory: projectOutput
+  });
+  assert.deepEqual(
+    new Set(result.additions),
+    new Set([fixture.widget.manifest.id, fixture.control.manifest.id])
+  );
+  assert.equal(result.project.composition.length, 2);
+
+  const parentEdge = result.project.composition.find((edge) => edge.id === "shared-widget");
+  const nestedEdge = result.project.composition.find((edge) => edge.id === "selection-control");
+  assert.equal(parentEdge.parent.id, parent.manifest.id);
+  assert.equal(parentEdge.child.id, fixture.widget.manifest.id);
+  assert.equal(
+    await readFile(path.join(result.workspace, parentEdge.integration.resolved_path), "utf8"),
+    "# Family hub to widget\n\nThe family hub supplies household events. The widget presents them without owning the household record.\n"
+  );
+  assert.equal(nestedEdge.parent.id, fixture.widget.manifest.id);
+  assert.equal(nestedEdge.child.id, fixture.control.manifest.id);
+
+  const validateProject = await compileProtocolSchema("project.schema.json");
+  assert.equal(
+    validateProject(result.project),
+    true,
+    formatSchemaErrors(validateProject.errors).join("\n")
+  );
+  const guide = await readFile(path.join(result.workspace, "agent-guide.md"), "utf8");
+  assert.match(guide, /Bundled composition seams/);
+  assert.match(guide, /components\/org\.example\.family-hub\/integration\/widget\.md/);
+  const lockVerification = await verifyProjectLock(projectOutput, [fixture.parentPath]);
+  assert.deepEqual(
+    new Set(lockVerification.verifiedPackages),
+    new Set([
+      parent.manifest.id,
+      fixture.widget.manifest.id,
+      fixture.control.manifest.id
+    ])
+  );
+
+  const authoring = await auditPackage(fixture.parentPath, {
+    area: "supporting-material",
+    target: "compose",
+    stateDirectory: path.join(fixture.output, "authoring"),
+    toolVersion: "0.2.3-test"
+  });
+  assert.match(authoring.current.instructions, /responsibility boundaries, concept mapping, state ownership/);
+  assert.match(authoring.current.instructions, /prompts, not required headings/);
+  assert.match(authoring.current.instructions, /shared-widget/);
+  assert.match(authoring.current.instructions, /selection-control/);
+  assert.match(formatAuthoringGuidance("composition"), /Delete unused sections/);
+
+  const packed = await packPackage(fixture.parentPath, {
+    outputDirectory: path.join(fixture.output, "release"),
+    stateDirectory: path.join(fixture.output, "pack-authoring"),
+    toolVersion: "0.2.3-test"
+  });
+  const archive = await execFileAsync("tar", ["-tzf", packed.paths.archive]);
+  assert.match(
+    archive.stdout,
+    /package\/bundled\/widget\/bundled\/control\/seedspec\.yaml/
+  );
+
+  const manifest = parseYaml(await readFile(fixture.parentManifestPath, "utf8"));
+  manifest.composition.includes[0].digest = `sha256:${"0".repeat(64)}`;
+  await writeFile(fixture.parentManifestPath, stringifyYaml(manifest), "utf8");
+  await assert.rejects(
+    validatePackage(fixture.parentPath),
+    (error) => error.code === "COMPOSITION_IDENTITY_MISMATCH"
+  );
 });
 
 test("source-bound linting separates protocol validity from authored-content feedback", async (t) => {
@@ -282,7 +527,10 @@ test("source-bound linting separates protocol validity from authored-content fee
   }];
   await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
   await writeFile(
-    path.join(packagePath, manifest.definition.entrypoint),
+    path.join(
+      packagePath,
+      manifest.context.modules.find((module) => module.id === manifest.definition.module).source.path
+    ),
     "# Integration\n\nBuild a Next.js page and route for the customer interface.\n",
     "utf8"
   );
@@ -858,7 +1106,7 @@ test("capability conformance results bind exact contract, suite, checks, and rea
 
   const resultPath = path.join(output, "capability-conformance.yaml");
   const result = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     capability: binding.capability,
     contract_digest: binding.contract_digest,
     suite_digest: binding.suite_digest,
@@ -976,13 +1224,20 @@ test("resolution commits atomically and removes failed staging state", async (t)
 test("kind-specific manifest schemas accept their matching examples", async () => {
   const application = await validatePackage(allowance);
   const feature = await validatePackage(savings);
+  const component = await validatePackage(path.join(
+    root,
+    "conformance/fixtures/bundled-family-hub/bundled/shared-agenda-widget"
+  ));
   const validateApplication = await compileProtocolSchema("application.schema.json");
   const validateFeature = await compileProtocolSchema("feature.schema.json");
+  const validateComponent = await compileProtocolSchema("component.schema.json");
 
   assert.equal(validateApplication(application.manifest), true, formatSchemaErrors(validateApplication.errors).join("\n"));
   assert.equal(validateFeature(feature.manifest), true, formatSchemaErrors(validateFeature.errors).join("\n"));
+  assert.equal(validateComponent(component.manifest), true, formatSchemaErrors(validateComponent.errors).join("\n"));
   assert.equal(validateApplication(feature.manifest), false);
   assert.equal(validateFeature(application.manifest), false);
+  assert.equal(validateComponent(feature.manifest), false);
 });
 
 test("inspect reports identity, capabilities, and optional components", async () => {
@@ -1015,15 +1270,13 @@ test("begin validates an application and exposes the pre-resolution workflow", a
   assert.ok(beginning.components.some(
     (component) => component.name === "reference" && component.review === "before-planning"
   ));
-  assert.ok(beginning.artifacts.some(
-    (artifact) => artifact.id === "product-spec" && artifact.adapter?.id === "org.seedspec.adapter.product-spec"
-  ));
+  assert.ok(beginning.artifacts.some((artifact) => artifact.id === "chore-reference"));
   assert.equal(beginning.tasks.path, "tasks.yaml");
   assert.equal(beginning.tasks.items[0].id, "inspect-current-state");
   assert.equal(beginning.trust.discovery_activates_content, false);
   assert.ok(beginning.next_actions.some(
     (action) => action.id === "record-artifact-dispositions"
-      && /primary intent artifact.*native workflow remains inactive/.test(action.action)
+      && /supporting artifact/.test(action.action)
   ));
   assert.ok(beginning.next_actions.some(
     (action) => action.id === "review-task-sequence" && /listed order/.test(action.action)
@@ -1032,6 +1285,246 @@ test("begin validates an application and exposes the pre-resolution workflow", a
   assert.match(formatted, /Their order is their only sequencing mechanism/);
   assert.ok(formatted.indexOf("No package-declared solution decisions were supplied.")
     < formatted.indexOf("## Implementation profiles"));
+});
+
+test("context modules and bridge skills validate, inspect, and survive resolution", async (t) => {
+  const fixture = await createContextModulePackage(t);
+  const record = await validatePackage(fixture.packagePath);
+  const inspection = await inspectPackage(fixture.packagePath);
+  const beginning = await beginPackage(fixture.packagePath);
+  const formattedBeginning = formatPackageBeginning(beginning);
+
+  assert.equal(record.manifest.context.modules.length, 3);
+  assert.equal(inspection.contextModules[1].id, "refund-safety");
+  assert.equal(inspection.contextModules[1].bridges[0].skill, "review-behavior");
+  assert.equal(beginning.trust.context_prepared, false);
+  assert.equal(beginning.trust.bridge_skills_invoked, false);
+  assert.match(formattedBeginning, /prepare only modules relevant to the current purpose/i);
+  assert.match(formattedBeginning, /source: `package:context\/refund-safety\/?`/);
+  assert.match(formattedBeginning, /review-behavior.*purpose review, purpose evaluate/s);
+
+  const result = await resolveProject(fixture.packagePath, {
+    outputDirectory: fixture.output
+  });
+  const indexPath = path.join(result.workspace, "context-index.yaml");
+  const index = parseYaml(await readFile(indexPath, "utf8"));
+  const validateIndex = await compileProtocolSchema("context-index.schema.json");
+  const project = parseYaml(
+    await readFile(path.join(result.workspace, "project.yaml"), "utf8")
+  );
+  const guide = await readFile(path.join(result.workspace, "agent-guide.md"), "utf8");
+
+  assert.equal(validateIndex(index), true, formatSchemaErrors(validateIndex.errors).join("\n"));
+  assert.equal(project.context_index, "context-index.yaml");
+  const behavior = index.modules.find((module) => module.id === "refund-safety");
+  assert.equal(behavior.qualified_id, `${record.manifest.id}/refund-safety`);
+  assert.equal(behavior.availability, "materialized");
+  assert.equal(behavior.bridges[0].skill, `${record.manifest.id}/review-behavior`);
+  assert.equal(
+    await readFile(
+      path.join(result.workspace, behavior.root, behavior.entrypoint),
+      "utf8"
+    ),
+    await readFile(path.join(fixture.packagePath, "context/refund-safety/BEHAVIOR.md"), "utf8")
+  );
+  assert.match(guide, /## Context navigation/);
+  assert.match(guide, /A bridge Skill explains how to consume another module format/);
+});
+
+test("context preparation selects native or bridge mechanisms and binds reported use", async (t) => {
+  const fixture = await createContextModulePackage(t);
+  const projectPath = path.join(fixture.output, "context-project");
+  const resolved = await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
+
+  const registry = createAdapterRegistry();
+  await loadIntegrationAdapter(contextIntegration, registry);
+  const native = await prepareContext(
+    resolved.workspace,
+    contextRequest,
+    path.join(fixture.output, "prepared-native"),
+    { registry }
+  );
+  const behavior = native.bundle.modules.find((module) => module.module.endsWith("/refund-safety"));
+  assert.equal(behavior.mechanism.kind, "native-adapter");
+  assert.equal(behavior.validation.status, "valid");
+  assert.ok(behavior.included_files.some((file) => file.path === "BEHAVIOR.md"));
+  const validateBundle = await compileProtocolSchema("context-bundle.schema.json");
+  const validateReceipt = await compileProtocolSchema("context-preparation-receipt.schema.json");
+  assert.equal(validateBundle(native.bundle), true, formatSchemaErrors(validateBundle.errors).join("\n"));
+  assert.equal(validateReceipt(native.receipt), true, formatSchemaErrors(validateReceipt.errors).join("\n"));
+
+  const usage = JSON.parse(await readFile(contextUse, "utf8"));
+  usage.modules = usage.modules.map((module) => ({
+    ...module,
+    module: module.module.replace(
+      "org.seedspec.fixtures.context-modules",
+      "org.seedspec.fixtures.comprehensive-application"
+    )
+  }));
+  const useReceipt = await recordContextUse(
+    native.output,
+    usage,
+    path.join(fixture.output, "context-use-receipt.json")
+  );
+  const validateUseReceipt = await compileProtocolSchema("context-use-receipt.schema.json");
+  assert.equal(validateUseReceipt(useReceipt), true, formatSchemaErrors(validateUseReceipt.errors).join("\n"));
+  assert.equal(useReceipt.subject.preparation_receipt, native.receipt.receipt_id);
+
+  const preparedOutput = native.bundle.modules[0].output.path;
+  await writeFile(
+    path.join(native.output, preparedOutput),
+    `${await readFile(path.join(native.output, preparedOutput), "utf8")}\ntampered\n`,
+    "utf8"
+  );
+  await assert.rejects(
+    recordContextUse(
+      native.output,
+      usage,
+      path.join(fixture.output, "tampered-context-use-receipt.json")
+    ),
+    (error) => error.code === "CONTEXT_BUNDLE_DIGEST_MISMATCH"
+  );
+
+  const bridged = await prepareContext(
+    resolved.workspace,
+    contextRequest,
+    path.join(fixture.output, "prepared-bridge")
+  );
+  const bridgedBehavior = bridged.bundle.modules.find((module) => module.module.endsWith("/refund-safety"));
+  assert.equal(bridgedBehavior.mechanism.kind, "bridge-skills");
+  assert.equal(bridgedBehavior.mechanism.skills[0].skill.endsWith("/review-behavior"), true);
+  assert.ok(await readFile(
+    path.join(bridged.output, bridgedBehavior.mechanism.skills[0].path, "SKILL.md"),
+    "utf8"
+  ));
+});
+
+test("integration discovery is inert and explicit adapter loading verifies code bytes", async (t) => {
+  const output = await temporaryDirectory(t);
+  const integrationPath = path.join(output, "integration");
+  const marker = path.join(output, "adapter-loaded.txt");
+  await cp(contextIntegration, integrationPath, { recursive: true });
+  const adapterPath = path.join(integrationPath, "adapter.mjs");
+  await writeFile(adapterPath, `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(marker)}, "loaded\\n", "utf8");
+export const adapter = {
+  adapter_api_version: "1",
+  id: "org.seedspec.fixtures.example-context-adapter",
+  version: "1.0.0",
+  formats: [{ id: "org.example.context.behavior", versions: ["1.0.0"] }],
+  capabilities: ["inspect", "validate", "prepare"],
+  async inspect() { return {}; },
+  async validate() { return { valid: true, issues: [] }; },
+  async prepare() { return { text: "# Prepared", supporting_files: [] }; }
+};
+`, "utf8");
+  const descriptorPath = path.join(integrationPath, "seedspec-integration.json");
+  const descriptor = JSON.parse(await readFile(descriptorPath, "utf8"));
+  descriptor.adapter.entrypoint = "adapter.js";
+  await writeFile(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`, "utf8");
+  await assert.rejects(
+    readIntegrationDescriptor(integrationPath),
+    (error) => error.code === "INVALID_INTEGRATION_DESCRIPTOR"
+  );
+  descriptor.adapter.entrypoint = "adapter.mjs";
+  descriptor.adapter.digest = await computeFileDigest(adapterPath);
+  await writeFile(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`, "utf8");
+
+  const discovery = await discoverFormatIntegrations(
+    path.join(root, "conformance/fixtures/context-modules"),
+    [integrationPath]
+  );
+  assert.equal(discovery.modules.find((module) => module.module === "refund-safety").compatible.length, 1);
+  await assert.rejects(access(marker));
+
+  const integrationLink = path.join(output, "integration-link");
+  await symlink(integrationPath, integrationLink);
+  await assert.rejects(
+    discoverFormatIntegrations(
+      path.join(root, "conformance/fixtures/context-modules"),
+      [integrationLink]
+    ),
+    (error) => error.code === "INVALID_INTEGRATION_DESCRIPTOR"
+  );
+
+  const registry = createAdapterRegistry();
+  await loadIntegrationAdapter(integrationPath, registry);
+  await access(marker);
+  assert.equal(registry.list().length, 1);
+
+  await writeFile(adapterPath, `${await readFile(adapterPath, "utf8")}\n// changed\n`, "utf8");
+  await assert.rejects(
+    discoverFormatIntegrations(
+      path.join(root, "conformance/fixtures/context-modules"),
+      [integrationPath]
+    ),
+    (error) => error.code === "INTEGRATION_ADAPTER_DIGEST_MISMATCH"
+  );
+});
+
+test("adapter registries reject duplicates and ambiguous format claims", () => {
+  const adapter = (id) => ({
+    adapter_api_version: "1",
+    id,
+    version: "1.0.0",
+    formats: [{ id: "org.example.context.behavior", versions: ["1.0.0"] }],
+    capabilities: ["validate"],
+    async validate() { return { valid: true, issues: [] }; }
+  });
+  const registry = createAdapterRegistry([adapter("org.example.adapters.first")]);
+  assert.throws(
+    () => registry.register(adapter("org.example.adapters.first")),
+    (error) => error.code === "DUPLICATE_CONTEXT_ADAPTER"
+  );
+  registry.register(adapter("org.example.adapters.second"));
+  assert.throws(
+    () => registry.match({
+      id: "refund-safety",
+      qualified_id: "org.example.package/refund-safety",
+      format: "org.example.context.behavior",
+      format_version: "1.0.0"
+    }, "validate"),
+    (error) => error.code === "AMBIGUOUS_CONTEXT_ADAPTER"
+  );
+});
+
+test("authoring bridge plans are dry-run first and install verified Skills atomically", async (t) => {
+  const fixture = await createContextModulePackage(t);
+  const manifestPath = path.join(fixture.packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.context.modules = manifest.context.modules.filter((module) => module.id !== "review-behavior");
+  delete manifest.context.modules.find((module) => module.id === "refund-safety").bridges;
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
+  await rm(path.join(fixture.packagePath, "context/review-behavior"), { recursive: true, force: true });
+  const before = await validatePackage(fixture.packagePath);
+
+  await assert.rejects(
+    planIntegrationBridges(fixture.packagePath, [contextIntegration], {
+      selections: [{
+        integration: "org.seedspec.fixtures.example-context-integration",
+        bridge: "review-behavior",
+        module: "primary-intent"
+      }]
+    }),
+    (error) => error.code === "INVALID_INTEGRATION_SELECTION"
+  );
+
+  const plan = await planIntegrationBridges(fixture.packagePath, [contextIntegration]);
+  assert.equal(plan.skills.length, 1);
+  assert.equal(plan.bindings.length, 1);
+  assert.equal((await validatePackage(fixture.packagePath)).digest, before.digest);
+
+  const stateRoot = path.join(fixture.output, "authoring-state");
+  const applied = await applyIntegrationBridgePlan(plan, { stateRoot });
+  const updated = await validatePackage(fixture.packagePath);
+  assert.equal(applied.digest, updated.digest);
+  assert.ok(updated.manifest.context.modules.some((module) => module.id === "review-behavior"));
+  assert.equal(
+    updated.manifest.context.modules.find((module) => module.id === "refund-safety").bridges[0].skill,
+    "review-behavior"
+  );
+  assert.match(await readFile(path.join(stateRoot, "integrations.yaml"), "utf8"), /after_digest/);
 });
 
 test("begin reports when a package has no author acceptance material", async (t) => {
@@ -1130,7 +1623,7 @@ test("author-declared implementation resources are validated, preserved, and res
 
   const fileDigest = `sha256:${createHash("sha256").update(fixture.skillSource).digest("hex")}`;
   const remoteManifest = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     id: resource.id,
     version: "0.1.0",
     kind: "skill",
@@ -1266,7 +1759,7 @@ test("latest resource policies reject SemVer prereleases below a stable baseline
   const projectPath = path.join(fixture.output, "project");
   await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
   const remoteManifest = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     id: "org.seedspec.guidance.authorization-decisions",
     version: "0.1.0-alpha.1",
     kind: "skill",
@@ -1340,47 +1833,41 @@ test("bundled implementation resources are reverified before use", async (t) => 
   assert.equal(state.resources[0].reason_code, "IMPLEMENTATION_RESOURCE_DIGEST_MISMATCH");
 });
 
-test("artifact discovery recognizes ProductSpec without activating its workflow", async () => {
+test("artifact discovery remains passive supporting material", async () => {
   const listing = await listPackageArtifacts(allowance);
-  const artifact = listing.artifacts.find((candidate) => candidate.id === "product-spec");
-  const adapter = listArtifactAdapters().find((candidate) => (
-    candidate.id === "org.seedspec.adapter.product-spec"
-  ));
+  const artifact = listing.artifacts.find((candidate) => candidate.id === "chore-reference");
 
-  assert.equal(artifact.type, "org.seedspec.artifact.product-spec");
-  assert.equal(artifact.adapter.id, adapter.id);
-  assert.deepEqual(artifact.concerns, ["org.seedspec.concern.intent"]);
-  assert.equal(adapter.implementation, "@productspec/parser");
+  assert.equal(artifact.type, "org.example.artifact.reference-markdown");
+  assert.deepEqual(artifact.concerns, ["org.seedspec.concern.design"]);
+  assert.equal("adapter" in artifact, false);
 });
 
-test("the official ProductSpec adapter invokes the upstream parser explicitly", async () => {
-  const result = await validateArtifact(allowance, "product-spec");
-  assert.equal(result.valid, true);
-  assert.equal(result.adapter.id, "org.seedspec.adapter.product-spec");
-  assert.equal(result.summary.title, "Allowance Tracker");
-  assert.equal(result.summary.formatVersion, "0.1");
-});
-
-test("core validation does not silently run artifact-specific validation", async (t) => {
-  const output = await temporaryDirectory(t);
-  const packagePath = path.join(output, "invalid-productspec");
-  await cp(allowance, packagePath, { recursive: true });
-  await writeFile(
-    path.join(packagePath, "intent/allowance-tracker.product-spec.md"),
-    "This remains package input but is not a valid ProductSpec.\n",
-    "utf8"
-  );
-
-  await validatePackage(packagePath);
-  const resolved = await resolveProject(packagePath, { outputDirectory: output });
-  assert.ok(await readFile(
-    path.join(resolved.workspace, resolved.artifactIndex.artifacts[0].path),
-    "utf8"
-  ));
+test("context validation requires an explicit adapter registry", async (t) => {
+  const fixture = await createContextModulePackage(t);
   await assert.rejects(
-    validateArtifact(packagePath, "product-spec"),
-    (error) => error.code === "INVALID_ARTIFACT"
+    validateContextModule(fixture.packagePath, "refund-safety", {
+      registry: createAdapterRegistry()
+    }),
+    (error) => error.code === "CONTEXT_ADAPTER_NOT_FOUND"
   );
+});
+
+test("core validation does not silently run context-format validation", async (t) => {
+  const fixture = await createContextModulePackage(t);
+  await writeFile(
+    path.join(fixture.packagePath, "context/refund-safety/BEHAVIOR.md"),
+    "This remains package input even when its native validator rejects it.\n",
+    "utf8"
+  );
+
+  await validatePackage(fixture.packagePath);
+  const registry = createAdapterRegistry();
+  await loadIntegrationAdapter(
+    path.join(root, "conformance/integrations/example-context"),
+    registry
+  );
+  const result = await validateContextModule(fixture.packagePath, "refund-safety", { registry });
+  assert.equal(result.valid, false);
 });
 
 test("artifact relationships must refer to declared local artifact IDs", async (t) => {
@@ -1390,7 +1877,7 @@ test("artifact relationships must refer to declared local artifact IDs", async (
   const manifestPath = path.join(packagePath, "seedspec.yaml");
   const manifest = parseYaml(await readFile(manifestPath, "utf8"));
   manifest.relationships = [{
-    from: "product-spec",
+    from: "chore-reference",
     type: "org.seedspec.relation.derived-from",
     to: "missing-artifact"
   }];
@@ -1403,30 +1890,28 @@ test("artifact relationships must refer to declared local artifact IDs", async (
   );
 });
 
-test("a primary intent artifact must exist, match the entrypoint, and declare intent", async (t) => {
+test("the primary intent module must exist and resolve to local bytes", async (t) => {
   const output = await temporaryDirectory(t);
   const packagePath = path.join(output, "invalid-primary-intent");
   await cp(allowance, packagePath, { recursive: true });
   const manifestPath = path.join(packagePath, "seedspec.yaml");
   const manifest = parseYaml(await readFile(manifestPath, "utf8"));
 
-  manifest.definition.artifact = "missing-artifact";
+  manifest.definition.module = "missing-primary-intent";
   await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
   await assert.rejects(
     validatePackage(packagePath),
-    (error) => error.code === "INVALID_MANIFEST_SEMANTICS"
-      && error.details.some((detail) => detail.includes("missing-artifact"))
+    (error) => error.code === "INVALID_CONTEXT_MODULE"
+      && error.details.some((detail) => detail.includes("missing-primary-intent"))
   );
 
-  manifest.definition.artifact = "product-spec";
-  manifest.artifacts[0].path = "definition/app.md";
-  manifest.artifacts[0].concerns = ["org.seedspec.concern.design"];
+  manifest.definition.module = "primary-intent";
+  manifest.context.modules[0].source.path = "intent/not-here.md";
   await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
   await assert.rejects(
     validatePackage(packagePath),
-    (error) => error.code === "INVALID_MANIFEST_SEMANTICS"
-      && error.details.some((detail) => detail.includes("definition.entrypoint"))
-      && error.details.some((detail) => detail.includes("org.seedspec.concern.intent"))
+    (error) => error.code === "INVALID_CONTEXT_MODULE"
+      && /does not exist/.test(error.message)
   );
 });
 
@@ -1451,8 +1936,8 @@ test("feature discovery exposes declaration context without compatibility verdic
 test("invalid fixture fails with a useful referenced-file error", async () => {
   await assert.rejects(
     validatePackage(path.join(fixtures, "missing-definition")),
-    (error) => error.code === "INVALID_REFERENCES"
-      && error.details.some((detail) => detail.includes("definition.entrypoint"))
+    (error) => error.code === "INVALID_CONTEXT_MODULE"
+      && /does not exist/.test(error.message)
   );
 });
 
@@ -1489,9 +1974,9 @@ test("the comprehensive application fixture resolves without additions", async (
     (capability) => capability.id === "org.seedspec.core.chores"
   ));
   assert.equal(result.artifactIndex.artifacts.length, 1);
-  assert.equal(result.artifactIndex.artifacts[0].disposition, "selected");
-  assert.equal(result.artifactIndex.artifacts[0].intent_role, "primary");
-  assert.equal(result.project.artifact_status, "recorded");
+  assert.equal(result.artifactIndex.artifacts[0].disposition, "unreviewed");
+  assert.equal("intent_role" in result.artifactIndex.artifacts[0], false);
+  assert.equal(result.project.artifact_status, "review");
   assert.equal(project.task_index, "tasks.yaml");
   assert.deepEqual(
     result.taskIndex.packages[0].tasks.map((task) => task.id),
@@ -1537,10 +2022,10 @@ test("artifact dispositions and implementation targets survive resolution", asyn
   const selectionsPath = path.join(output, "artifact-selections.yaml");
   const preferencesPath = path.join(output, "technical-preferences.yaml");
   await writeFile(selectionsPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
-      id: "product-spec",
+      id: "chore-reference",
       disposition: "selected",
       note: "Use this as supporting product intent."
     }]
@@ -1553,7 +2038,7 @@ test("artifact dispositions and implementation targets survive resolution", asyn
       guidance: [
         {
           package: "org.seedspec.fixtures.comprehensive-application",
-          artifact: "product-spec"
+          artifact: "chore-reference"
         },
         {
           package: "org.seedspec.fixtures.comprehensive-application",
@@ -1575,17 +2060,17 @@ test("artifact dispositions and implementation targets survive resolution", asyn
   assert.equal(artifact.disposition, "selected");
   assert.equal(artifact.selection_note, "Use this as supporting product intent.");
   assert.match(guide, /production-hosting.*org\.seedspec\.target\.hosting.*com\.example\.hosting\.static/);
-  assert.match(guide, /artifact org\.seedspec\.fixtures\.comprehensive-application\/product-spec/);
+  assert.match(guide, /artifact org\.seedspec\.fixtures\.comprehensive-application\/chore-reference/);
   assert.match(guide, /Discovery is not activation/);
 });
 
-test("invalid artifact references fail and primary intent may guide a target without optional selection", async (t) => {
+test("invalid artifact references fail and target guidance requires selected artifacts", async (t) => {
   const output = await temporaryDirectory(t);
   const invalidSelectionsPath = path.join(output, "invalid-artifact-selections.yaml");
-  const declinedPrimaryPath = path.join(output, "declined-primary.yaml");
+  const declinedArtifactPath = path.join(output, "declined-artifact.yaml");
   const preferencesPath = path.join(output, "technical-preferences.yaml");
   await writeFile(invalidSelectionsPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       id: "missing-artifact",
@@ -1599,15 +2084,15 @@ test("invalid artifact references fail and primary intent may guide a target wit
       target: "com.example.hosting.static",
       guidance: [{
         package: "org.seedspec.fixtures.comprehensive-application",
-        artifact: "product-spec"
+        artifact: "chore-reference"
       }]
     }]
   }), "utf8");
-  await writeFile(declinedPrimaryPath, stringifyYaml({
-    protocol_version: "0.2",
+  await writeFile(declinedArtifactPath, stringifyYaml({
+    protocol_version: "0.3",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
-      id: "product-spec",
+      id: "chore-reference",
       disposition: "declined"
     }]
   }), "utf8");
@@ -1622,18 +2107,28 @@ test("invalid artifact references fail and primary intent may guide a target wit
   );
   await assert.rejects(
     resolveProject(allowance, {
-      outputDirectory: path.join(output, "declined-primary-output"),
-      artifactSelectionsPath: declinedPrimaryPath
+      outputDirectory: path.join(output, "declined-artifact-output"),
+      artifactSelectionsPath: declinedArtifactPath,
+      technicalPreferencesPath: preferencesPath
     }),
-    (error) => error.code === "INVALID_ARTIFACT_SELECTIONS"
-      && /Primary intent artifact/.test(error.message)
+    (error) => error.code === "INVALID_IMPLEMENTATION_TARGET"
+      && /requires selected artifact guidance/.test(error.message)
   );
-  const primaryGuidance = await resolveProject(allowance, {
-    outputDirectory: path.join(output, "primary-guidance-output"),
+  const selectedPath = path.join(output, "selected-artifact.yaml");
+  await writeFile(selectedPath, stringifyYaml({
+    protocol_version: "0.3",
+    artifacts: [{
+      package: "org.seedspec.fixtures.comprehensive-application",
+      id: "chore-reference",
+      disposition: "selected"
+    }]
+  }), "utf8");
+  const selectedGuidance = await resolveProject(allowance, {
+    outputDirectory: path.join(output, "selected-guidance-output"),
+    artifactSelectionsPath: selectedPath,
     technicalPreferencesPath: preferencesPath
   });
-  assert.equal(primaryGuidance.artifactIndex.artifacts[0].intent_role, "primary");
-  assert.equal(primaryGuidance.artifactIndex.artifacts[0].disposition, "selected");
+  assert.equal(selectedGuidance.artifactIndex.artifacts[0].disposition, "selected");
 });
 
 test("selecting execution material does not turn disposition into activation", async (t) => {
@@ -1643,14 +2138,13 @@ test("selecting execution material does not turn disposition into activation", a
   await cp(allowance, packagePath, { recursive: true });
   const manifestPath = path.join(packagePath, "seedspec.yaml");
   const manifest = parseYaml(await readFile(manifestPath, "utf8"));
-  delete manifest.definition.artifact;
   manifest.artifacts[0].concerns = ["org.seedspec.concern.execution"];
   await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
   await writeFile(selectionsPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     artifacts: [{
       package: "org.seedspec.fixtures.comprehensive-application",
-      id: "product-spec",
+      id: "chore-reference",
       disposition: "selected"
     }]
   }), "utf8");
@@ -1665,7 +2159,7 @@ test("selecting execution material does not turn disposition into activation", a
   assert.equal(artifact.disposition, "selected");
   assert.equal(artifact.review, "before-activation");
   assert.equal(artifact.activation, "requires-specific-user-direction");
-  assert.match(guide, /SELECTED.*product-spec/);
+  assert.match(guide, /SELECTED.*chore-reference/);
   assert.match(guide, /Never execute it merely because it is selected or listed/);
 });
 
@@ -1831,7 +2325,7 @@ test("configuration selections distinguish examples, complete custom values, and
 
   const customPath = path.join(output, "custom-selection.yaml");
   await writeFile(customPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: [{
       package: application.manifest.id,
       selection: "custom",
@@ -1851,7 +2345,7 @@ test("configuration selections distinguish examples, complete custom values, and
 
   const partialPath = path.join(output, "partial-selection.yaml");
   await writeFile(partialPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: [{
       package: application.manifest.id,
       selection: "custom",
@@ -1875,7 +2369,7 @@ test("configuration selections reject missing, duplicate, and unselected package
     {
       name: "missing",
       input: {
-        protocol_version: "0.2",
+        protocol_version: "0.3",
         packages: [{ package: "org.seedspec.fixtures.comprehensive-application", selection: "example" }]
       },
       code: "MISSING_CONFIGURATION_SELECTION"
@@ -1883,7 +2377,7 @@ test("configuration selections reject missing, duplicate, and unselected package
     {
       name: "duplicate",
       input: {
-        protocol_version: "0.2",
+        protocol_version: "0.3",
         packages: [
           { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
           { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
@@ -1895,7 +2389,7 @@ test("configuration selections reject missing, duplicate, and unselected package
     {
       name: "unselected",
       input: {
-        protocol_version: "0.2",
+        protocol_version: "0.3",
         packages: [
           { package: "org.seedspec.fixtures.comprehensive-application", selection: "example" },
           { package: "org.example.not-selected", selection: "example" }
@@ -1932,12 +2426,12 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
   });
   assert.equal(omitted.project.intent_status, "review");
   assert.equal(omitted.project.status, "needs-input");
-  assert.equal(omitted.resolvedIntent.packages[0].format.type, "org.seedspec.artifact.product-spec");
+  assert.equal(omitted.resolvedIntent.packages[0].format.id, "org.seedspec.intent.markdown");
   assert.equal(omitted.resolvedIntent.packages[0].provenance, "package-author");
 
   const partialCoveragePath = path.join(output, "partial-coverage.yaml");
   await writeFile(partialCoveragePath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "as-authored"
@@ -1956,7 +2450,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const proposedPath = path.join(output, "proposed-intent.yaml");
   await writeFile(proposedPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "as-authored"
@@ -1979,7 +2473,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const affirmedPath = path.join(output, "affirmed-intent.yaml");
   await writeFile(affirmedPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "adapted",
@@ -2035,7 +2529,7 @@ test("applied intent preserves fit, provenance, plans, and baseline evidence", a
 
   const invalidPath = path.join(output, "invalid-intent.yaml");
   await writeFile(invalidPath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     packages: [{
       package: "org.seedspec.fixtures.comprehensive-application",
       use: "adapted"
@@ -2087,7 +2581,7 @@ test("completion checking derives verified-with-gaps from scoped evidence", asyn
   const appliedIntentPath = await writeAffirmedAppliedIntent(output, [allowance, savings]);
   const completionScopePath = path.join(output, "completion-input.yaml");
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     items: [
       {
         kind: "component",
@@ -2154,7 +2648,7 @@ test("completion checking rejects overlapping references and stale verification"
   const appliedIntentPath = await writeAffirmedAppliedIntent(output, [allowance]);
   const completionScopePath = path.join(output, "completion-input.yaml");
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     items: [{
       kind: "component",
       id: "allowance-acceptance",
@@ -2177,7 +2671,7 @@ test("completion checking rejects overlapping references and stale verification"
   );
 
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     items: [{
       kind: "component",
       id: "allowance-acceptance",
@@ -2196,7 +2690,7 @@ test("completion checking rejects overlapping references and stale verification"
   });
 
   await writeFile(completionScopePath, stringifyYaml({
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     items: [{
       kind: "component",
       id: "allowance-acceptance",
@@ -2336,6 +2830,7 @@ test("init creates valid starter packages for every kind hint", async (t) => {
     "solution",
     "application",
     "feature",
+    "component",
     "workflow",
     "automation",
     "configuration",
@@ -2346,7 +2841,8 @@ test("init creates valid starter packages for every kind hint", async (t) => {
     await initPackage(kind, packagePath);
     const record = await validatePackage(packagePath);
     assert.equal(record.manifest.kind, kind);
-    assert.equal(record.manifest.definition.entrypoint, "seed.md");
+    assert.equal(record.manifest.definition.module, "primary-intent");
+    assert.equal(record.manifest.context.modules[0].entrypoint, "seed.md");
     assert.equal(record.manifest.components.acceptance, "success.md");
     assert.match(record.definition, /## Seed/);
     assert.match(record.definition, /short honest seed is valid/);
@@ -2428,26 +2924,21 @@ test("preparation, author evaluation, publish checking, and packing form one hea
   );
 });
 
-test("0.1 package migration is dry-run first and preserves author package version", async (t) => {
+test("Protocol 0.3 rejects automatic migration from retired package shapes", async (t) => {
   const output = await temporaryDirectory(t);
   const packagePath = path.join(output, "old-package");
   await cp(savings, packagePath, { recursive: true });
   const manifestPath = path.join(packagePath, "seedspec.yaml");
   const document = parseYaml(await readFile(manifestPath, "utf8"));
-  const authorVersion = document.version;
-  document.protocol_version = "0.1";
+  document.protocol_version = "0.2";
   await writeFile(manifestPath, stringifyYaml(document), "utf8");
 
-  const planned = await upgradePackage(packagePath);
-  assert.equal(planned.written, false);
-  assert.equal(planned.changes[0].from, "0.1");
-  assert.equal(parseYaml(await readFile(manifestPath, "utf8")).protocol_version, "0.1");
-
-  const migrated = await upgradePackage(packagePath, { write: true });
-  assert.equal(migrated.written, true);
-  const record = await validatePackage(packagePath);
-  assert.equal(record.manifest.protocol_version, "0.2");
-  assert.equal(record.manifest.version, authorVersion);
+  await assert.rejects(
+    upgradePackage(packagePath),
+    (error) => error.code === "UNSUPPORTED_PROTOCOL_MIGRATION"
+      && error.details.some((detail) => /clean cut/.test(detail))
+  );
+  assert.equal(parseYaml(await readFile(manifestPath, "utf8")).protocol_version, "0.2");
 });
 
 test("CLI validates and inspects the comprehensive application fixture", async () => {
@@ -2462,6 +2953,7 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   const inspection = await execFileAsync(process.execPath, [cli, "inspect", savings]);
   const lint = await execFileAsync(process.execPath, [cli, "lint", hubspotMetric]);
   const artifacts = await execFileAsync(process.execPath, [cli, "artifacts", allowance]);
+  const adapters = await execFileAsync(process.execPath, [cli, "context", "adapters"]);
   const authoringWorkspace = await execFileAsync(process.execPath, [
     cli,
     "author",
@@ -2475,12 +2967,6 @@ test("CLI validates and inspects the comprehensive application fixture", async (
     allowance,
     "org.seedspec.core.chores"
   ]);
-  const productSpec = await execFileAsync(process.execPath, [
-    cli,
-    "validate-artifact",
-    allowance,
-    "product-spec"
-  ]);
   const discovery = await execFileAsync(process.execPath, [
     cli,
     "discover-features",
@@ -2490,9 +2976,9 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   ]);
 
   const versionInfo = JSON.parse(version.stdout);
-  assert.equal(versionInfo.protocol_version, "0.2");
-  assert.equal(versionInfo.conformance_suite_version, "0.2.3");
-  assert.equal(versionInfo.cli_version, "0.2.3");
+  assert.equal(versionInfo.protocol_version, "0.3");
+  assert.equal(versionInfo.conformance_suite_version, "0.3.0");
+  assert.equal(versionInfo.cli_version, "0.3.0");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.equal(JSON.parse(doctor.stdout).status, "healthy");
   assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
@@ -2506,8 +2992,9 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.match(lint.stdout, /Source-bound authoring review: Profiled Workflow Fixture/);
   assert.match(lint.stdout, /Kind hint: workflow/);
   assert.match(inspection.stdout, /Components: acceptance, integration/);
-  assert.match(artifacts.stdout, /ProductSpec/);
-  assert.match(artifacts.stdout, /Intent role: primary/);
+  assert.match(artifacts.stdout, /org\.example\.artifact\.reference-markdown/);
+  assert.doesNotMatch(artifacts.stdout, /Intent role/);
+  assert.match(adapters.stdout, /Registered context adapters: none/);
   const authoringSnapshot = JSON.parse(authoringWorkspace.stdout);
   assert.equal(authoringSnapshot.authoring_workspace_snapshot_version, "1");
   assert.equal(authoringSnapshot.package.status, "valid");
@@ -2515,16 +3002,86 @@ test("CLI validates and inspects the comprehensive application fixture", async (
   assert.doesNotMatch(authoringWorkspace.stdout, new RegExp(root.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
   assert.match(capabilityConformance.stdout, /Conformance status: not-evaluated/);
   assert.match(capabilityConformance.stdout, /Declared suite coverage: partial/);
-  assert.match(productSpec.stdout, /Valid ProductSpec artifact/);
   assert.match(discovery.stdout, /Portable Feature Fixture.*candidate/);
+});
+
+test("CLI executes the complete context integration lifecycle", async (t) => {
+  const output = await temporaryDirectory(t);
+  const cli = path.join(root, "packages/cli/bin/seedspec.js");
+  const contextPackage = path.join(root, "conformance/fixtures/context-modules");
+  const project = path.join(output, "project");
+  const prepared = path.join(output, "prepared-context");
+
+  await execFileAsync(process.execPath, [
+    cli,
+    "resolve",
+    contextPackage,
+    "--output",
+    project
+  ]);
+  const discovery = await execFileAsync(process.execPath, [
+    cli,
+    "context",
+    "discover",
+    contextPackage,
+    "--integration",
+    contextIntegration,
+    "--json"
+  ]);
+  const validation = await execFileAsync(process.execPath, [
+    cli,
+    "context",
+    "validate",
+    contextPackage,
+    "refund-safety",
+    "--integration",
+    contextIntegration,
+    "--json"
+  ]);
+  const preparation = await execFileAsync(process.execPath, [
+    cli,
+    "context",
+    "prepare",
+    project,
+    "--request",
+    contextRequest,
+    "--output",
+    prepared,
+    "--integration",
+    contextIntegration,
+    "--json"
+  ]);
+  const usage = await execFileAsync(process.execPath, [
+    cli,
+    "context",
+    "record-use",
+    prepared,
+    "--input",
+    contextUse,
+    "--json"
+  ]);
+
+  assert.equal(
+    JSON.parse(discovery.stdout).modules.find((module) => module.module === "refund-safety")
+      .compatible.length,
+    1
+  );
+  assert.equal(JSON.parse(validation.stdout).valid, true);
+  assert.equal(
+    JSON.parse(preparation.stdout).bundle.modules.some(
+      (module) => module.mechanism.kind === "native-adapter"
+    ),
+    true
+  );
+  assert.equal(JSON.parse(usage.stdout).subject.modules.length, 2);
 });
 
 test("installation doctor verifies the exact release and bundled suite", async () => {
   const result = await inspectInstallation({
-    cliVersion: "0.2.3"
+    cliVersion: "0.3.0"
   });
   assert.equal(result.status, "healthy");
-  assert.equal(result.protocol_release.id, "0.2.3");
+  assert.equal(result.protocol_release.id, "0.3.0");
   assert.ok(result.checks.every((check) => check.status === "passed"));
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
@@ -2559,14 +3116,14 @@ test("CLI review emits source-bound agent instructions, status, and bundled docu
     "coherence"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.2\.3`/);
+  assert.match(audit.stdout, /Tool version: `0\.3\.0`/);
   assert.match(audit.stdout, /Internal focus: 2 of 4 — Coherence/);
   assert.match(audit.stdout, /Absence is not a gap/);
   assert.match(audit.stdout, /After recording a reviewed disposition, rerun `npx @seedspec\/cli author review`/);
   assert.doesNotMatch(audit.stdout, /Internal review progress:/);
   assert.match(status.stdout, /2\. Coherence — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.2\.3/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.3\.0/);
   assert.match(docs.stdout, /Coherence objective/);
 });
 
@@ -2669,7 +3226,7 @@ test("CLI failures expose stable protocol error codes", async () => {
       "validate",
       path.join(fixtures, "missing-definition")
     ]),
-    (error) => /\[INVALID_REFERENCES\]/.test(error.stderr)
+    (error) => /\[INVALID_CONTEXT_MODULE\]/.test(error.stderr)
   );
   await assert.rejects(
     execFileAsync(process.execPath, [
@@ -2750,7 +3307,7 @@ test("a dependency lock verifies exact package bytes and declaration analysis", 
   );
 });
 
-test("0.2 conformance suite passes every declared case", async () => {
+test("0.3 conformance suite passes every declared case", async () => {
   const result = await runConformanceSuite(path.join(root, "conformance/cases.yaml"));
   assert.equal(result.suite.version, conformanceSuiteVersion);
   assert.equal(result.status, "conformant");
@@ -2766,8 +3323,8 @@ test("conformance suites cannot reference fixtures outside their directory", asy
   await cp(allowance, outsidePackage, { recursive: true });
   const indexPath = path.join(suiteDirectory, "cases.yaml");
   await writeFile(indexPath, stringifyYaml({
-    suite_version: "0.2.3",
-    protocol_version: "0.2",
+    suite_version: "0.3.0",
+    protocol_version: "0.3",
     cases: [{
       id: "outside-fixture",
       operation: "validate",
@@ -2980,6 +3537,240 @@ test("attached sources become review context instead of an unwritable file", asy
     }),
     (error) => error.code === "INVALID_AUTHORING_INPUT"
   );
+});
+
+test("document proposals require an explicit author decision before engine application", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  const opened = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+  const documentPath = path.join(packagePath, "definition", "feature.md");
+  const beforeContent = await readFile(documentPath, "utf8");
+  const afterContent = `${beforeContent}\n\nClosed goals cannot be reopened.\n`;
+  const before = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    expectedRevision: before.workspace.revision,
+    proposal: {
+      path: "definition/feature.md",
+      summary: "State the finality of closed goals",
+      content: afterContent,
+      basis: {
+        kind: "author-answer",
+        references: ["question-closed-goal"]
+      }
+    }
+  });
+  assert.equal(proposed.proposal.status, "proposed");
+  assert.equal(proposed.proposal.pass, opened.current.id);
+  assert.equal(proposed.proposal.document.before_content, beforeContent);
+  assert.equal(proposed.proposal.document.after_content, afterContent);
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+  assert.equal(proposed.snapshot.review.proposals.proposed, 1);
+
+  await assert.rejects(
+    reviewArea(packagePath, {
+      stateRoot: stateDirectory,
+      summary: "The author accepted a clarification.",
+      disposition: "improved"
+    }),
+    (error) => error.code === "AUTHORING_CHANGE_PENDING"
+  );
+
+  const accepted = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    expectedRevision: proposed.workspace.revision,
+    proposalId: proposed.proposal.id,
+    decision: "accept",
+    rationale: "This is the intended lifecycle."
+  });
+  assert.equal(accepted.proposal.status, "accepted");
+  assert.equal(accepted.proposal.decision.by, "author");
+  assert.equal(accepted.proposal.decisions.length, 1);
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const blockedPublish = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0"
+  });
+  assert.equal(blockedPublish.ready, false);
+  assert.equal(
+    blockedPublish.checks.find(({ id }) => id === "accepted-authoring-changes").status,
+    "failed"
+  );
+
+  const applied = await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    expectedRevision: accepted.workspace.revision,
+    proposalId: proposed.proposal.id
+  });
+  assert.equal(applied.proposal.status, "applied");
+  assert.equal(applied.recovered, false);
+  assert.equal(await readFile(documentPath, "utf8"), afterContent);
+  assert.equal(applied.snapshot.review.proposals.applied, 1);
+  assert.equal(applied.snapshot.review.proposals.proposed, 0);
+  assert.equal(applied.snapshot.review.proposals.accepted, 0);
+
+  const result = parseYaml(await readFile(opened.current.result, "utf8"));
+  assert.ok(result.changes.proposed.includes(proposed.proposal.id));
+  assert.ok(result.changes.applied.includes(proposed.proposal.id));
+
+  const closed = await reviewArea(packagePath, {
+    stateRoot: stateDirectory,
+    summary: "Closed goals are final.",
+    disposition: "improved"
+  });
+  assert.equal(closed.reviewed.pass, opened.current.id);
+});
+
+test("rejected and stale document proposals never change package bytes", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+  const documentPath = path.join(packagePath, "definition", "feature.md");
+  const beforeContent = await readFile(documentPath, "utf8");
+
+  const rejectedProposal = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/feature.md",
+      summary: "Rejected wording",
+      content: `${beforeContent}\nRejected wording.\n`,
+      basis: { kind: "agent-proposal", references: [] }
+    }
+  });
+  const rejected = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: rejectedProposal.proposal.id,
+    decision: "reject"
+  });
+  assert.equal(rejected.proposal.status, "rejected");
+  await assert.rejects(
+    applyDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposalId: rejectedProposal.proposal.id
+    }),
+    (error) => error.code === "AUTHORING_CHANGE_NOT_ACCEPTED"
+  );
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const staleProposal = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/feature.md",
+      summary: "Stale wording",
+      content: `${beforeContent}\nStale wording.\n`,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  await writeFile(documentPath, `${beforeContent}\nExternal edit.\n`, "utf8");
+  await assert.rejects(
+    decideDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposalId: staleProposal.proposal.id,
+      decision: "accept"
+    }),
+    (error) => error.code === "AUTHORING_CHANGE_STALE"
+  );
+  assert.equal(await readFile(documentPath, "utf8"), `${beforeContent}\nExternal edit.\n`);
+});
+
+test("an author can retract an accepted change that can no longer be applied", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+  const documentPath = path.join(packagePath, "definition", "feature.md");
+  const beforeContent = await readFile(documentPath, "utf8");
+
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/feature.md",
+      summary: "Clarify closure",
+      content: `${beforeContent}\nClosed goals remain closed.\n`,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  const accepted = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id,
+    decision: "accept",
+    rationale: "Use this wording."
+  });
+  await writeFile(documentPath, `${beforeContent}\nA different authored clarification.\n`, "utf8");
+
+  await assert.rejects(
+    applyDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposalId: accepted.proposal.id
+    }),
+    (error) => error.code === "AUTHORING_CHANGE_STALE"
+  );
+  const retracted = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: accepted.proposal.id,
+    decision: "reject",
+    rationale: "The author replaced it with different wording."
+  });
+  assert.equal(retracted.proposal.status, "rejected");
+  assert.deepEqual(
+    retracted.proposal.decisions.map(({ outcome }) => outcome),
+    ["accepted", "rejected"]
+  );
+  assert.equal(await readFile(documentPath, "utf8"), `${beforeContent}\nA different authored clarification.\n`);
+  const publish = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0"
+  });
+  assert.equal(publish.ready, true);
+  const ledger = parseYaml(await readFile(path.join(stateDirectory, "change-proposals.yaml"), "utf8"));
+  const validateLedger = compileConfigurationSchema(await readAuthoringSchema("changes"));
+  assert.equal(validateLedger(ledger), true, formatSchemaErrors(validateLedger.errors).join("\n"));
+});
+
+test("authoring change paths stay inside existing package directories", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+
+  await assert.rejects(
+    proposeDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposal: {
+        path: "../outside.md",
+        summary: "Escape the package",
+        content: "unsafe",
+        basis: { kind: "agent-proposal", references: [] }
+      }
+    }),
+    (error) => error.code === "INVALID_AUTHORING_INPUT"
+  );
+  await assert.rejects(
+    proposeDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposal: {
+        path: "missing/new.md",
+        summary: "Create under a missing directory",
+        content: "new",
+        basis: { kind: "author-answer", references: [] }
+      }
+    }),
+    (error) => error.code === "INVALID_AUTHORING_DOCUMENT_PATH"
+  );
+});
+
+test("the published authoring change schema remains outside protocol conformance", async () => {
+  const schema = await readAuthoringSchema("changes");
+  assert.equal(schema.properties.authoring_change_proposals_version.const, AUTHORING_CHANGE_PROPOSAL_FORMAT);
+  assert.match(schema.description, /never SeedSpec Protocol conformance surface/u);
 });
 
 test("a mutation rejects a revision that no longer describes the workspace", async (t) => {

@@ -45,6 +45,24 @@ The project-scoped `$harden-seedspec-protocol` skill under `.agents/skills/`
 contains the complete editorial and publication checklist for agent-assisted
 reviews.
 
+## Documentation versions
+
+Repository documentation describes the source state in its repository context.
+Release metadata must not become narrative context.
+
+- Do not put release numbers in titles, headings, prose, installation examples,
+  or summary tables.
+- Refer to the protocol or named operation directly. Do not write "this
+  release" or "current release."
+- Keep release identities in `release.json`, package manifests,
+  `protocol-release.json`, schema identifiers, and Git tags.
+- Use versions for machine fields, compatibility, migrations, changelogs,
+  decisions, and evidence.
+- Use unpinned package commands in human-facing examples. Use placeholders when
+  exact pinning matters.
+- Add versioned documentation only when SeedSpec intentionally supports
+  multiple protocol lines.
+
 ## Verify the change
 
 Install dependencies and run:

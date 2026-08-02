@@ -1,11 +1,11 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.seedspec.fixtures.profiled-workflow
 name: Profiled Workflow Fixture
 version: 0.1.0
 kind: workflow
 description: Exercise a workflow package with several conditional implementation profiles.
 definition:
-  entrypoint: definition/solution.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
@@ -85,3 +85,12 @@ components:
   examples: examples/
   reference: reference/
   security: security/
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: solution.md
+      source:
+        kind: package
+        path: definition/solution.md

@@ -13,7 +13,8 @@ and user-directed implementation.
 The **SeedSpec Protocol** is the interoperability layer inside that system. A
 SeedSpec package is a versioned, human-readable collection of package-author
 intent, configuration, capabilities, package evidence, optional related
-artifacts, ordered implementation task runbooks, and implementation resources.
+artifacts, ordered implementation task runbooks, implementation resources, and
+semantic context modules with explicit bridge bindings.
 The protocol defines their semantic roles, identity, composition, integrity,
 resolution, handoff, and verification state across independent tools.
 Resolution adds end-user applied intent and keeps baseline, realization, and
@@ -80,6 +81,9 @@ source idea, expertise, or existing solution
           resolved project specification + verification plan
                               |
                               v
+               request-specific context bundle
+                              |
+                              v
              replaceable agent + implementation environment
                               |
                               v
@@ -114,8 +118,7 @@ handoff behavior without turning package validity into a correctness promise.
 - Separate intent, design, execution, and infrastructure.
 - Preserve useful author task order without inventing a workflow graph or
   treating task completion as conformance.
-- Package and relate artifacts without imposing one universal specification
-  format.
+- Keep artifacts passive and route semantic processing through context modules.
 - Discovery is not activation; artifact presence does not authorize an agent
   workflow.
 - Authors choose which versioned implementation resources travel with a
@@ -123,6 +126,12 @@ handoff behavior without turning package validity into a correctness promise.
   user context.
 - Package-scoped skills are resolved and explicitly consulted from the handoff;
   they are not installed into a native skill registry or automatically invoked.
+- Context modules preserve native semantic formats behind one purpose- and
+  audience-aware inventory without reclassifying every module as a Skill.
+- Native adapters remain preferred. Explicit bridge Skills provide a portable
+  fallback for Skill-aware harnesses.
+- Context preparation binds request-specific selection and mechanism choice.
+  It does not prove use or satisfaction of module claims.
 - The end user directs the implementing agent.
 - Official adapters add optional depth without becoming protocol dependencies.
 - Handoff and lineage over permanent control of a realized solution.
@@ -153,19 +162,24 @@ machine-operable capability evidence in [ADR
 0011](docs/decisions/0011-machine-operable-capability-evidence.md), ordered task
 runbooks in [ADR 0012](docs/decisions/0012-ordered-agent-task-runbooks.md), and
 examples in [docs/use-cases.md](docs/use-cases.md).
+The unified Protocol 0.3 context lifecycle is recorded in [ADR
+0018](docs/decisions/0018-unified-context-integration-lifecycle.md).
 
-## 0.2 experimental boundary
+## 0.3 experimental boundary
 
 This repository tests the protocol with conformance fixtures for a software
 application root, a profiled workflow root, and feature additions; authoring
-and guided-use skills; a reference CLI; a generic artifact model; an official
-ProductSpec adapter; versioned capability contracts with structured history
+and guided-use skills; a reference CLI; passive artifacts; format integration
+descriptors and an instance-scoped context adapter registry;
+versioned capability contracts with structured history
 and optional conformance suites; author-controlled implementation-resource
 resolution; ordered task runbooks; candidate implementation profiles;
-applied-intent resolution; explicit evidence subjects; deterministic handoff
-output; agent guidance; persistent implementation notes; and acceptance
-information. Complete packages and realized solutions remain independently
-versioned in the reference-solutions repository.
+context-module declarations, bridge bindings, preparation bundles, and use
+receipts; applied-intent resolution;
+explicit evidence subjects; deterministic handoff output; agent guidance;
+persistent implementation notes; and acceptance information. Complete
+packages and realized solutions remain independently versioned in the
+reference-solutions repository.
 
 The platform does not enforce what an agent builds or changes. The resolved
 project supplies structured intent and evidence; the agent may map renamed

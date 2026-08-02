@@ -329,7 +329,7 @@ export async function materializeImplementationResources(records, workspace) {
   );
 
   const index = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     policies: [],
     resources: []
   };
@@ -424,7 +424,7 @@ export function implementationResourceIndexDigest(index) {
 
 export function createInitialImplementationResourceState(index) {
   return {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     index_digest: implementationResourceIndexDigest(index),
     status: index.resources.length > 0 ? "not-resolved" : "resolved",
     resources: index.resources.map((resource) => ({
@@ -880,7 +880,7 @@ export async function resolveImplementationResources(projectPath, {
   const anyUnavailable = resources.some((resource) => resource.resolution_status === "unavailable");
   const anyFallback = resources.some((resource) => resource.resolution_status === "bundled-fallback");
   const state = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     index_digest: implementationResourceIndexDigest(index),
     status: expectedUnavailable.length > 0
       ? "failed"

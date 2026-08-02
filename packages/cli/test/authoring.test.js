@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp } from "node:fs/promises";
+import { cp, mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -14,6 +14,10 @@ const cli = path.join(repositoryRoot, "packages/cli/bin/seedspec.js");
 const fixture = path.join(
   repositoryRoot,
   "conformance/fixtures/comprehensive-application"
+);
+const bundledFixture = path.join(
+  repositoryRoot,
+  "conformance/fixtures/bundled-family-hub"
 );
 
 function run(arguments_, cwd, input) {
@@ -95,6 +99,45 @@ test("author exposes prompt, review, questions, history, check, and help under o
   const help = run(["author", "help"], projectRoot);
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /npx @seedspec\/cli author/u);
+
+  const guidance = run(["author", "guidance"], projectRoot);
+  assert.equal(guidance.status, 0, guidance.stderr);
+  assert.match(guidance.stdout, /composition\s+shaping prose for a declared parent-to-child integration seam/u);
+
+  const compositionGuidance = run(
+    ["author", "guidance", "--topic", "composition"],
+    projectRoot
+  );
+  assert.equal(compositionGuidance.status, 0, compositionGuidance.stderr);
+  assert.match(compositionGuidance.stdout, /## Responsibility boundary/u);
+  assert.match(compositionGuidance.stdout, /Delete unused sections/u);
+
+  const changesSchema = run(["author", "schema", "changes"], projectRoot);
+  assert.equal(changesSchema.status, 0, changesSchema.stderr);
+  assert.match(changesSchema.stdout, /authoring-change-proposals/u);
+});
+
+test("author review exposes recursive bundled composition and optional seam prompts", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
+  const projectRoot = path.join(temporaryRoot, "project");
+  const packageRoot = path.join(projectRoot, "seedspec");
+  await cp(bundledFixture, packageRoot, { recursive: true });
+
+  assert.equal(run(["author"], projectRoot).status, 0);
+  const review = run([
+    "author",
+    "review",
+    "--area",
+    "supporting-material",
+    "--target",
+    "compose"
+  ], projectRoot);
+
+  assert.equal(review.status, 0, review.stderr);
+  assert.match(review.stdout, /shared-agenda-widget/u);
+  assert.match(review.stdout, /responsibility boundaries, concept mapping, state ownership/u);
+  assert.match(review.stdout, /prompts, not required headings/u);
+  assert.match(review.stdout, /author guidance --topic composition/u);
 });
 
 test("author review emits the agent work order by default and shortens it only on request", async () => {
@@ -116,7 +159,7 @@ test("author review emits the agent work order by default and shortens it only o
   // install, so the brief may never emit a bare `seedspec` invocation.
   const bareInvocations = full.stdout.match(/(?:^|[|(\s])seedspec [a-z]/gmu) ?? [];
   assert.deepEqual(bareInvocations, [], "brief must invoke the CLI through npx");
-  for (const operation of ["record", "answer", "attach-source", "reviewed"]) {
+  for (const operation of ["record", "answer", "attach-source", "propose", "decide", "apply", "reviewed"]) {
     assert.match(
       full.stdout,
       new RegExp(`npx @seedspec/cli author ${operation}`, "u"),
@@ -147,6 +190,56 @@ test("author review emits the agent work order by default and shortens it only o
   assert.equal(history.status, 0, history.stderr);
   assert.doesNotMatch(history.stdout, /No review passes recorded/u);
   assert.match(history.stdout, /in-progress/u);
+});
+
+test("author proposal commands keep package writes behind explicit acceptance", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-cli-author-"));
+  const projectRoot = path.join(temporaryRoot, "project");
+  const packageRoot = path.join(projectRoot, "seedspec");
+  await cp(fixture, packageRoot, { recursive: true });
+  assert.equal(run(["author"], projectRoot).status, 0);
+  assert.equal(run(["author", "review"], projectRoot).status, 0);
+
+  const documentPath = path.join(packageRoot, "definition", "app.md");
+  const beforeContent = await readFile(documentPath, "utf8");
+  const afterContent = `${beforeContent}\n\nThe author accepted this clarification.\n`;
+  const proposed = run(
+    ["author", "propose", "--json", "-"],
+    projectRoot,
+    JSON.stringify({
+      path: "definition/app.md",
+      summary: "Add the accepted clarification",
+      content: afterContent,
+      basis: { kind: "author-answer", references: [] }
+    })
+  );
+  assert.equal(proposed.status, 0, proposed.stderr);
+  const proposal = JSON.parse(proposed.stdout).proposal;
+  assert.equal(proposal.status, "proposed");
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const changes = run(["author", "changes"], projectRoot);
+  assert.equal(changes.status, 0, changes.stderr);
+  assert.match(changes.stdout, new RegExp(proposal.id, "u"));
+  assert.match(changes.stdout, /Before:[\s\S]*After:/u);
+
+  const decided = run(
+    ["author", "decide", "--json", "-"],
+    projectRoot,
+    JSON.stringify({ proposal_id: proposal.id, decision: "accept" })
+  );
+  assert.equal(decided.status, 0, decided.stderr);
+  assert.equal(JSON.parse(decided.stdout).proposal.status, "accepted");
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const applied = run(
+    ["author", "apply", "--json", "-"],
+    projectRoot,
+    JSON.stringify({ proposal_id: proposal.id })
+  );
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.equal(JSON.parse(applied.stdout).proposal.status, "applied");
+  assert.equal(await readFile(documentPath, "utf8"), afterContent);
 });
 
 test("a generated operation command preserves apostrophes in author prose", async () => {

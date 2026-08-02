@@ -1,6 +1,6 @@
 # SeedSpec
 
-**SeedSpec 0.2.3 — experimental**
+**Experimental**
 
 SeedSpec helps people turn product and domain expertise into portable,
 agent-ready starting points. A SeedSpec package keeps the intended outcome,
@@ -61,8 +61,8 @@ claim boundaries before the package specification supplies exact field-level
 rules.
 
 The normative SeedSpec Protocol lives in this repository as
-[`@seedspec/protocol`](packages/protocol/README.md), the [Protocol 0.2
-specification](docs/protocol.md), the [versioned schemas](packages/protocol/schemas/v0.2/),
+[`@seedspec/protocol`](packages/protocol/README.md), the [protocol
+specification](docs/protocol.md), the [versioned schemas](packages/protocol/schemas/),
 and the [conformance suite](conformance/cases.yaml). The former
 `SeedSpec/seedspec-protocol` preview repository is retired; this repository is
 the canonical source for both the protocol and first-party tooling.
@@ -77,13 +77,15 @@ the canonical source for both the protocol and first-party tooling.
 - A **resolved handoff** preserves selected package material, user choices, and
   provenance for one implementation context. It does not prove the guidance was
   followed.
+- A **prepared context bundle** records what was selected for one request and
+  how each module was prepared. It does not prove that the content was followed.
 - A **verified completion result** applies only to its declared scope and
   recorded evidence. It is not a universal certification of the package or
   realization.
 
 ## Use a published package
 
-Run the current CLI without installing it globally:
+Run the CLI without installing it globally:
 
 ```bash
 npx @seedspec/cli --help
@@ -103,9 +105,10 @@ Codex, Claude, or another agent. A tool-capable agent follows it by running
 order. The recipient does not need to install a SeedSpec skill or add anything
 to its PATH.
 
-The default npm tag identifies the current release. Human-facing examples use
-that friendly default. Tests, automation, and reproducible integrations should
-pin an exact version and may add `--yes` to avoid npm's first-run confirmation.
+The npm `latest` tag selects the default published CLI version. Human-facing
+examples use that default. Tests, automation, and reproducible integrations
+should pin an exact version and may add `--yes` to avoid npm's first-run
+confirmation.
 
 ## Author a package
 
@@ -133,12 +136,19 @@ agent records through operations that validate and write durable state:
 npx @seedspec/cli author record --json -         # findings, questions, inventory
 npx @seedspec/cli author answer --json -         # the author's answer, or a decline
 npx @seedspec/cli author attach-source --json -  # material the review may cite
+npx @seedspec/cli author propose --json -        # exact before/after document bytes
+npx @seedspec/cli author decide --json -         # explicit author acceptance or rejection
+npx @seedspec/cli author apply --json -          # engine application of an accepted proposal
 npx @seedspec/cli author reviewed --json -       # close a thread
 ```
 
 The authoring workflow combines deterministic protocol checks with agent-guided
 semantic review. The CLI does not embed a model or silently rewrite package
-content. `npx @seedspec/cli author prompt` prints the short prompt a person gives
+content. Proposed document replacements remain workspace state until the author
+accepts them and the engine applies them against unchanged bytes.
+The author can reject an accepted but unapplied proposal without losing its
+earlier decision record.
+`npx @seedspec/cli author prompt` prints the short prompt a person gives
 an agent; the full review output then supplies the self-contained operating
 brief. Its review threads stay private while the author gets a short, natural
 conversation about the seed. The `--summary` option is the shorter human-facing
@@ -176,7 +186,6 @@ npx seedspec inspect conformance/fixtures/comprehensive-application
 npx seedspec inspect conformance/fixtures/portable-feature
 npx seedspec lint conformance/fixtures/profiled-workflow
 npx seedspec artifacts conformance/fixtures/comprehensive-application
-npx seedspec validate-artifact conformance/fixtures/comprehensive-application product-spec
 npx seedspec capability-conformance conformance/fixtures/comprehensive-application \
   org.seedspec.core.chores
 npx seedspec discover-features conformance/fixtures/comprehensive-application \
@@ -191,7 +200,7 @@ preferences, optional artifacts, completion scope, and evidence remain explicit
 inputs or state rather than assumptions hidden in resolution. See [runtime
 behavior](docs/runtime.md) for the complete lifecycle.
 
-## What exists in 0.2.3
+## Project scope
 
 - A compact declarative package format inside a wider handoff and composition
   protocol.
@@ -200,25 +209,26 @@ behavior](docs/runtime.md) for the complete lifecycle.
 - A resumable preparation workflow, independent-agent evaluation workspace,
   publish gate, deterministic package archive, and digest-bound sidecars.
 - A generic CLI and JavaScript runtime for validation, inspection, authoring,
-  artifact adapters, discovery, configuration, resolution, locks, and scoped
-  completion checks.
-- One package-author primary intent source plus separately preserved end-user
+  format integrations, context preparation, discovery, configuration,
+  resolution, locks, receipts, and scoped completion checks.
+- One package-author primary intent module plus separately preserved end-user
   applied intent and agent proposals.
 - Configuration choices, decision provenance, implementation profiles,
-  implementation resources, ordered task runbooks, completion plans, typed
-  evidence, and durable deviation records.
+  implementation resources, context modules with bridge Skills, ordered task
+  runbooks, completion plans, typed evidence, and durable deviation records.
 - Versioned capability contracts with structured history, review severity, and
   optional digest-bound conformance material.
-- A generic artifact model and an explicit ProductSpec adapter without making
-  ProductSpec a core dependency.
+- Passive supporting artifacts plus a unified context-module and adapter model
+  without bundling any external semantic format into the core runtime.
 - Self-contained protocol fixtures, tooling tests, and a format conformance
   suite.
 
 The [architecture](ARCHITECTURE.md) explains how these pieces fit together. The
 [principles](docs/principles.md), [glossary](docs/glossary.md), [use
 cases](docs/use-cases.md), and [versioning guide](docs/versioning.md) explain the
-design boundaries. Normative behavior is defined only by the [protocol
-specification](docs/protocol.md), [schemas](packages/protocol/schemas/v0.2/), and
+design boundaries. [Context modules](docs/context-modules.md) explain the
+shared discovery and bridge model. Normative behavior is defined only by the [protocol
+specification](docs/protocol.md), [schemas](packages/protocol/schemas/), and
 [conformance contract](conformance/cases.yaml).
 
 ## Repository layout
@@ -249,6 +259,7 @@ source idea, expertise, or existing solution
   -> versioned SeedSpec package
   -> end-user fit, configuration, and implementation choices
   -> resolved project handoff
+  -> request-specific context bundle
   -> user-directed implementing agent
   -> realization + scoped evidence
 ```

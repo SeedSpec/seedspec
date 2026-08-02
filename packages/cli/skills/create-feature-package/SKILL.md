@@ -87,9 +87,11 @@ audit report. Default to a brief reflection of the feature and one question,
 with one grounded concern at a time.
 
 Do not search archived workspaces, history, sibling documents, or engine code
-for additional sources. Show an exact package change only after the author says
-they want to address the concern, then wait for explicit acceptance before
-applying it.
+for additional sources. After the author agrees to address a concern, record
+the exact replacement with `author propose`. Record explicit acceptance or
+rejection with `author decide`. Apply only an accepted proposal with
+`author apply`. Before application, the author can reject a previously accepted
+proposal without losing its earlier decision record.
 
 Then run:
 

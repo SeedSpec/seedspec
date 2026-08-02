@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 tasks:
   - id: inspect-context
     instruction: Inspect the package reference before adapting the realization.

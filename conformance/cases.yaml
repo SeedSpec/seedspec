@@ -1,5 +1,5 @@
-suite_version: "0.2.3"
-protocol_version: "0.2"
+suite_version: "0.3.0"
+protocol_version: "0.3"
 
 cases:
   - id: validate-comprehensive-application
@@ -13,6 +13,13 @@ cases:
     description: A feature with tested-against capability revisions is valid.
     operation: validate
     package: fixtures/portable-feature
+    expect:
+      result: pass
+
+  - id: validate-bundled-component-composition
+    description: A parent can bundle an exact component package and bind it to a Markdown integration seam.
+    operation: validate
+    package: fixtures/bundled-family-hub
     expect:
       result: pass
 
@@ -88,6 +95,21 @@ cases:
     expect:
       result: pass
 
+  - id: validate-context-modules-and-bridge-skill
+    description: A package can declare native semantic modules and bind one to a package-local bridge Skill without activating either module.
+    operation: validate
+    package: fixtures/context-modules
+    expect:
+      result: pass
+
+  - id: reject-unknown-context-bridge-skill
+    description: A context bridge must reference a Skill module declared by the same package.
+    operation: validate
+    package: fixtures/invalid-context-bridge
+    expect:
+      result: fail
+      code: INVALID_CONTEXT_MODULE
+
   - id: reject-insecure-implementation-resource-url
     description: Canonical implementation resources must use HTTPS.
     operation: validate
@@ -161,20 +183,20 @@ cases:
       result: fail
       code: INVALID_MANIFEST_SEMANTICS
 
-  - id: reject-invalid-primary-intent-artifact
-    description: A primary intent artifact must match the definition entrypoint and declare the intent concern.
+  - id: reject-invalid-primary-intent-module
+    description: definition.module must identify a declared context module with local bytes.
     operation: validate
     package: fixtures/invalid-primary-intent
     expect:
       result: fail
-      code: INVALID_MANIFEST_SEMANTICS
+      code: INVALID_CONTEXT_MODULE
 
   - id: package-digest-is-stable
     operation: digest-stability
     package: fixtures/comprehensive-application
     expect:
       result: pass
-      digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
+      digest: sha256:87cbb879960dfca371620a19bb0c7c0b0931f73060d0671ba8e634aeca0204a9
 
   - id: resolve-application-with-portable-feature
     description: The comprehensive application and portable feature fixtures produce a ready project.
@@ -208,6 +230,85 @@ cases:
       intent_status: affirmed
       completion_scope_status: review
       addition_order: []
+
+  - id: resolve-context-modules-and-bridge-skill
+    description: Resolution qualifies module identities, materializes local bytes, and preserves explicit bridge bindings.
+    operation: resolve
+    root: fixtures/context-modules
+    additions: []
+    configuration_selection: examples
+    intent_selection: affirmed
+    expect:
+      result: pass
+      project_status: ready
+      configuration_status: selected
+      intent_status: affirmed
+      completion_scope_status: review
+      context_module_count: 3
+      context_bridge_count: 1
+      addition_order: []
+
+  - id: discover-context-format-integration
+    description: Descriptor discovery reports compatible format support without loading adapter code.
+    operation: integration-discovery
+    package: fixtures/context-modules
+    integrations:
+      - integrations/example-context
+    expect:
+      result: pass
+      compatible_integration_count: 1
+
+  - id: validate-context-module-with-explicit-adapter
+    description: Explicit adapter registration validates module-specific semantics.
+    operation: context-validation
+    package: fixtures/context-modules
+    module: refund-safety
+    integrations:
+      - integrations/example-context
+    expect:
+      result: pass
+      context_validation: true
+
+  - id: prepare-context-with-native-adapter
+    description: Context preparation selects applicable modules and records native adapter use.
+    operation: context-preparation
+    package: fixtures/context-modules
+    request: fixtures/context-request-review.yaml
+    integrations:
+      - integrations/example-context
+    expect:
+      result: pass
+      prepared_module_count: 2
+      native_adapter_count: 1
+      bridge_preparation_count: 0
+
+  - id: prepare-context-with-bridge-fallback
+    description: Context preparation uses the bound bridge Skill when no adapter is registered.
+    operation: context-preparation
+    package: fixtures/context-modules
+    request: fixtures/context-request-review.yaml
+    integrations: []
+    expect:
+      result: pass
+      prepared_module_count: 2
+      native_adapter_count: 0
+      bridge_preparation_count: 1
+
+  - id: resolve-bundled-component-composition
+    description: Recursively bundled children become additions without separate selection and preserve their integration edges.
+    operation: resolve
+    root: fixtures/bundled-family-hub
+    additions: []
+    configuration_selection: examples
+    intent_selection: affirmed
+    expect:
+      result: pass
+      project_status: ready
+      configuration_status: selected
+      intent_status: affirmed
+      completion_scope_status: review
+      addition_order:
+        - org.seedspec.fixtures.shared-agenda-widget
 
   - id: resolve-configured-system-and-automation-root
     description: A provider-specific non-code-first root resolves through the same configuration, decision, handoff, and verification model.

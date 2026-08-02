@@ -1,0 +1,32 @@
+protocol_version: "0.3"
+modules:
+  - package: org.seedspec.fixtures.comprehensive-application
+    package_digest: sha256:87cbb879960dfca371620a19bb0c7c0b0931f73060d0671ba8e634aeca0204a9
+    id: primary-intent
+    qualified_id: org.seedspec.fixtures.comprehensive-application/primary-intent
+    role: primary-intent
+    format: org.seedspec.intent.markdown
+    description: The package author's primary intent.
+    entrypoint: allowance-tracker.md
+    source:
+      kind: package
+      path: intent/allowance-tracker.md
+    availability: materialized
+    root: context/org.seedspec.fixtures.comprehensive-application/primary-intent/
+    content_digest: sha256:379b3a032dca9bc081c16d2b57bdcd5b69c46328985825fe285b6193bb40e5db
+    content_digest_scope: entrypoint
+  - package: org.seedspec.fixtures.portable-feature
+    package_digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
+    id: primary-intent
+    qualified_id: org.seedspec.fixtures.portable-feature/primary-intent
+    role: primary-intent
+    format: org.seedspec.intent.markdown
+    description: The package author's primary intent.
+    entrypoint: feature.md
+    source:
+      kind: package
+      path: definition/feature.md
+    availability: materialized
+    root: context/org.seedspec.fixtures.portable-feature/primary-intent/
+    content_digest: sha256:789260c2b4a3cba2faf10922c96394548f4394a778a02acfffc826351f20dd2a
+    content_digest_scope: entrypoint

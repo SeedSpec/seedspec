@@ -1,0 +1,17 @@
+protocol_version: "0.3"
+modules:
+  - package: org.seedspec.fixtures.portable-feature
+    package_digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
+    id: primary-intent
+    qualified_id: org.seedspec.fixtures.portable-feature/primary-intent
+    role: primary-intent
+    format: org.seedspec.intent.markdown
+    description: The package author's primary intent.
+    entrypoint: feature.md
+    source:
+      kind: package
+      path: definition/feature.md
+    availability: materialized
+    root: context/org.seedspec.fixtures.portable-feature/primary-intent/
+    content_digest: sha256:789260c2b4a3cba2faf10922c96394548f4394a778a02acfffc826351f20dd2a
+    content_digest_scope: entrypoint

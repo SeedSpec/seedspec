@@ -1,10 +1,10 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 
 tasks:
   - id: inspect-current-state
     instruction: Inspect the existing solution and identify the local concepts, behavior, and constraints that overlap this package before making changes.
     references:
-      - intent/allowance-tracker.product-spec.md
+      - intent/allowance-tracker.md
 
   - id: review-author-context
     instruction: Review the supplied reference context and note where the existing solution requires an adaptation rather than a direct translation.

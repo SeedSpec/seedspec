@@ -9,7 +9,8 @@ export const AUTHORING_SCHEMA_FORMAT = "1";
 // these schemas deliberately live outside packages/protocol/schemas and are not
 // protocol conformance surface.
 const AUTHORING_SCHEMAS = Object.freeze({
-  result: "authoring-pass-result.schema.json"
+  result: "authoring-pass-result.schema.json",
+  changes: "authoring-change-proposals.schema.json"
 });
 
 const schemaDirectory = path.join(

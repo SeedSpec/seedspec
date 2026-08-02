@@ -7,7 +7,9 @@ Status: accepted for the design alpha
 
 ## Context
 
-SeedSpec packages may contain product documents, designs, plans, evaluations, reference implementations, deployment material, and third-party formats such as ProductSpec. Some formats publish parsers, validators, agent skills, or managed workflows.
+SeedSpec packages may contain product documents, designs, plans, evaluations,
+reference implementations, deployment material, and third-party formats. Some
+formats publish parsers, validators, agent skills, or managed workflows.
 
 Treating every format as opaque would limit useful tooling. Automatically adopting a discovered format's instructions would let package content silently change agent behavior and would couple SeedSpec core to external standards.
 
@@ -21,7 +23,6 @@ Treating every format as opaque would limit useful tooling. Automatically adopti
 - Report SeedSpec package conformance separately from artifact-specific conformance.
 - Do not infer agent authority or workflow policy from an artifact's presence, concern, type, or relationship.
 - Materialize local declared artifacts into resolved project state so downstream tools can discover them without executing them.
-- Recognize ProductSpec through a separately versioned official adapter that uses the official ProductSpec parser when explicitly invoked.
 
 ## Consequences
 

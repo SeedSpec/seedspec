@@ -39,7 +39,7 @@ Then replace the scaffold with:
   matters; and
 - `success.md`, stating at least one observable result supported by the seed.
 
-Protocol 0.2 also requires the generated manifest and configuration schema and
+The protocol also requires the generated manifest and configuration schema and
 example. Keep the configuration surface empty unless the author deliberately
 offers product variation.
 
@@ -84,8 +84,11 @@ application and one question. Surface one grounded concern at a time.
 does not require searching archives, history, sibling files, or implementation
 code for more context.
 
-Show an exact package edit only after the author says they want to address the
-concern, then wait for explicit acceptance before applying it.
+After the author agrees to address a concern, record the exact replacement with
+`author propose` and show its ID, path, and wording. Record explicit acceptance
+or rejection with `author decide`. Apply only an accepted proposal with
+`author apply`. Before application, the author can reject a previously accepted
+proposal without losing its earlier decision record.
 
 Questions recorded in the local authoring workspace belong to this conversation.
 Declining a suggestion does not create configuration, a portable question, a

@@ -58,13 +58,16 @@ When a concern is grounded:
 
 1. explain it briefly in product language;
 2. ask whether the author wants to address it;
-3. after they say yes, show the exact proposed edit;
-4. wait for explicit acceptance of that displayed change; and
-5. apply, validate, and record it.
+3. after they say yes, record the exact replacement with `author propose`;
+4. show the proposal ID, path, and exact wording;
+5. wait for explicit acceptance or rejection;
+6. record that decision with `author decide`; and
+7. apply only an accepted proposal with `author apply`.
 
 Do not treat silence or continued conversation as acceptance. Declining an
 improvement does not create configuration, a portable question, a task, or
-future implementation work.
+future implementation work. Before application, the author can reject a
+previously accepted proposal. The workspace retains both decisions.
 
 ## Record through the commands
 
@@ -75,11 +78,15 @@ and reports the new state:
 npx @seedspec/cli author record --json -         # findings, questions, inventory
 npx @seedspec/cli author answer --json -         # the author's answer, or a decline
 npx @seedspec/cli author attach-source --json -  # material the review may cite
+npx @seedspec/cli author propose --json -        # exact before and after text
+npx @seedspec/cli author decide --json -         # explicit author decision
+npx @seedspec/cli author apply --json -          # apply one accepted proposal
 npx @seedspec/cli author reviewed --json -       # close the thread
 ```
 
-`author reviewed` runs validation, linting, and the digest itself. Run
-`npx @seedspec/cli author schema result` to inspect the shape they write.
+`author reviewed` refuses to close a thread with an unsettled proposal, then
+runs validation, linting, and the digest itself. Run `author schema result` and
+`author schema changes` to inspect the durable shapes.
 
 Keep that bookkeeping out of the conversation.
 

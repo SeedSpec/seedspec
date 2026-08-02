@@ -5,18 +5,20 @@
 ## Project summary
 
 - Root package: org.seedspec.fixtures.comprehensive-application@0.1.0
-- Root package digest: sha256:db31a17f409b6c8b7ab9d5df60f64732da6c2bde418a398aa1d3974331e0be75
+- Root package digest: sha256:87cbb879960dfca371620a19bb0c7c0b0931f73060d0671ba8e634aeca0204a9
 - Root kind hint: application
 - Additions: org.seedspec.fixtures.portable-feature@0.1.0
-- Protocol: 0.2
+- Bundled composition edges: 0
+- Protocol: 0.3
 - Applied intent: affirmed
+- Context modules: 2
 
 ## Applied intent and provenance
 
 Package definitions below are package-author intent. Project-local contributions are end-user intent or explicitly labeled agent proposals; format alone does not determine authority.
 
-- org.seedspec.fixtures.comprehensive-application: as-authored; `org.seedspec.artifact.product-spec` at `intent/allowance-tracker.product-spec.md`
-- org.seedspec.fixtures.portable-feature: as-authored; `org.seedspec.intent.native` at `definition/feature.md`
+- org.seedspec.fixtures.comprehensive-application: as-authored; module `primary-intent` in format `org.seedspec.intent.markdown` at `intent/allowance-tracker.md`
+- org.seedspec.fixtures.portable-feature: as-authored; module `primary-intent` in format `org.seedspec.intent.markdown` at `definition/feature.md`
 
 ## Solution configuration
 
@@ -45,61 +47,57 @@ transaction_corrections: append-only-adjustments
 
 ## Root definition
 
----
-spec_format_version: "0.1"
-title: "Allowance Tracker"
-artifact_type: "prd"
-spec_revision: 1
-author: "SeedSpec Protocol example"
-created_at: "2026-07-16T00:00:00Z"
-updated_at: "2026-07-16T00:00:00Z"
----
+# Allowance Tracker
 
 ## Problem
 
-Households rely on memory and informal records to assign chores and track allowance, making expectations and balances difficult for guardians and children to trust.
+Households rely on memory and informal records to assign chores and track
+allowance. Guardians and children cannot reliably inspect expectations,
+decisions, and balances.
 
-## Hypothesis
+## Intended outcome
 
-If assignments, approvals, and balance changes share one visible history, households will resolve allowance questions with less ambiguity because each earning has an attributable cause.
+Allowance Tracker lets a household assign work, review completed assignments,
+and maintain a trustworthy allowance balance derived from an append-only
+transaction history.
 
-## Product Summary
-
-Allowance Tracker helps a household assign work, review completed assignments, and maintain a trustworthy allowance balance derived from an append-only transaction history.
+If assignments, approvals, and balance changes share one visible history,
+households can resolve allowance questions with less ambiguity because each
+earning has an attributable cause.
 
 ## Scope
 
-```productspec-scope
-in:
-  - Let guardians define chores and assign distinct occurrences to children.
-  - Let eligible work be submitted, approved or rejected, and safely retried.
-  - Derive each child's balance from attributable earning and adjustment transactions.
-out:
-  - Do not process bank transfers or hold real funds.
-  - Do not prescribe a framework, data store, hosting provider, or authentication implementation.
-cut:
-  - Keep savings goals, notifications, and chore streaks as separately composable features.
-```
+The application must:
 
-## Acceptance Criteria
+- let guardians define chores and assign distinct occurrences to children;
+- let eligible work be submitted, approved or rejected, and safely retried;
+- derive each child's balance from attributable earning and adjustment
+  transactions; and
+- preserve enough history to explain every balance change.
 
-```productspec-acceptance-criteria
-- id: AC-1
-  criterion: Given an available assignment, submitting and approving it creates exactly one earning transaction for the assigned child.
-- id: AC-2
-  criterion: Retrying submission or approval never creates a duplicate earning transaction.
-- id: AC-3
-  criterion: A child's displayed balance equals the sum of that child's transactions and preserves the reason for every change.
-```
+The application does not process bank transfers or hold real funds. It does not
+prescribe a framework, data store, hosting provider, or authentication
+implementation. Savings goals, notifications, and chore streaks remain
+separately composable features.
 
-## Success Metrics
+## Acceptance summary
 
-```productspec-success-metrics
-- id: SM-1
-  metric: attributable_balance_change_rate
-  target: "100%"
-  window: all recorded balance changes
-```
+1. Submitting and approving an available assignment creates exactly one
+   earning transaction for the assigned child.
+2. Retrying submission or approval never creates a duplicate earning
+   transaction.
+3. A child's displayed balance equals the sum of that child's transactions and
+   preserves the reason for every change.
+
+The complete observable criteria remain in `acceptance/criteria.md`.
+
+## Context modules
+
+Context modules remain separate semantic inputs. Their discovery does not activate native workflows, bridge Skills, scripts, tools, or remote sources.
+
+Context modules:
+- org.seedspec.fixtures.comprehensive-application/primary-intent (org.seedspec.intent.markdown; primary-intent; materialized)
+- org.seedspec.fixtures.portable-feature/primary-intent (org.seedspec.intent.markdown; primary-intent; materialized)
 
 ## Root acceptance
 
@@ -146,7 +144,7 @@ Unless a criterion names a configuration, it applies to every implementation.
 
 Package: org.seedspec.fixtures.portable-feature@0.1.0
 
-Digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+Digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
 
 ### Addition configuration (example)
 
@@ -301,7 +299,7 @@ These are ordered implementation reminders, not product requirements or conforma
 ### org.seedspec.fixtures.comprehensive-application
 
 - `inspect-current-state`: Inspect the existing solution and identify the local concepts, behavior, and constraints that overlap this package before making changes.
-  - References: `task-references/org.seedspec.fixtures.comprehensive-application/intent/allowance-tracker.product-spec.md`
+  - References: `task-references/org.seedspec.fixtures.comprehensive-application/intent/allowance-tracker.md`
 - `review-author-context`: Review the supplied reference context and note where the existing solution requires an adaptation rather than a direct translation.
   - References: `task-references/org.seedspec.fixtures.comprehensive-application/reference/capabilities/chores-1.0.0.md`
 - `realize-package`: Realize the affirmed package intent using the existing architecture and record material deviations or terminology mappings.
@@ -320,7 +318,7 @@ These are ordered implementation reminders, not product requirements or conforma
 
 These artifacts are preserved inputs, not automatically activated workflows:
 
-- org.seedspec.fixtures.comprehensive-application/product-spec: org.seedspec.artifact.product-spec — artifacts/org.seedspec.fixtures.comprehensive-application/product-spec/allowance-tracker.product-spec.md — disposition selected; review before-planning
+- org.seedspec.fixtures.comprehensive-application/chore-reference: org.example.artifact.reference-markdown — artifacts/org.seedspec.fixtures.comprehensive-application/chore-reference/chores-1.0.0.md — disposition unreviewed; review before-planning
 
 ## Declared capabilities
 

@@ -1,11 +1,11 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.example.invalid-verification-method
 name: Invalid Verification Method
 version: 0.1.0
 kind: solution
 description: Uses an unregistered and unnamespaced verification method.
 definition:
-  entrypoint: definition/solution.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
@@ -21,3 +21,12 @@ implementation_profiles:
         verification:
           method: account-check
           evidence: required
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: solution.md
+      source:
+        kind: package
+        path: definition/solution.md

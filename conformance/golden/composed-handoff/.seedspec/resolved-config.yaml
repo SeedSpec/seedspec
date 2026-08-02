@@ -1,4 +1,4 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 root:
   package: org.seedspec.fixtures.comprehensive-application
   selection: example

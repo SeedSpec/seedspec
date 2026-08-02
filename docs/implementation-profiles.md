@@ -5,9 +5,8 @@
 
 SeedSpec separates durable intent from authored ways to realize it.
 
-- **Primary intent** is the package-author source identified by
-  `definition.entrypoint`, in native SeedSpec Markdown or a declared external
-  intent format.
+- **Primary intent** is the package-author context module identified by
+  `definition.module`, in native SeedSpec Markdown or another declared format.
 - **Resolved intent** combines that source's provenance with the end user's
   affirmed application, adaptations, and project-local contributions.
 - An **implementation profile** is a candidate direction shipped by the author.
@@ -134,7 +133,7 @@ user or organization demand. Preferences may include approved platforms,
 languages, hosting, cost boundaries, data residency, compliance requirements,
 or operating constraints.
 
-Protocol 0.2 records project-specific preferences through technical preferences
+The protocol records project-specific preferences through technical preferences
 and implementation targets. Persistent user- or organization-level preference
 stores are tooling concerns rather than portable package state. Tooling may use
 those preferences to rank or explain profiles, but it must preserve authored

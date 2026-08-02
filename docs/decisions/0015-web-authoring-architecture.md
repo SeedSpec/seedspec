@@ -22,9 +22,10 @@ operating brief.
 
 Several foundational write operations now exist: recording observations,
 resolving questions, attaching sources, and closing a thread. Each can compare
-an expected workspace revision when the caller supplies one. The proposal and
-acceptance path remains unimplemented, so hosted architecture can be explored
-but cannot move independently of the remaining engine work.
+an expected workspace revision when the caller supplies one. The coordinated
+0.3 first-party tooling also adds digest-bound document proposals, explicit
+author decisions, and engine application. Hosted work still cannot move independently of the shared storage
+boundary, workspace export, and frontend-parity fixtures.
 
 A separate evaluation harness already runs a Cloudflare Think agent against
 SeedSpec packages. It solves several problems a hosted authoring product also

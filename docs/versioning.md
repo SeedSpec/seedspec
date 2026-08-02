@@ -14,18 +14,18 @@ family; an independent tool implementer or evaluator records the exact schema,
 conformance-suite, runtime, and CLI versions. The domains remain separate even
 when a user interface presents a simpler compatibility summary.
 
-| Version | Identifies | Current value |
-| --- | --- | --- |
-| Protocol family | The package and handoff vocabulary declared in protocol documents | `0.2` |
-| Exact protocol release | The release manifest binding language, schemas, operations, conformance, and compatibility | `0.2.3` |
-| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` | `0.2.3` |
-| Conformance suite | The exact indexed cases, fixtures, and expected results | `0.2.3` |
-| Runtime | One release of the reference JavaScript implementation | `0.2.3` |
-| CLI | One release of the public command-line interface | `0.2.3` |
-| SeedSpec package | One author-controlled version of a portable solution package | Declared in `seedspec.yaml` |
+| Identity | Identifies |
+| --- | --- |
+| Protocol family | The package and handoff vocabulary declared in protocol documents |
+| Exact protocol release | The release manifest binding language, schemas, operations, conformance, and compatibility |
+| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` |
+| Conformance suite | The exact indexed cases, fixtures, and expected results |
+| Runtime | One release of the reference JavaScript implementation |
+| CLI | One release of the public command-line interface |
+| SeedSpec package | One author-controlled version declared in `seedspec.yaml` |
 
-`protocol_version: "0.2"` states that a package uses the Protocol 0.2 family.
-It does not identify the exact release bytes. Reproducible tooling should
+`protocol_version` states which protocol family a package uses. It does not
+identify the exact release bytes. Reproducible tooling should
 pin the exact `@seedspec/protocol` release and record the digest of its
 `protocol-release.json`. That manifest binds the schemas, normative documents,
 operation set, complete conformance corpus, compatible first-party tooling, and
@@ -34,7 +34,7 @@ predecessor compatibility in one identity.
 Run the first-party CLI to obtain the complete implementation version record:
 
 ```bash
-npx --yes @seedspec/cli@0.2.3 version --json
+npx @seedspec/cli version --json
 ```
 
 Numeric releases use npm's default `latest` distribution tag. Integrations

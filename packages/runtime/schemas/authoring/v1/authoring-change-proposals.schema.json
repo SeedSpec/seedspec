@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/authoring/v1/authoring-change-proposals.schema.json",
+  "title": "SeedSpec authoring change proposals",
+  "description": "Durable, revision-bound proposals and author decisions for text documents in one authoring workspace. This is first-party authoring state, never SeedSpec Protocol conformance surface or distributable package content.",
+  "type": "object",
+  "required": ["authoring_change_proposals_version", "proposals"],
+  "properties": {
+    "authoring_change_proposals_version": { "const": "1" },
+    "proposals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/proposal" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "proposal": {
+      "type": "object",
+      "required": [
+        "id",
+        "pass",
+        "status",
+        "summary",
+        "basis",
+        "document",
+        "package_digest_before",
+        "workspace_revision_before",
+        "proposed_at",
+        "decision",
+        "decisions"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "pass": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["proposed", "accepted", "rejected", "applied"]
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "basis": {
+          "type": "object",
+          "required": ["kind", "references"],
+          "properties": {
+            "kind": {
+              "enum": ["author-answer", "supplied-source", "agent-proposal", "mechanical"]
+            },
+            "references": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "document": {
+          "type": "object",
+          "required": [
+            "path",
+            "before_digest",
+            "after_digest",
+            "before_content",
+            "after_content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+            },
+            "before_digest": {
+              "oneOf": [
+                { "$ref": "#/$defs/digest" },
+                { "type": "null" }
+              ]
+            },
+            "after_digest": { "$ref": "#/$defs/digest" },
+            "before_content": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "null" }
+              ]
+            },
+            "after_content": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "package_digest_before": { "$ref": "#/$defs/digest" },
+        "workspace_revision_before": { "$ref": "#/$defs/digest" },
+        "proposed_at": { "type": "string", "format": "date-time" },
+        "decision": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/decision" }
+          ]
+        },
+        "decisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/decision" }
+        },
+        "applied_at": { "type": "string", "format": "date-time" },
+        "package_digest_after": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "required": ["outcome", "by", "rationale", "decided_at"],
+      "properties": {
+        "outcome": { "enum": ["accepted", "rejected"] },
+        "by": { "const": "author" },
+        "rationale": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "decided_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

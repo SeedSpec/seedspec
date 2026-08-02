@@ -1,9 +1,8 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { parseDocument } from "yaml";
 import { protocolRelease, protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
 import { resolvePackageLocation } from "./files.js";
-import { validatePackage } from "./validate.js";
 
 export async function upgradePackage(inputPath, {
   to = protocolRelease.release_id,
@@ -36,44 +35,13 @@ export async function upgradePackage(inputPath, {
       package: root
     };
   }
-  if (from !== "0.1" || protocolVersion !== "0.2") {
-    throw new SeedSpecError(`No safe automatic migration from protocol ${String(from)}`, {
-      code: "UNSUPPORTED_PROTOCOL_MIGRATION",
-      details: [`target protocol: ${protocolVersion}`]
-    });
-  }
-
-  const changes = [{
-    path: "seedspec.yaml",
-    field: "protocol_version",
-    from,
-    to: protocolVersion,
-    reason: "Select the SeedSpec 0.2 package and handoff contract."
-  }];
-  if (write) {
-    document.set("protocol_version", protocolVersion);
-    await writeFile(manifestPath, document.toString(), "utf8");
-    const record = await validatePackage(root);
-    return {
-      upgrade_version: "1",
-      source_protocol: from,
-      target_release: to,
-      target_protocol: protocolVersion,
-      changes,
-      written: true,
-      package: root,
-      digest: record.digest
-    };
-  }
-  return {
-    upgrade_version: "1",
-    source_protocol: from,
-    target_release: to,
-    target_protocol: protocolVersion,
-    changes,
-    written: false,
-    package: root
-  };
+  throw new SeedSpecError(`No safe automatic migration from protocol ${String(from)}`, {
+    code: "UNSUPPORTED_PROTOCOL_MIGRATION",
+    details: [
+      `target protocol: ${protocolVersion}`,
+      "Protocol 0.3 is a clean cut. Re-author the manifest with definition.module and context.modules."
+    ]
+  });
 }
 
 export function formatUpgrade(result) {

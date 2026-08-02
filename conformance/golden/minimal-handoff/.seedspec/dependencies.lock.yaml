@@ -1,10 +1,10 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 resolution_algorithm: declaration-review-v1
 root:
   id: org.seedspec.fixtures.portable-feature
   version: 0.1.0
   kind: feature
-  digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+  digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
 additions: []
 capabilities:
   - id: org.seedspec.finance.goal-allocations
@@ -13,21 +13,21 @@ capabilities:
       id: org.seedspec.fixtures.portable-feature
       version: 0.1.0
       kind: feature
-      digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+      digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
   - id: org.seedspec.finance.goal-progress
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.portable-feature
       version: 0.1.0
       kind: feature
-      digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+      digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
   - id: org.seedspec.finance.savings-goals
     version: 1.0.0
     provider:
       id: org.seedspec.fixtures.portable-feature
       version: 0.1.0
       kind: feature
-      digest: sha256:9adb6b0695ad5341842e9ec661288f8e216db50c8bb094e9897900e39dd5093c
+      digest: sha256:8fdfe9e9b29fefd53deff2962e54d2d26a3fa05ce1e3054d70dbd86df02f7789
 requirements:
   - consumer: org.seedspec.fixtures.portable-feature
     capability: org.seedspec.core.actors

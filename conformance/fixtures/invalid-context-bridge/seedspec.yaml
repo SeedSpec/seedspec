@@ -1,0 +1,34 @@
+protocol_version: "0.3"
+id: org.seedspec.fixtures.invalid-context-bridge
+name: Invalid Context Bridge
+version: 0.1.0
+kind: solution
+description: Exercises an unresolved bridge Skill reference.
+definition:
+  module: primary-intent
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+provides:
+  capabilities: []
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: solution.md
+      source:
+        kind: package
+        path: definition/solution.md
+    - id: refund-safety
+      format: org.example.context.behavior
+      description: Refund safety behavior.
+      entrypoint: BEHAVIOR.md
+      source:
+        kind: package
+        path: context/refund-safety/
+      bridges:
+        - skill: missing-bridge
+          applies_to:
+            purposes:
+              - review

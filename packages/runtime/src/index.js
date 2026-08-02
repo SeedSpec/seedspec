@@ -19,14 +19,36 @@ export {
   formatProviderDiscovery
 } from "./discovery.js";
 export {
-  PRODUCTSPEC_ARTIFACT_TYPE,
-  formatAdapterListing,
   formatArtifactListing,
-  formatArtifactValidation,
-  listArtifactAdapters,
-  listPackageArtifacts,
-  validateArtifact
+  listPackageArtifacts
 } from "./artifacts.js";
+export {
+  ADAPTER_API_VERSION,
+  AdapterRegistry,
+  createAdapterRegistry,
+  formatAdapterListing
+} from "./adapters.js";
+export {
+  discoverFormatIntegrations,
+  formatIntegrationDiscovery,
+  loadIntegrationAdapter,
+  readIntegrationDescriptor
+} from "./integrations.js";
+export {
+  applyIntegrationBridgePlan,
+  formatIntegrationBridgePlan,
+  planIntegrationBridges
+} from "./integration-authoring.js";
+export {
+  formatContextValidation,
+  validateContextModule
+} from "./context-validation.js";
+export {
+  contextApplies,
+  formatContextPreparation,
+  prepareContext,
+  recordContextUse
+} from "./context-preparation.js";
 export { inspectPackage, formatInspection } from "./inspect.js";
 export { formatPackageLint, lintPackage } from "./lint.js";
 export { initPackage } from "./init.js";
@@ -48,9 +70,18 @@ export {
   isResolvedQuestion
 } from "./authoring/core/entries.js";
 export {
+  AUTHORING_CHANGE_BASIS_KINDS,
+  AUTHORING_CHANGE_DECISIONS,
+  AUTHORING_CHANGE_PROPOSAL_FORMAT,
+  AUTHORING_CHANGE_STATUSES
+} from "./authoring/core/proposals.js";
+export {
   AUTHORING_OPERATION_FORMAT,
+  applyDocumentChange,
   answerQuestion,
   attachSource,
+  decideDocumentChange,
+  proposeDocumentChange,
   recordObservations,
   reviewArea
 } from "./authoring/operations.js";

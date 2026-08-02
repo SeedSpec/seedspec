@@ -27,10 +27,11 @@ as the practical floor:
 2. **Observable success** says what someone could observe if that seed were
    realized successfully.
 
-`seedspec init` now scaffolds these as `seed.md` and `success.md`. Protocol 0.2
-continues to validate older package layouts, but the reference publish check
-requires a declared, non-placeholder acceptance component so a distributable
-seed carries its own success definition.
+`seedspec init` scaffolds these as a primary context module at `seed.md` and an
+acceptance component at `success.md`. Protocol 0.3 does not validate retired
+package layouts. The reference publish check requires a declared,
+non-placeholder acceptance component so a distributable seed carries its own
+success definition.
 
 Success material is not an exhaustive test plan and is not evidence that a
 realization exists. It should cover only outcomes the seed actually states.
@@ -155,6 +156,35 @@ The absence of supporting material is not itself an authoring defect. Raise this
 choice when supplied intent or an existing declaration makes the material
 relevant; do not turn it into a universal packaging requirement.
 
+## Declare context modules and bridges
+
+When supplied material has a stable semantic format and an agent-facing
+entrypoint, authoring can declare it as a context module. The authoring tool
+should capture:
+
+- one package-local module ID;
+- the native namespaced format and optional version;
+- a short discovery description;
+- one entrypoint and source;
+- relevant purposes and audiences; and
+- zero or more explicit bridge Skills.
+
+A format integration may offer default bridge Skills. The authoring tool can
+recommend compatible defaults, but it writes only the author's actual
+selection into `context.modules` and the target module's nested `bridges`.
+The author can accept, replace, add, or remove a proposed bridge. Runtime
+resolution must not restore an omitted default.
+
+Use `seedspec context discover` to inspect compatible integrations. Use
+`seedspec context author` for a dry-run bridge plan. Add `--write` only after
+the plan matches the intended module IDs, paths, and bindings.
+
+Prefer a bridge whose scope matches the target module and purpose. Do not use a
+bridge to add requirements absent from the native format. Preserve task Skills
+as independent modules when they perform domain work rather than explain how to
+consume another module. See [Context modules and bridge
+Skills](context-modules.md).
+
 ## Source-bound findings
 
 Absence is not a gap. A default finding must cite package or supplied source
@@ -223,9 +253,19 @@ the seed as written.
 
 ## Author authority and changes
 
-The agent shows every proposed package change and applies it only after explicit
-author acceptance. Silence, continued conversation, or acceptance of another
-change is not approval.
+The agent records each exact text replacement through `author propose` and shows
+the resulting proposal ID, package path, and wording. This does not change the
+package. After the author responds, `author decide` records explicit acceptance
+or rejection. `author apply` writes only an accepted proposal whose package and
+document bytes remain current. Silence, continued conversation, or acceptance
+of another change is not approval. Before application, the author can reject a
+previously accepted proposal. The workspace retains both decisions.
+
+Use `author changes` to inspect before and after content. Proposal state remains
+in the authoring workspace and is not part of the distributable package or
+Protocol conformance. A thread cannot close with a proposed or accepted change.
+An accepted but unapplied change blocks packing so accepted intent cannot be
+silently omitted from the release bytes.
 
 The review result privately separates:
 
@@ -260,6 +300,14 @@ completeness checklist:
 - `package` improves portable clarity without treating distribution as
   completeness.
 
+When a package declares bundled composition, the supporting-material review
+examines each linked integration Markdown file against the parent and child
+intent. It can suggest prose about responsibility boundaries, concept mapping,
+state ownership, cross-boundary actions, configuration mapping, loading and
+failure states, excluded responsibilities, and observable integration checks.
+These are authoring prompts, not protocol-required headings. The review does
+not propose components that the package does not declare.
+
 ## State and compatibility
 
 Authoring state remains outside the distributable package:
@@ -269,6 +317,7 @@ Authoring state remains outside the distributable package:
 ├── workspace.yaml
 ├── sources.yaml
 ├── open-questions.yaml
+├── change-proposals.yaml
 ├── candidates/
 └── passes/
     └── 0001-seed/
@@ -277,19 +326,20 @@ Authoring state remains outside the distributable package:
         └── result.yaml
 ```
 
-New passes use instruction format `0.5` and result format `0.3`. An active
-`0.3` or `0.4` source-bound pass is refreshed to the current conversation and
-record brief when review resumes, without discarding its result state. Existing
-`0.2` passes and their seven legacy area IDs remain readable and are preserved
-in history. A new review continues with the four source-bound private threads
-instead of rewriting old records.
+New passes use instruction format `0.7` and result format `0.3`. An active
+source-bound pass that uses the current result format is refreshed to the
+current conversation and record brief when review resumes, without discarding
+its result state. Existing `0.2` passes and their seven legacy area IDs remain
+readable and are preserved in history. A new review continues with the four
+source-bound private threads instead of rewriting old records.
 
 ## Review is not a packaging gate
 
 A package with stable valid bytes and separate authored success material can be
 packed even when some guided areas remain unreviewed or the local authoring
-session retains questions. Publish checking reports those conditions as
-advisories.
+session retains questions or undecided proposals. Publish checking reports
+those conditions as advisories. An accepted document change must be applied or
+rejected before packing.
 
 Publishers and organizations may impose stronger review profiles for their own
 catalogs. Those policies must not be presented as the universal definition of

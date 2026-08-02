@@ -33,13 +33,19 @@ export async function preparePackage(inputPath, {
   const phase = publishCheck.ready
     ? "ready-to-pack"
     : review.current?.outcome === "needs-author"
+      || review.proposals.proposed > 0
+      || review.proposals.accepted > 0
       ? "author-resolution"
       : "final-check";
 
   const phaseStatuses = {
     baseline: "completed",
     "guided-review": review.complete ? "completed" : review.current ? "available" : "optional",
-    "author-resolution": review.questions.open > 0 ? "available" : "not-needed",
+    "author-resolution": review.questions.open > 0
+      || review.proposals.proposed > 0
+      || review.proposals.accepted > 0
+      ? "available"
+      : "not-needed",
     "publish-check": publishCheck.ready ? "completed" : "blocked",
     "agent-evaluation": "optional",
     pack: publishCheck?.ready ? "ready" : "pending"
@@ -68,7 +74,7 @@ export async function preparePackage(inputPath, {
       {
         id: "author-resolution",
         status: phaseStatuses["author-resolution"],
-        purpose: "Resolve questions from the current authoring session when the author chooses; they are not automatically package obligations."
+        purpose: "Resolve optional session questions and decide or apply document proposals without turning them into protocol obligations."
       },
       {
         id: "publish-check",

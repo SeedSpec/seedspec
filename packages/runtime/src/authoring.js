@@ -7,7 +7,7 @@ import { lintPackage } from "./lint.js";
 import { validatePackage } from "./validate.js";
 import { isResolvedQuestion } from "./authoring/core/entries.js";
 
-export const AUTHORING_INSTRUCTION_FORMAT = "0.5";
+export const AUTHORING_INSTRUCTION_FORMAT = "0.7";
 export const AUTHORING_RESULT_FORMAT = "0.3";
 export const AUTHORING_STATE_FORMAT = "0.2";
 
@@ -45,7 +45,9 @@ const RESULT_FORMAT_BY_INSTRUCTION = Object.freeze({
   "0.2": "0.2",
   "0.3": "0.3",
   "0.4": "0.3",
-  "0.5": "0.3"
+  "0.5": "0.3",
+  "0.6": "0.3",
+  "0.7": "0.3"
 });
 
 // Historical state formats stay readable. Decision 0014 promises that legacy
@@ -384,7 +386,7 @@ function targetInstruction(target) {
     capture: "Preserve the supplied seed with the least interpretation. Do not seek expansion.",
     shape: "Help the author make the supplied seed and its success conditions clearer without enlarging its subject.",
     harden: "Scrutinize high-consequence claims the author actually made, but do not introduce a generic risk checklist.",
-    compose: "Clarify relationships among material the package actually declares; do not propose undeclared components.",
+    compose: "Clarify relationships among declared material, including bundled package seams; do not propose undeclared components.",
     package: "Improve portable clarity and remove contradictions without treating distribution as a completeness requirement."
   }[target];
 }
@@ -439,10 +441,13 @@ function successInstructions() {
 
 function supportingMaterialInstructions() {
   return [
-    "Privately inventory what the package actually includes: configuration, declared decisions, implementation profiles, tasks, skills or other implementation resources, assets, artifacts, examples, reference code, and evidence.",
+    "Privately inventory what the package actually includes: configuration, declared decisions, implementation profiles, bundled package composition, tasks, skills or other implementation resources, assets, artifacts, examples, reference code, and evidence.",
     "Keep that factual inventory in the result record; do not recite it to the author. The absence of any optional item is valid and is not a finding.",
     "For declared configuration, review whether its options or values have distinct meanings, described effects, valid boundaries, and corresponding success observations where the seed makes them consequential.",
     "For declared skills, assets, or reference code, review whether their stated purpose and influence are clear. Do not claim the package is missing another resource unless an authored reference is broken.",
+    "For every declared composition edge, review its linked integration Markdown against the parent and child intent. A missing or contradictory seam is grounded by that declaration; an undeclared component is not.",
+    "When useful, suggest prose about responsibility boundaries, concept mapping, state ownership, cross-boundary actions, configuration mapping, loading and failure states, excluded responsibilities, or observable integration checks. These are prompts, not required headings. Suggest only what the authored relationship makes material.",
+    "If the author accepts improving an integration seam, use `author guidance --topic composition` to offer a small prose structure. Include only relevant sections.",
     "Raise at most one consequential included item whose role or effect appears surprising, unclear, or inconsistent with the seed. Otherwise say the supporting material appears intentional and ask whether the author wants to explore it further.",
     "Offer additions or removals only when the author asks to explore them or when existing declarations conflict."
   ];
@@ -483,18 +488,41 @@ function inlineSourceValue(value) {
   return String(value).replace(/\s+/gu, " ").trim().slice(0, 300);
 }
 
+function compositionContextEdges(record, edges = [], visited = new Set()) {
+  const key = `${record.manifest.id}\0${record.digest}`;
+  if (visited.has(key)) return edges;
+  visited.add(key);
+  for (const edge of record.composition.includes) {
+    edges.push({
+      ...edge,
+      parent: record.manifest.id
+    });
+    compositionContextEdges(edge.record, edges, visited);
+  }
+  return edges;
+}
+
 function packageContextLines(record, sources, stateRoot) {
+  const composition = compositionContextEdges(record);
+  const primaryModule = record.manifest.context.modules.find(
+    (module) => module.id === record.manifest.definition.module
+  );
   return [
     `- Package: \`${record.manifest.id}@${record.manifest.version}\``,
     `- Kind hint: \`${record.manifest.kind}\``,
     `- Package root: \`${record.root}\``,
     `- Active authoring workspace: \`${stateRoot}\``,
-    `- Primary intent: \`${record.manifest.definition.entrypoint}\``,
+    `- Primary intent: module \`${primaryModule.id}\` (${primaryModule.format}) at \`${primaryModule.source.path ?? primaryModule.entrypoint}\``,
     `- Success material: ${record.manifest.components?.acceptance
       ? `\`${record.manifest.components.acceptance}\``
       : "not declared"}`,
     `- Configuration schema: \`${record.manifest.configuration.schema}\``,
     `- Configuration example: \`${record.manifest.configuration.example}\``,
+    `- Bundled composition: ${composition.length
+      ? composition.map((edge) => (
+        `\`${edge.parent}/${edge.id}\` → \`${edge.package}@${edge.version}\` at \`${edge.path}\` through \`${edge.integration}\``
+      )).join("; ")
+      : "not declared"}`,
     ...sourceContextLines(sources)
   ];
 }
@@ -525,8 +553,9 @@ function sourceBoundaryInstructions() {
 function changeInstructions() {
   return [
     "Every document edit you formulate is an agent proposal unless the author supplied the exact wording.",
-    "Explain the concern and ask whether the author wants to address it. Only after they say yes, show the exact proposed wording and its package path.",
-    "Apply only after the author accepts that displayed change. Silence, continued conversation, and approval of a different change are not acceptance.",
+    "Explain the concern and ask whether the author wants to address it. Only after they say yes, record the exact replacement through `author propose`, then show its proposal ID, package path, and exact wording.",
+    "After the author accepts or rejects that displayed proposal, record the decision through `author decide`. Apply only an accepted proposal through `author apply`. Before application, the author may reject a previously accepted proposal; the workspace retains both decisions. Silence, continued conversation, and approval of a different proposal are not acceptance.",
+    "Never write a package document directly. The proposal record binds its before and after bytes; the engine rejects stale acceptance or application.",
     "A declined suggestion stays declined. It does not become configuration, a portable question, a future task, or an implementation obligation. Configuration is deliberate authored variation, not a bucket for unanswered questions.",
     "Resolve genuine contradictions or express them as deliberate alternatives. Ordinary omissions and implementation latitude are nonblocking."
   ];
@@ -578,14 +607,23 @@ function recordInstructions(pass, packageRoot) {
     "# Material the review may draw findings from.",
     ...input('{"source":{"kind":"document","authority":"author","location":"...","summary":"..."}}', "attach-source"),
     "",
+    "# After the author agrees to address a concern, record the exact replacement without changing the package.",
+    ...input('{"path":"seed.md","summary":"...","content":"complete replacement text","basis":{"kind":"author-answer","references":["<question-id>"]}}', "propose"),
+    "",
+    "# After the author explicitly accepts or rejects that displayed proposal.",
+    ...input('{"proposal_id":"change-...","decision":"accept","rationale":"..."}', "decide"),
+    "",
+    "# Apply only after the proposal has an accepted author decision.",
+    ...input('{"proposal_id":"change-..."}', "apply"),
+    "",
     "# Close the current thread.",
     ...input('{"summary":"what the author confirmed","disposition":"improved"}', "reviewed"),
     "```",
     "",
-    "Entry types: `finding`, `inventory`, `contradiction`, `suggestion`, `question`, `tooling-feedback`. Resolutions: `resolved`, `closed`, `rejected`, `not-package-decision`, `routed-to-platform`. Dispositions: `improved`, `good-enough`, `not-relevant`.",
+    "Entry types: `finding`, `inventory`, `contradiction`, `suggestion`, `question`, `tooling-feedback`. Resolutions: `resolved`, `closed`, `rejected`, `not-package-decision`, `routed-to-platform`. Change decisions: `accept`, `reject`. Dispositions: `improved`, `good-enough`, `not-relevant`.",
     "The record is substance for a future co-author, not a transcript. A finding cites what triggered it; `summary` states the product direction, clarification, or authored choice the author confirmed, never your activity.",
-    "`author reviewed` runs validation, linting, and the digest itself and closes the thread. Declining a suggestion creates no package content and no future work.",
-    `Run \`${cli} author schema result\` to inspect the durable shape these commands write. Add \`--pass ${pass}\` only when acting on a thread other than the open one.`
+    "`author reviewed` refuses to close a thread with a proposed or accepted change, then runs validation, linting, and the digest itself. Declining a suggestion creates no package content and no future work.",
+    `Run \`${cli} author schema result\` and \`${cli} author schema changes\` to inspect the durable shapes. Add \`--pass ${pass}\` only when acting on a thread other than the open one.`
   ];
 }
 
@@ -704,7 +742,7 @@ const GUIDANCE_TOPICS = Object.freeze([
     lines: () => [
       ...recordInstructions("<pass>", "<package-path>"),
       "",
-      "Run `npx @seedspec/cli author schema result` for the enforced field contract."
+      "Run `npx @seedspec/cli author schema result` and `npx @seedspec/cli author schema changes` for the enforced field contracts."
     ]
   },
   {
@@ -739,6 +777,33 @@ const GUIDANCE_TOPICS = Object.freeze([
       "Bundled bytes travel with the package digest and can be read in full before anything consults",
       "them (`seedspec resources <path> --show <id>`). Guidance that shapes agent behavior should be",
       "bundled rather than referenced, so an adopter can review exactly what they are accepting."
+    ]
+  },
+  {
+    id: "composition",
+    summary: "shaping prose for a declared parent-to-child integration seam",
+    lines: () => [
+      "An integration seam explains how one declared child participates in one parent. It is ordinary Markdown, not structured compatibility data.",
+      "",
+      "Offer a shape only after the author chooses to improve the seam. Use only sections supported by the parent and child intent:",
+      "",
+      "```markdown",
+      "# <Parent> to <child>",
+      "",
+      "## Responsibility boundary",
+      "<What each side owns and deliberately does not own.>",
+      "",
+      "## Concept and state mapping",
+      "<How parent concepts, identifiers, and state relate to child inputs or outputs.>",
+      "",
+      "## Actions and states across the seam",
+      "<Material actions, events, configuration, loading, empty, and failure behavior.>",
+      "",
+      "## Observable integration checks",
+      "<What someone can observe when this relationship works.>",
+      "```",
+      "",
+      "Delete unused sections. Do not add a topic merely because it appears in this example. The final prose may use any structure."
     ]
   }
 ]);
@@ -849,6 +914,26 @@ async function summarizeQuestions(stateRoot) {
     total: questions.length,
     open: questions.filter((question) => !isResolvedQuestion(question)).length,
     resolved: questions.filter((question) => isResolvedQuestion(question)).length
+  };
+}
+
+async function summarizeProposals(stateRoot) {
+  const proposalsPath = path.join(stateRoot, "change-proposals.yaml");
+  const state = await readYaml(proposalsPath, "authoring change proposals");
+  const proposals = state?.proposals ?? [];
+  if (!Array.isArray(proposals)) {
+    throw new SeedSpecError("Authoring change-proposals.yaml must contain a proposals array", {
+      code: "INVALID_AUTHORING_STATE",
+      details: [proposalsPath]
+    });
+  }
+  return {
+    path: proposalsPath,
+    total: proposals.length,
+    proposed: proposals.filter(({ status }) => status === "proposed").length,
+    accepted: proposals.filter(({ status }) => status === "accepted").length,
+    rejected: proposals.filter(({ status }) => status === "rejected").length,
+    applied: proposals.filter(({ status }) => status === "applied").length
   };
 }
 
@@ -965,7 +1050,7 @@ async function refreshCurrentPassInstructions({
   };
 }
 
-function auditSummary({ record, stateRoot, workspace, passes, current, questions, toolVersion, notices }) {
+function auditSummary({ record, stateRoot, workspace, passes, current, questions, proposals, toolVersion, notices }) {
   const followingArea = areaAfterCompletedPass(passes, current);
   return {
     notices: notices ?? [],
@@ -1012,6 +1097,7 @@ function auditSummary({ record, stateRoot, workspace, passes, current, questions
       name: areaTitle(followingArea)
     } : null,
     questions,
+    proposals,
     complete: AUTHORING_AREAS.every((area) => SATISFIED_OUTCOMES.has(areaStatus(area, passes)))
   };
 }
@@ -1047,6 +1133,14 @@ export async function auditPackage(inputPath, {
         total: 0,
         open: 0,
         resolved: 0
+      },
+      proposals: {
+        path: path.join(stateRoot, "change-proposals.yaml"),
+        total: 0,
+        proposed: 0,
+        accepted: 0,
+        rejected: 0,
+        applied: 0
       },
       toolVersion,
       notices
@@ -1126,6 +1220,7 @@ export async function auditPackage(inputPath, {
       passes,
       current,
       questions: await summarizeQuestions(stateRoot),
+      proposals: await summarizeProposals(stateRoot),
       toolVersion,
       notices
     });
@@ -1172,6 +1267,7 @@ export async function auditPackage(inputPath, {
     passes,
     current,
     questions: await summarizeQuestions(stateRoot),
+    proposals: await summarizeProposals(stateRoot),
     toolVersion,
     notices
   });
@@ -1184,7 +1280,8 @@ export function formatAuthoringAudit(result, { statusOnly = false, summary = fal
       "SeedSpec authoring summary",
       `Package: ${result.package.id}@${result.package.version}`,
       `Review progress: ${reviewed} of ${result.areas.length} areas reviewed`,
-      `Session questions: ${result.questions.open} open, ${result.questions.resolved} resolved`
+      `Session questions: ${result.questions.open} open, ${result.questions.resolved} resolved`,
+      `Document changes: ${result.proposals.proposed} proposed, ${result.proposals.accepted} accepted, ${result.proposals.applied} applied`
     ];
     if (result.current) {
       const currentArea = result.areas.find((area) => area.id === result.current.area);
@@ -1215,6 +1312,7 @@ export function formatAuthoringAudit(result, { statusOnly = false, summary = fal
     `Coaching depth: ${result.target}`,
     `Authoring state: ${result.state}`,
     `Session questions: ${result.questions.open} open, ${result.questions.resolved} resolved`,
+    `Document changes: ${result.proposals.proposed} proposed, ${result.proposals.accepted} accepted, ${result.proposals.applied} applied`,
     "",
     "Internal review progress:"
   ];

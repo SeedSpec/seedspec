@@ -21,9 +21,10 @@ That creates five files. Two of them matter to you:
 The rest (`seedspec.yaml`, `configuration/`) is bookkeeping the tools maintain.
 
 Other kinds are available when "application" is wrong: `feature` for behavior
-added to something that already exists, `workflow` for a process spanning
-systems, plus `automation`, `configuration`, `integration`, and `solution`. The
-kind is a hint for tools, not a commitment.
+added to something that already exists, `component` for a bounded reusable
+part, and `workflow` for a process spanning systems. The remaining hints are
+`automation`, `configuration`, `integration`, and `solution`. The kind is a
+hint for tools, not a commitment.
 
 ## 2. Write a rough seed
 

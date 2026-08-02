@@ -27,6 +27,10 @@ import { resolveProject } from "./resolve.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { validatePackage } from "./validate.js";
 import { inspectCapabilityConformance } from "./capability-conformance.js";
+import { createAdapterRegistry } from "./adapters.js";
+import { prepareContext } from "./context-preparation.js";
+import { validateContextModule } from "./context-validation.js";
+import { discoverFormatIntegrations, loadIntegrationAdapter } from "./integrations.js";
 
 const require = createRequire(import.meta.url);
 const yamlVersion = JSON.parse(
@@ -103,11 +107,24 @@ function validateFixturePaths(suite, indexDirectory) {
       testCase.decisions,
       testCase.applied_intent,
       testCase.result_file,
+      testCase.request,
       testCase.golden,
-      ...(testCase.additions ?? [])
+      ...(testCase.additions ?? []),
+      ...(testCase.integrations ?? [])
     ].filter(Boolean);
     for (const fixturePath of paths) resolveFixture(indexDirectory, fixturePath);
   }
+}
+
+function selectedRecordsWithBundledChildren(records) {
+  const selected = new Map();
+  const visit = (record) => {
+    if (selected.has(record.manifest.id)) return;
+    selected.set(record.manifest.id, record);
+    for (const edge of record.composition.includes) visit(edge.record);
+  };
+  for (const record of records) visit(record);
+  return [...selected.values()];
 }
 
 async function executeCase(testCase, indexDirectory, outputDirectory) {
@@ -135,19 +152,66 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       );
       return { capabilityStatus: result.status };
     }
+    case "integration-discovery": {
+      const discovery = await discoverFormatIntegrations(
+        resolveFixture(indexDirectory, testCase.package),
+        testCase.integrations.map((source) => resolveFixture(indexDirectory, source))
+      );
+      return {
+        compatibleIntegrationCount: discovery.modules.reduce(
+          (count, module) => count + module.compatible.length,
+          0
+        )
+      };
+    }
+    case "context-validation": {
+      const registry = createAdapterRegistry();
+      for (const source of testCase.integrations) {
+        await loadIntegrationAdapter(resolveFixture(indexDirectory, source), registry);
+      }
+      const result = await validateContextModule(
+        resolveFixture(indexDirectory, testCase.package),
+        testCase.module,
+        { registry }
+      );
+      return { contextValidation: result.valid };
+    }
+    case "context-preparation": {
+      const packagePath = resolveFixture(indexDirectory, testCase.package);
+      const project = await resolveProject(packagePath, { outputDirectory });
+      const registry = createAdapterRegistry();
+      for (const source of testCase.integrations) {
+        await loadIntegrationAdapter(resolveFixture(indexDirectory, source), registry);
+      }
+      const result = await prepareContext(
+        project.workspace,
+        resolveFixture(indexDirectory, testCase.request),
+        path.join(outputDirectory, "prepared-context"),
+        { registry }
+      );
+      return {
+        preparedModuleCount: result.bundle.modules.length,
+        nativeAdapterCount: result.bundle.modules.filter(
+          (module) => module.mechanism.kind === "native-adapter"
+        ).length,
+        bridgePreparationCount: result.bundle.modules.filter(
+          (module) => module.mechanism.kind === "bridge-skills"
+        ).length
+      };
+    }
     case "resolve": {
       const rootPath = resolveFixture(indexDirectory, testCase.root);
       const additionPaths = testCase.additions.map((addition) => resolveFixture(indexDirectory, addition));
-      const records = await Promise.all([
+      const records = selectedRecordsWithBundledChildren(await Promise.all([
         validatePackage(rootPath),
         ...additionPaths.map(validatePackage)
-      ]);
+      ]));
       let configurationSelectionsPath;
       if (testCase.configuration_selection === "examples") {
         configurationSelectionsPath = path.join(outputDirectory, "configuration-selections.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(configurationSelectionsPath, stringifyYaml({
-          protocol_version: "0.2",
+          protocol_version: "0.3",
           packages: records.map((record) => ({
             package: record.manifest.id,
             selection: "example"
@@ -161,7 +225,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         appliedIntentPath = path.join(outputDirectory, "applied-intent.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(appliedIntentPath, stringifyYaml({
-          protocol_version: "0.2",
+          protocol_version: "0.3",
           packages: records.map((record) => ({
             package: record.manifest.id,
             use: "as-authored"
@@ -239,6 +303,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
       const validateCompletionScope = await compileProtocolSchema("completion-scope.schema.json");
       const validateVerificationState = await compileProtocolSchema("verification-state.schema.json");
       const validateResolutionReceipt = await compileProtocolSchema("resolution-receipt.schema.json");
+      const validateContextIndex = await compileProtocolSchema("context-index.schema.json");
       const resolutionReceipt = JSON.parse(await readFile(
         path.join(result.workspace, "resolution-receipt.json"),
         "utf8"
@@ -253,6 +318,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         || !validateImplementationProfileState(implementationProfileState)
         || !validateCompletionScope(completionScope)
         || !validateVerificationState(verificationState)
+        || !validateContextIndex(result.contextIndex)
         || !validateResolutionReceipt(resolutionReceipt)) {
         throw new SeedSpecError("Resolution produced non-conforming structured state", {
           code: "CONFORMANCE_ASSERTION_FAILED",
@@ -267,6 +333,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
             ...formatSchemaErrors(validateImplementationProfileState.errors),
             ...formatSchemaErrors(validateCompletionScope.errors),
             ...formatSchemaErrors(validateVerificationState.errors),
+            ...formatSchemaErrors(validateContextIndex.errors),
             ...formatSchemaErrors(validateResolutionReceipt.errors)
           ]
         });
@@ -305,6 +372,11 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         outputDigest: resolutionReceipt.subject.result.output_digest,
         ...(goldenDigest ? { goldenDigest } : {}),
         reviewCount: result.lock.reviews.length,
+        contextModuleCount: result.contextIndex.modules.length,
+        contextBridgeCount: result.contextIndex.modules.reduce(
+          (count, module) => count + (module.bridges?.length ?? 0),
+          0
+        ),
         sourceExtensions
       };
     }
@@ -375,6 +447,42 @@ function assertExpectedOutput(testCase, output) {
     && output.reviewCount !== testCase.expect.review_count) {
     throw new SeedSpecError(
       `Capability review count mismatch; expected ${testCase.expect.review_count}, received ${output.reviewCount}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (Number.isInteger(testCase.expect.context_module_count)
+    && output.contextModuleCount !== testCase.expect.context_module_count) {
+    throw new SeedSpecError(
+      `Context module count mismatch; expected ${testCase.expect.context_module_count}, received ${output.contextModuleCount}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  if (Number.isInteger(testCase.expect.context_bridge_count)
+    && output.contextBridgeCount !== testCase.expect.context_bridge_count) {
+    throw new SeedSpecError(
+      `Context bridge count mismatch; expected ${testCase.expect.context_bridge_count}, received ${output.contextBridgeCount}`,
+      { code: "CONFORMANCE_ASSERTION_FAILED" }
+    );
+  }
+  const countExpectations = [
+    ["compatible_integration_count", "compatibleIntegrationCount", "Compatible integration count"],
+    ["prepared_module_count", "preparedModuleCount", "Prepared module count"],
+    ["native_adapter_count", "nativeAdapterCount", "Native adapter count"],
+    ["bridge_preparation_count", "bridgePreparationCount", "Bridge preparation count"]
+  ];
+  for (const [expectedField, outputField, label] of countExpectations) {
+    if (Number.isInteger(testCase.expect[expectedField])
+      && output[outputField] !== testCase.expect[expectedField]) {
+      throw new SeedSpecError(
+        `${label} mismatch; expected ${testCase.expect[expectedField]}, received ${output[outputField]}`,
+        { code: "CONFORMANCE_ASSERTION_FAILED" }
+      );
+    }
+  }
+  if (typeof testCase.expect.context_validation === "boolean"
+    && output.contextValidation !== testCase.expect.context_validation) {
+    throw new SeedSpecError(
+      `Context validation mismatch; expected ${testCase.expect.context_validation}, received ${output.contextValidation}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
   }

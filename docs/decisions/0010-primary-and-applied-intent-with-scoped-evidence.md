@@ -1,6 +1,6 @@
 # Decision 0010: Separate primary intent, applied intent, and evidence subjects
 
-- Status: accepted for Protocol 0.1 design alpha
+- Status: primary-intent storage superseded by Decision 0018; applied-intent and evidence decisions retained
 - Date: 2026-07-21
 
 ## Context
@@ -14,9 +14,9 @@ verification plan, current-state observations, and a successful realization to
 be confused with one another.
 
 SeedSpec also needs to support richer intent formats without requiring every
-author to translate them into a weaker native document. ProductSpec is an
-important example: its scope, acceptance criteria, evals, success metrics, and
-evidence relationships can serve directly as package-author intent.
+author to translate them into a weaker native document. Their scope, acceptance
+criteria, evals, success metrics, and evidence relationships can serve directly
+as package-author intent.
 
 ## Decision
 
@@ -46,8 +46,8 @@ evidence relationships can serve directly as package-author intent.
   compared.
 - Partial reuse remains legitimate, but a result cannot silently claim complete
   package satisfaction.
-- ProductSpec can be the primary definition of a SeedSpec package without
-  becoming a core dependency or automatically activating ProductSpec tooling.
+- An external format can be the primary definition of a SeedSpec package
+  without becoming a core dependency or automatically activating its tooling.
 - Native authoring can stay physically compact while using explicit semantic
   areas for purpose, obligations and boundaries, success and evidence, and
   decision latitude.

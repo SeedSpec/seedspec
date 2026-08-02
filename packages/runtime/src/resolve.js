@@ -11,6 +11,10 @@ import { artifactReview, componentReview } from "./guidance.js";
 import { resolveAppliedIntent } from "./intent.js";
 import { createResolutionReceipt } from "./receipts.js";
 import {
+  formatContextInventory,
+  materializeContextIndex
+} from "./context.js";
+import {
   materializeImplementationResources,
   reconcileImplementationResourceState
 } from "./resources.js";
@@ -116,6 +120,85 @@ function lockedPackage(record) {
   };
 }
 
+function lexicalCompare(left, right) {
+  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
+}
+
+function assertSamePackageIdentity(existing, candidate) {
+  if (
+    existing.manifest.version !== candidate.manifest.version
+    || existing.digest !== candidate.digest
+  ) {
+    throw new SeedSpecError(
+      `Selected composition contains conflicting identities for ${candidate.manifest.id}`,
+      {
+        code: "COMPOSITION_IDENTITY_COLLISION",
+        details: [
+          `${existing.manifest.version} ${existing.digest} at ${existing.root}`,
+          `${candidate.manifest.version} ${candidate.digest} at ${candidate.root}`
+        ]
+      }
+    );
+  }
+}
+
+function collectSelectedComposition(application, explicitAdditions) {
+  const recordsById = new Map([[application.manifest.id, application]]);
+  for (const addition of explicitAdditions) {
+    if (recordsById.has(addition.manifest.id)) {
+      throw new SeedSpecError(`Package selected more than once: ${addition.manifest.id}`, {
+        code: "DUPLICATE_ADDITION"
+      });
+    }
+    recordsById.set(addition.manifest.id, addition);
+  }
+
+  const edges = [];
+  const visited = new Set();
+  const visit = (record) => {
+    const recordKey = `${record.manifest.id}\0${record.digest}`;
+    if (visited.has(recordKey)) return;
+    visited.add(recordKey);
+
+    for (const declaration of record.composition.includes) {
+      const child = declaration.record;
+      const existing = recordsById.get(child.manifest.id);
+      if (existing) {
+        assertSamePackageIdentity(existing, child);
+      } else {
+        recordsById.set(child.manifest.id, child);
+      }
+      edges.push({
+        id: declaration.id,
+        parent: record,
+        child,
+        integration: declaration.integration
+      });
+      visit(child);
+    }
+  };
+
+  visit(application);
+  for (const addition of [...explicitAdditions].sort((left, right) => (
+    lexicalCompare(left.manifest.id, right.manifest.id)
+  ))) {
+    visit(addition);
+  }
+
+  edges.sort((left, right) => (
+    lexicalCompare(left.parent.manifest.id, right.parent.manifest.id)
+    || lexicalCompare(left.id, right.id)
+    || lexicalCompare(left.child.manifest.id, right.child.manifest.id)
+  ));
+
+  return {
+    additions: [...recordsById.values()].filter(
+      (record) => record.manifest.id !== application.manifest.id
+    ),
+    edges
+  };
+}
+
 function featureDirectoryName(id) {
   return id.replace(/[^a-zA-Z0-9.-]/g, "-");
 }
@@ -161,17 +244,6 @@ async function readArtifactSelections(selectionsPath, records) {
         code: "INVALID_ARTIFACT_SELECTIONS"
       });
     }
-    if (
-      record.manifest.definition.artifact === selection.id
-      && selection.disposition !== "selected"
-    ) {
-      throw new SeedSpecError(`Primary intent artifact cannot be ${selection.disposition}: ${key}`, {
-        code: "INVALID_ARTIFACT_SELECTIONS",
-        details: [
-          "The artifact is the package's primary intent definition. Its content participates in resolution even though activating its native workflow remains optional."
-        ]
-      });
-    }
     selections.set(key, selection);
   }
   return selections;
@@ -211,8 +283,7 @@ async function validateTechnicalPreferences(technicalPreferences, records, artif
             code: "INVALID_IMPLEMENTATION_TARGET"
           });
         }
-        const isPrimaryIntent = record.manifest.definition.artifact === reference.artifact;
-        if (!isPrimaryIntent && artifactSelections.get(key)?.disposition !== "selected") {
+        if (artifactSelections.get(key)?.disposition !== "selected") {
           throw new SeedSpecError(`Implementation target ${target.id} requires selected artifact guidance: ${key}`, {
             code: "INVALID_IMPLEMENTATION_TARGET",
             details: ["Record the artifact with disposition selected in --artifact-selections."]
@@ -243,7 +314,7 @@ async function materializeArtifacts(records, workspace, selections) {
   await mkdir(artifactDirectory, { recursive: true });
 
   const artifactIndex = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     artifacts: [],
     relationships: []
   };
@@ -252,15 +323,13 @@ async function materializeArtifacts(records, workspace, selections) {
     const packageDirectory = featureDirectoryName(record.manifest.id);
     for (const artifact of record.manifest.artifacts ?? []) {
       const selection = selections.get(artifactKey(record.manifest.id, artifact.id));
-      const primaryIntent = record.manifest.definition.artifact === artifact.id;
-      const review = primaryIntent ? "before-planning" : artifactReview(artifact);
+      const review = artifactReview(artifact);
       const resolved = {
         package: record.manifest.id,
         id: artifact.id,
         type: artifact.type,
         review,
-        disposition: primaryIntent ? "selected" : selection?.disposition ?? "unreviewed",
-        ...(primaryIntent ? { intent_role: "primary" } : {}),
+        disposition: selection?.disposition ?? "unreviewed",
         ...(selection?.note ? { selection_note: selection.note } : {}),
         ...(review === "before-activation"
           ? { activation: "requires-specific-user-direction" }
@@ -311,7 +380,7 @@ async function materializeComponents(records, workspace) {
   await mkdir(componentDirectory, { recursive: true });
 
   const componentIndex = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     components: []
   };
 
@@ -347,6 +416,43 @@ async function materializeComponents(records, workspace) {
   }
 
   return componentIndex;
+}
+
+function resolveCompositionEdges(edges, componentIndex) {
+  return edges.map((edge) => {
+    const integrationComponent = componentIndex.components.find((component) => (
+      component.package === edge.parent.manifest.id
+      && component.name === "integration"
+    ));
+    if (!integrationComponent) {
+      throw new SeedSpecError(
+        `Resolved composition is missing integration material for ${edge.parent.manifest.id}/${edge.id}`,
+        { code: "INVALID_COMPOSITION" }
+      );
+    }
+
+    const sourceBase = integrationComponent.source_path.replace(/\/$/u, "");
+    const relativeWithinComponent = path.posix.relative(
+      sourceBase,
+      edge.integration
+    );
+    const resolvedPath = integrationComponent.path.endsWith("/")
+      ? portablePath(
+        integrationComponent.path.replace(/\/$/u, ""),
+        relativeWithinComponent
+      )
+      : integrationComponent.path;
+
+    return {
+      id: edge.id,
+      parent: packageReference(edge.parent),
+      child: packageReference(edge.child),
+      integration: {
+        source_path: edge.integration,
+        resolved_path: resolvedPath
+      }
+    };
+  });
 }
 
 function yamlBlock(value) {
@@ -509,7 +615,7 @@ async function materializeImplementationProfileState(records, selections, worksp
   }
 
   const state = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     scope: "project",
     status: packages.some((item) => item.selection === "review")
       ? "review"
@@ -558,6 +664,7 @@ function intentContributionLines(contribution) {
 function buildAgentGuide({
   application,
   features,
+  composition,
   resolvedIntent,
   implementationProfileState,
   configurationStatus,
@@ -569,6 +676,7 @@ function buildAgentGuide({
   artifacts,
   taskIndex,
   implementationResources,
+  contextModules,
   technicalPreferences
 }) {
   const planningComponents = components.filter((component) => component.review === "before-planning");
@@ -635,13 +743,15 @@ function buildAgentGuide({
     "1. Read `resolved-intent.yaml` first. It distinguishes package-authored intent, the end user's disposition for each package, local intent contributions, and unconfirmed agent proposals.",
     "2. Read `resolved-spec.md` and `resolved-config.yaml` for the complete package definitions, configuration, decisions, and technical preferences.",
     "3. Read `implementation-profile-state.yaml` for candidate implementation profiles, the recorded preference, and conditions that must be checked.",
-    "4. Read `components.yaml` and `artifacts.yaml` for preserved material and its required review timing. A primary intent artifact is already part of core intent; its native workflow is not automatically activated.",
-    "5. Read `tasks.yaml` for package-authored implementation reminders. Within each package, consume tasks from top to bottom; the list order is the only sequencing mechanism.",
-    "6. Read `implementation-resources.yaml`, then run `seedspec resolve-resources <project-path>` before consulting any declared implementation skill or instruction.",
-    "7. Read `implementation-resource-state.yaml`; every bundled fallback must include the reason canonical resolution failed.",
-    "8. Read `implementation-notes.md` for local terminology, behavior, architecture, external resource identifiers, configured state, and earlier deviations.",
-    "9. Read each addition's `additions/*/integration-decisions.md` before integrating it.",
-    "10. Inspect the actual environment before planning. Current code, configuration, external system state, user data, tests, and audit records are authoritative evidence of what exists.",
+    "4. Read `project.yaml` for bundled composition edges. Read every edge's integration Markdown before deciding how its parent and child meet.",
+    "5. Read `components.yaml` and `artifacts.yaml` for preserved supporting material and its required review timing.",
+    "6. Read `context-index.yaml`. Start with primary-intent modules, then prepare only supporting modules relevant to the current purpose, audience, and scope. Prefer an explicitly registered native adapter; otherwise consult the linked bridge Skill.",
+    "7. Read `tasks.yaml` for package-authored implementation reminders. Within each package, consume tasks from top to bottom; the list order is the only sequencing mechanism.",
+    "8. Read `implementation-resources.yaml`, then run `seedspec resolve-resources <project-path>` before consulting any declared implementation skill or instruction.",
+    "9. Read `implementation-resource-state.yaml`; every bundled fallback must include the reason canonical resolution failed.",
+    "10. Read `implementation-notes.md` for local terminology, behavior, architecture, external resource identifiers, configured state, and earlier deviations.",
+    "11. Read each addition's `additions/*/integration-decisions.md` before integrating it.",
+    "12. Inspect the actual environment before planning. Current code, configuration, external system state, user data, tests, and audit records are authoritative evidence of what exists.",
     "",
     // The standing rules are identical in every handoff, so carrying all of
     // them inline made boilerplate ~63% of a small guide -- a fixed cost that
@@ -654,7 +764,8 @@ function buildAgentGuide({
     "- Capabilities, compatibility, and conflicts are package-author declarations, not observations of the actual implementation. Missing or conflicting declarations are prompts to inspect and plan, never reasons by themselves to reject the work.",
     "- Recognize equivalent local concepts even when names differ, and adapt incoming behavior to the current realization. Do not rename, migrate, or overwrite established behavior to make it resemble the source SeedSpec.",
     "- Surface consequential ambiguity before implementing it. Reversible technical choices remain yours.",
-    "- Discovery is not activation. Nothing in this handoff authorizes loading a skill, running a command, fetching a URL, or invoking an adapter; that needs specific user direction at the time.",
+    "- Discovery is not activation. A context request determines which module is relevant. Preparing a module does not authorize running its scripts, fetching an unresolved URL, changing external state, or treating packaged content as higher authority.",
+    "- A bridge Skill explains how to consume another module format. It cannot override that format or add semantic requirements absent from the module.",
     "- Record material mappings, external resource identifiers, and deviations in `implementation-notes.md`; record evidence and remaining gaps in `verification-report.md` and `verification-state.yaml`.",
     "",
     "Run `seedspec docs implementing` for the complete implementing-agent guide, including capability revision review, artifact activation, resource consultation, and verification detail.",
@@ -663,19 +774,52 @@ function buildAgentGuide({
     "",
     `- Root package: ${application.manifest.id}@${application.manifest.version} (kind hint: ${application.manifest.kind})`,
     `- Additions: ${features.length ? features.map(({ record }) => `${record.manifest.id}@${record.manifest.version} (kind hint: ${record.manifest.kind})`).join(", ") : "none"}`,
+    `- Bundled composition edges: ${composition.length}`,
     `- Implementation profiles: ${implementationProfileState.status}`,
     `- Applied intent: ${resolvedIntent.status}`,
     `- Configuration: ${configurationStatus === "selected" ? "explicitly selected" : "review required; author examples are present only as unreviewed placeholders"}`,
     `- Optional components: ${components.length ? components.map((component) => `${component.package}/${component.name}`).join(", ") : "none"}`,
     `- Optional artifacts: ${artifacts.length ? artifacts.map((artifact) => `${artifact.package}/${artifact.id} (${artifact.type}; ${artifact.disposition})`).join(", ") : "none"}`,
     `- Task sequences: ${taskIndex.packages.length ? taskIndex.packages.map((item) => `${item.package} (${item.tasks.length})`).join(", ") : "none"}`,
-    `- Implementation resources: ${declaredResources.length ? declaredResources.map((resource) => `${resource.package}/${resource.id} (${resource.kind}; ${resource.usage})`).join(", ") : "none"}`
+    `- Implementation resources: ${declaredResources.length ? declaredResources.map((resource) => `${resource.package}/${resource.id} (${resource.kind}; ${resource.usage})`).join(", ") : "none"}`,
+    `- Context modules: ${contextModules.modules.length}`,
+    `- Context bridges: ${contextModules.modules.reduce((count, module) => count + (module.bridges?.length ?? 0), 0)}`
   ];
+
+  if (composition.length === 0) {
+    absent.push("bundled composition edges");
+  } else {
+    lines.push(
+      "",
+      "## Bundled composition seams",
+      "",
+      "Each file is author-provided prose describing how one bundled child is intended to participate in its parent. Use it with both packages' intent and the actual environment. If a different seam is necessary, preserve the behavioral contract and record the material deviation.",
+      "",
+      ...composition.map((edge) => (
+        `- \`${edge.parent.id}/${edge.id}\` → ${edge.child.id}: \`${edge.integration.resolved_path}\``
+      ))
+    );
+  }
+
+  if (contextModules.modules.length === 0) {
+    absent.push("context modules");
+  } else {
+    lines.push(
+      "",
+      "## Context navigation",
+      "",
+      "Start with module descriptions. Prepare a module only when its purpose, audience, and scope match the current request. Loading one entrypoint does not load sibling modules or every file in its directory. A native adapter and a bridge Skill are alternative preparation mechanisms; neither grants execution authority.",
+      "",
+      formatContextInventory(contextModules),
+      "",
+      "Bridge Skills are independently identified modules. Use the bridge selected for the current purpose. Do not treat a bridge as part of the target module's semantic content."
+    );
+  }
 
   lines.push("", "## Applied intent", "");
   for (const source of resolvedIntent.packages) {
     lines.push(
-      `- ${source.package}: **${source.use}**; package-author source \`${source.format.type}\` at \`${source.entrypoint}\`${source.note ? ` — ${source.note}` : ""}`
+      `- ${source.package}: **${source.use}**; package-author module \`${source.module}\` in format \`${source.format.id}\` at \`${source.entrypoint}\`${source.note ? ` — ${source.note}` : ""}`
     );
   }
   if (resolvedIntent.contributions.length > 0) {
@@ -1093,7 +1237,7 @@ completion.
 
 const rootAgentInstructions = `# SeedSpec project guidance
 
-Read \`.seedspec/agent-guide.md\` before planning or realizing SeedSpec work. Resolve declared implementation resources through the SeedSpec CLI, report every bundled fallback, and explicitly consult only relevant resolved skills or instructions. Packaged skills are not installed or automatically invoked. Preserve local behavior and terminology, record material deviations and external resource identifiers in \`.seedspec/implementation-notes.md\`, record detailed realization and outcome evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope and evidence subjects.
+Read \`.seedspec/agent-guide.md\` before planning or realizing SeedSpec work. Start from the context-module inventory when present, and prepare only modules relevant to the current purpose, audience, and scope. Prefer a supported native adapter; otherwise consult the linked bridge Skill. Discovery does not activate a module, and preparation does not authorize scripts, remote access, tools, or external changes. A bridge explains how to use a format but cannot redefine its module. Resolve declared implementation resources through the SeedSpec CLI and report every bundled fallback. Preserve local behavior and terminology, record material deviations and external resource identifiers in \`.seedspec/implementation-notes.md\`, record detailed realization and outcome evidence in \`.seedspec/verification-report.md\`, and keep \`.seedspec/verification-state.yaml\` aligned with the exact completion scope and evidence subjects.
 `;
 
 function normalizeDecisionAnswers(records, suppliedAnswers) {
@@ -1171,6 +1315,7 @@ async function buildResolvedSpecification({
   resolvedIntent,
   completionScope,
   features,
+  composition,
   implementationProfileState,
   technicalPreferences,
   capabilities,
@@ -1181,7 +1326,8 @@ async function buildResolvedSpecification({
   components,
   artifacts,
   taskIndex,
-  implementationResources
+  implementationResources,
+  contextModules
 }) {
   const specAbsent = [];
   const lines = [
@@ -1195,15 +1341,17 @@ async function buildResolvedSpecification({
     `- Root package digest: ${application.digest}`,
     `- Root kind hint: ${application.manifest.kind}`,
     `- Additions: ${features.length ? features.map(({ record }) => `${record.manifest.id}@${record.manifest.version}`).join(", ") : "none"}`,
+    `- Bundled composition edges: ${composition.length}`,
     `- Protocol: ${application.manifest.protocol_version}`,
     `- Applied intent: ${resolvedIntent.status}`,
+    `- Context modules: ${contextModules.modules.length}`,
     "",
     "## Applied intent and provenance",
     "",
     "Package definitions below are package-author intent. Project-local contributions are end-user intent or explicitly labeled agent proposals; format alone does not determine authority.",
     "",
     ...resolvedIntent.packages.map((source) => (
-      `- ${source.package}: ${source.use}; \`${source.format.type}\` at \`${source.entrypoint}\`${source.note ? ` — ${source.note}` : ""}`
+      `- ${source.package}: ${source.use}; module \`${source.module}\` in format \`${source.format.id}\` at \`${source.entrypoint}\`${source.note ? ` — ${source.note}` : ""}`
     )),
     ...(resolvedIntent.contributions.length ? [
       "",
@@ -1226,6 +1374,32 @@ async function buildResolvedSpecification({
     "",
     application.definition.trim()
   ];
+
+  if (contextModules.modules.length > 0) {
+    lines.push(
+      "",
+      "## Context modules",
+      "",
+      "Context modules remain separate semantic inputs. Their discovery does not activate native workflows, bridge Skills, scripts, tools, or remote sources.",
+      "",
+      formatContextInventory(contextModules)
+    );
+  } else {
+    specAbsent.push("context modules");
+  }
+
+  if (composition.length > 0) {
+    lines.push(
+      "",
+      "## Bundled composition seams",
+      "",
+      "These Markdown files describe the author-intended relationship at each parent-to-child edge. They are semantic guidance, not structured compatibility claims.",
+      "",
+      ...composition.map((edge) => (
+        `- \`${edge.parent.id}/${edge.id}\` → ${edge.child.id}: \`${edge.integration.resolved_path}\``
+      ))
+    );
+  }
 
   const applicationAcceptance = await readMarkdownComponent(application, "acceptance");
   if (applicationAcceptance) {
@@ -1455,22 +1629,17 @@ async function resolveProjectInStaging(rootPath, {
   decisionsPath
 } = {}) {
   const application = await validatePackage(rootPath);
-  const featureRecords = await Promise.all(
+  const explicitAdditionRecords = await Promise.all(
     [...additionPaths, ...featurePaths].map(validatePackage)
   );
-  const selectedIds = new Set([application.manifest.id]);
-  for (const feature of featureRecords) {
-    if (selectedIds.has(feature.manifest.id)) {
-      throw new SeedSpecError(`Package selected more than once: ${feature.manifest.id}`, {
-        code: "DUPLICATE_ADDITION"
-      });
-    }
-    selectedIds.add(feature.manifest.id);
-  }
+  const selectedComposition = collectSelectedComposition(
+    application,
+    explicitAdditionRecords
+  );
 
   const { orderedAdditions: orderedFeatures, capabilities, requirements, reviews } = analyzeCapabilityDeclarations(
     application,
-    featureRecords
+    selectedComposition.additions
   );
   const selectedRecords = [application, ...orderedFeatures];
   const configurationState = await readConfigurationSelections(
@@ -1542,14 +1711,23 @@ async function resolveProjectInStaging(rootPath, {
     selectedRecords,
     workspace
   );
+  const compositionEdges = resolveCompositionEdges(
+    selectedComposition.edges,
+    componentIndex
+  );
   const taskIndex = await materializeTasks(selectedRecords, workspace);
   const implementationResourceIndex = await materializeImplementationResources(
     selectedRecords,
     workspace
   );
-
+  const contextIndex = await materializeContextIndex(
+    selectedRecords,
+    workspace,
+    artifactIndex,
+    implementationResourceIndex
+  );
   const project = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     status,
     configuration_status: configurationState.status,
     intent_status: resolvedIntent.status,
@@ -1561,11 +1739,13 @@ async function resolveProjectInStaging(rootPath, {
     implementation_profile_status: implementationProfileState.status,
     root: packageReference(application),
     additions: selectedFeatures.map(({ record }) => packageReference(record)),
+    composition: compositionEdges,
     configuration: "resolved-config.yaml",
     resolved_intent: "resolved-intent.yaml",
     task_index: "tasks.yaml",
     component_index: "components.yaml",
     artifact_index: "artifacts.yaml",
+    context_index: "context-index.yaml",
     implementation_resource_index: "implementation-resources.yaml",
     implementation_resource_state: "implementation-resource-state.yaml",
     implementation_profile_state: "implementation-profile-state.yaml",
@@ -1581,7 +1761,7 @@ async function resolveProjectInStaging(rootPath, {
     unresolved_decisions: decisionState.unresolved
   };
   const lock = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     resolution_algorithm: "declaration-review-v1",
     root: lockedPackage(application),
     additions: selectedFeatures.map(({ record }) => lockedPackage(record)),
@@ -1590,7 +1770,7 @@ async function resolveProjectInStaging(rootPath, {
     reviews
   };
   const resolvedConfiguration = {
-    protocol_version: "0.2",
+    protocol_version: "0.3",
     root: {
       package: application.manifest.id,
       selection: applicationSelection.selection,
@@ -1625,6 +1805,11 @@ async function resolveProjectInStaging(rootPath, {
     writeFile(path.join(workspace, "components.yaml"), stringifyYaml(componentIndex), "utf8"),
     writeFile(path.join(workspace, "artifacts.yaml"), stringifyYaml(artifactIndex), "utf8"),
     writeFile(
+      path.join(workspace, "context-index.yaml"),
+      stringifyYaml(contextIndex),
+      "utf8"
+    ),
+    writeFile(
       path.join(workspace, "implementation-profile-state.yaml"),
       stringifyYaml(implementationProfileState),
       "utf8"
@@ -1639,6 +1824,7 @@ async function resolveProjectInStaging(rootPath, {
       buildAgentGuide({
         application,
         features: selectedFeatures,
+        composition: compositionEdges,
         resolvedIntent,
         implementationProfileState,
         configurationStatus: configurationState.status,
@@ -1650,6 +1836,7 @@ async function resolveProjectInStaging(rootPath, {
         artifacts: artifactIndex.artifacts,
         taskIndex,
         implementationResources: implementationResourceIndex,
+        contextModules: contextIndex,
         technicalPreferences
       }),
       "utf8"
@@ -1663,6 +1850,7 @@ async function resolveProjectInStaging(rootPath, {
         resolvedIntent,
         completionScope,
         features: selectedFeatures,
+        composition: compositionEdges,
         implementationProfileState,
         technicalPreferences,
         capabilities,
@@ -1673,7 +1861,8 @@ async function resolveProjectInStaging(rootPath, {
         components: componentIndex.components,
         artifacts: artifactIndex.artifacts,
         taskIndex,
-        implementationResources: implementationResourceIndex
+        implementationResources: implementationResourceIndex,
+        contextModules: contextIndex
       }),
       "utf8"
     )
@@ -1706,10 +1895,14 @@ async function resolveProjectInStaging(rootPath, {
       conflicts: record.manifest.conflicts ?? {},
       decisions: record.manifest.decisions ?? [],
       implementation_profiles: record.manifest.implementation_profiles ?? [],
+      ...(record.manifest.composition
+        ? { composition: record.manifest.composition }
+        : {}),
       artifacts: record.manifest.artifacts ?? [],
       relationships: record.manifest.relationships ?? [],
       tasks: record.manifest.tasks ?? null,
       implementation_resources: record.manifest.implementation_resources ?? null,
+      context: record.manifest.context,
       extensions: record.manifest.extensions ?? {}
     };
     const integrationRecord = [
@@ -1792,8 +1985,10 @@ async function resolveProjectInStaging(rootPath, {
     resolvedIntent,
     artifactIndex,
     componentIndex,
+    composition: compositionEdges,
     taskIndex,
     implementationResourceIndex,
+    contextIndex,
     completionScope,
     implementationProfileState,
     resolutionReceipt,

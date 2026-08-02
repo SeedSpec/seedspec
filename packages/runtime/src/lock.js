@@ -16,6 +16,29 @@ function compareLockedPackage(expected, actual) {
     && expected.digest === actual.digest;
 }
 
+function addBundledPackages(record, supplied) {
+  const existing = supplied.get(record.manifest.id);
+  if (existing) {
+    if (!compareLockedPackage({
+      id: existing.manifest.id,
+      version: existing.manifest.version,
+      kind: existing.manifest.kind,
+      digest: existing.digest
+    }, record)) {
+      throw new SeedSpecError(
+        `Bundled package conflicts with another supplied package: ${record.manifest.id}`,
+        { code: "LOCK_PACKAGE_MISMATCH" }
+      );
+    }
+    return;
+  }
+
+  supplied.set(record.manifest.id, record);
+  for (const edge of record.composition.includes) {
+    addBundledPackages(edge.record, supplied);
+  }
+}
+
 export async function verifyProjectLock(projectPath, packagePaths) {
   const absolute = path.resolve(projectPath);
   const workspace = path.basename(absolute) === ".seedspec"
@@ -38,15 +61,17 @@ export async function verifyProjectLock(projectPath, packagePaths) {
   }
 
   const records = await Promise.all(packagePaths.map(validatePackage));
-  const supplied = new Map();
+  const suppliedRoots = new Map();
   for (const record of records) {
-    if (supplied.has(record.manifest.id)) {
+    if (suppliedRoots.has(record.manifest.id)) {
       throw new SeedSpecError(`Package supplied more than once: ${record.manifest.id}`, {
         code: "DUPLICATE_LOCK_PACKAGE"
       });
     }
-    supplied.set(record.manifest.id, record);
+    suppliedRoots.set(record.manifest.id, record);
   }
+  const supplied = new Map();
+  for (const record of suppliedRoots.values()) addBundledPackages(record, supplied);
 
   const expectedPackages = [lock.root, ...lock.additions];
   const missing = expectedPackages

@@ -1,10 +1,10 @@
-protocol_version: "0.2"
+protocol_version: "0.3"
 id: org.example.implementation-resources
 name: Implementation Resources
-version: "0.1.0"
+version: 0.1.0
 kind: application
 definition:
-  entrypoint: definition/app.md
+  module: primary-intent
 configuration:
   schema: configuration/schema.json
   example: configuration/example.yaml
@@ -15,23 +15,32 @@ implementation_resources:
   catalogs:
     - id: org.example.guidance.catalog
       url: https://example.org/seedspec/catalog.json
-      version: "1.0.0"
+      version: 1.0.0
   resources:
     - id: org.example.guidance.authorization
       kind: skill
       description: Experimental authorization decision guidance.
       usage: available
       entrypoint: SKILL.md
-      version: "0.1.0"
+      version: 0.1.0
       update_policy: exact
       canonical:
         manifest_url: https://example.org/seedspec/authorization/0.1.0/resource.json
         digest: sha256:b0a92bf7e5d46b8254a94a096df8b2f3bf1697e9665b5f9db7f7edaf92f26173
       bundled:
         path: guidance/authorization/
-        version: "0.1.0"
+        version: 0.1.0
         digest: sha256:b0a92bf7e5d46b8254a94a096df8b2f3bf1697e9665b5f9db7f7edaf92f26173
         compatibility: exact
       applies_to:
         capabilities:
           - org.example.capability.authorization
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: app.md
+      source:
+        kind: package
+        path: definition/app.md
