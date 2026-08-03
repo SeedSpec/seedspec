@@ -10,6 +10,9 @@ import {
   formatBundledSkills,
   listBundledSkills
 } from "../src/bundled-skills.js";
+import { runInteractiveShell } from "../src/session/interactive.js";
+import { runJsonlShell } from "../src/session/jsonl.js";
+import { createShellSession } from "../src/session/session.js";
 import {
   auditPackage,
   applyDocumentChange,
@@ -103,6 +106,10 @@ const IMPLEMENTING_GUIDE = readFileSync(
   new URL("../docs/implementing.md", import.meta.url),
   "utf8"
 );
+const SHELL_GUIDE = readFileSync(
+  new URL("../docs/shell.md", import.meta.url),
+  "utf8"
+);
 
 const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experimental)
 
@@ -136,11 +143,13 @@ Usage:
   seedspec eval <package-path> [--output <directory>] [--json]
   seedspec skills <list|export> [--output <directory>] [--skill <id>] [--json]
   seedspec upgrade <package-path> [--to <release>] [--dry-run|--write] [--json]
-  seedspec docs <authoring [area]|implementing>
+  seedspec docs <authoring [area]|implementing|shell>
   seedspec version [--json]
   seedspec doctor [--full] [--json]
   seedspec prompt [root-package-path-or-github-url]
   seedspec begin <root-package-path-or-github-url> [--json]
+  seedspec shell <root-package-path-or-github-url> [--jsonl]
+  seedspec repl <root-package-path-or-github-url> [--jsonl]
   seedspec validate <path>
   seedspec digest <path>
   seedspec inspect <path> [--json]
@@ -261,6 +270,7 @@ function parseArguments(args) {
       || value === "--full"
       || value === "--write"
       || value === "--dry-run"
+      || value === "--jsonl"
     ) {
       options.set(value.slice(2), [true]);
       continue;
@@ -454,6 +464,25 @@ async function run() {
   }
 
   switch (command) {
+    case "shell":
+    case "repl": {
+      rejectUnknownOptions(options, ["jsonl"]);
+      const packageInput = requirePositional(positional, 0, "root package path or GitHub URL");
+      if (positional.length > 1) throw new Error(`${command} accepts one package path or GitHub URL`);
+      await withPackageSource(packageInput, async ({ packagePath, source }) => {
+        const session = await createShellSession(packagePath, {
+          source: source?.original ?? packageInput,
+          implementingGuide: {
+            path: "@seedspec/cli/docs/implementing.md",
+            version: CLI_VERSION,
+            text: IMPLEMENTING_GUIDE
+          }
+        });
+        if (options.has("jsonl")) await runJsonlShell(session);
+        else await runInteractiveShell(session);
+      });
+      break;
+    }
     case "author": {
       const supportedActions = new Set([
         "open",
@@ -830,6 +859,9 @@ async function run() {
       } else if (topic === "implementing") {
         if (positional[1]) throw new Error("Implementing documentation does not accept a subsection");
         process.stdout.write(`SeedSpec CLI: ${CLI_VERSION}\n${IMPLEMENTING_GUIDE.trim()}\n`);
+      } else if (topic === "shell") {
+        if (positional[1]) throw new Error("Shell documentation does not accept a subsection");
+        process.stdout.write(`SeedSpec CLI: ${CLI_VERSION}\n${SHELL_GUIDE.trim()}\n`);
       } else {
         throw new Error(`Unknown documentation topic: ${topic}`);
       }

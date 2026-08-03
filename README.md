@@ -92,12 +92,17 @@ npx @seedspec/cli --help
 npx @seedspec/cli version
 npx @seedspec/cli begin <package-path-or-github-url>
 npx @seedspec/cli prompt <package-path-or-github-url>
+npx @seedspec/cli shell <package-path-or-github-url>
 ```
 
 `seedspec begin` is the read-only starting point for an agent. It validates the
 package, inventories the available intent and supporting material, explains the
 trust boundary, and identifies the user choices needed before resolution or
 implementation.
+
+`seedspec shell` retains one validated package for repeated inspection,
+deterministic documentation search, and exact section retrieval. Add `--jsonl`
+for a prompt-free agent stream. The session remains read-only.
 
 `seedspec prompt` prints a short handoff a person can paste into ChatGPT,
 Codex, Claude, or another agent. A tool-capable agent follows it by running

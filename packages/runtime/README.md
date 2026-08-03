@@ -22,21 +22,26 @@ import {
   createAuthoringWorkspace,
   createAuthorEvaluation,
   formatAuthoringStarterPrompt,
+  buildSearchCorpus,
   inspectAuthoringWorkspace,
   inspectCapabilityConformance,
   inspectPackage,
   packPackage,
   preparePackage,
   publishCheckPackage,
+  searchIndex,
   validatePackage
 } from "@seedspec/runtime";
 
 const record = await validatePackage("./my-seedspec-package");
 const inspection = await inspectPackage(record.root);
 const authoring = await inspectAuthoringWorkspace(record.root);
+const corpus = await buildSearchCorpus(record);
+const matches = searchIndex(corpus.index, "offline conflict", { scope: "package" });
 
 console.log(inspection.id, inspection.version, inspection.digest);
 console.log(authoring.workspace.revision, authoring.package.status);
+console.log(matches.matches);
 
 const emptyDraft = await createAuthoringWorkspace("./new-draft");
 console.log(emptyDraft.snapshot.workspace.id);
@@ -79,6 +84,12 @@ Validation establishes package structure and content identity. It does not
 establish authorship, publisher identity, compatibility with an unseen
 environment, semantic completeness, safety to execute, or permission for
 external effects.
+
+`buildSearchCorpus` indexes declared Markdown, structured declaration
+summaries, and the exact protocol-document release. `searchIndex` provides
+deterministic BM25 retrieval with exact phrases, role filters, scope filters,
+stable section IDs, and line metadata. It does not scan undeclared package
+files or load restricted resource bodies.
 
 Resolution preserves package task runbooks in authored order, copies their
 package-local references into the handoff, and surfaces them to the implementing
