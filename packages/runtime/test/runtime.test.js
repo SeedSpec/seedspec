@@ -172,6 +172,8 @@ const realizationVerification = Object.freeze({
   evidence: "required"
 });
 
+const publicAddressLookup = async () => [{ address: "203.0.113.10", family: 4 }];
+
 async function createImplementationResourcePackage(t, {
   includeCanonical = true,
   includeBundled = true,
@@ -413,6 +415,38 @@ test("kind is a tooling hint rather than a composition gate", async (t) => {
   assert.equal(featureAsRoot.lock.root.kind, "feature");
   assert.equal(workflow.manifest.kind, "workflow");
   assert.equal(customKind.manifest.kind, "com.example.kind.agent");
+});
+
+test("configuration schemas with explosive regex patterns are rejected deterministically", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "explosive-pattern");
+  await cp(allowance, packagePath, { recursive: true });
+  const schemaPath = path.join(packagePath, "configuration", "schema.json");
+  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+  schema.properties.pattern_probe = { type: "string", pattern: "^(a+)+$" };
+  await writeFile(schemaPath, JSON.stringify(schema, null, 2), "utf8");
+
+  await assert.rejects(
+    validatePackage(packagePath),
+    (error) => error.code === "INVALID_CONFIGURATION_SCHEMA"
+      && error.details.some((detail) => /unanchored repetition/u.test(detail))
+  );
+});
+
+test("common anchored repetition patterns in configuration schemas remain valid", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "anchored-pattern");
+  await cp(allowance, packagePath, { recursive: true });
+  const schemaPath = path.join(packagePath, "configuration", "schema.json");
+  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+  schema.properties.pattern_probe = {
+    type: "string",
+    pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+  };
+  await writeFile(schemaPath, JSON.stringify(schema, null, 2), "utf8");
+
+  const validated = await validatePackage(packagePath);
+  assert.equal(validated.manifest.id, "org.seedspec.fixtures.comprehensive-application");
 });
 
 test("bundled composition resolves recursively and preserves every integration seam", async (t) => {
@@ -1651,7 +1685,7 @@ test("author-declared implementation resources are validated, preserved, and res
   };
   const resolvedState = await resolveImplementationResources(
     path.join(fixture.output, "project"),
-    { fetchImpl }
+    { fetchImpl, lookupImpl: publicAddressLookup }
   );
   assert.equal(resolvedState.status, "resolved");
   assert.equal(resolvedState.resources[0].resolution_status, "online");
@@ -1712,7 +1746,8 @@ test("canonical resource failure uses and reports a bundled fallback", async (t)
     fetchImpl: async () => new Response("unavailable", {
       status: 503,
       statusText: "Unavailable"
-    })
+    }),
+    lookupImpl: publicAddressLookup
   });
 
   assert.equal(state.status, "degraded");
@@ -1740,13 +1775,65 @@ test("canonical resource redirects cannot reach literal private hosts", async (t
         status: 302,
         headers: { location: "https://127.0.0.1/internal" }
       });
-    }
+    },
+    lookupImpl: publicAddressLookup
   });
 
   assert.equal(fetchCalls, 1);
   assert.equal(state.resources[0].resolution_status, "bundled-fallback");
   assert.equal(state.resources[0].reason_code, "INVALID_IMPLEMENTATION_RESOURCE");
   assert.match(state.resources[0].reason, /local or private network host/);
+});
+
+test("canonical resource redirects cannot reach unroutable or non-global address forms", async (t) => {
+  const fixture = await createImplementationResourcePackage(t);
+  const projectPath = path.join(fixture.output, "project");
+  await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
+  const blockedTargets = [
+    "https://0.0.0.0/internal",
+    "https://100.64.1.2/internal",
+    "https://[fd00::1]/internal",
+    "https://[fe80::1]/internal",
+    "https://[::ffff:127.0.0.1]/internal",
+    "https://[::]/internal"
+  ];
+  for (const target of blockedTargets) {
+    const state = await resolveImplementationResources(projectPath, {
+      fetchImpl: async () => new Response(null, {
+        status: 302,
+        headers: { location: target }
+      }),
+      lookupImpl: publicAddressLookup
+    });
+    assert.equal(state.resources[0].resolution_status, "bundled-fallback", target);
+    assert.equal(state.resources[0].reason_code, "INVALID_IMPLEMENTATION_RESOURCE", target);
+    assert.match(state.resources[0].reason, /local or private network host/, target);
+  }
+});
+
+test("hostnames resolving to private addresses are rejected before any request", async (t) => {
+  const fixture = await createImplementationResourcePackage(t);
+  const projectPath = path.join(fixture.output, "project");
+  await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
+  const privateResolutions = [
+    [{ address: "10.0.0.5", family: 4 }],
+    [{ address: "203.0.113.10", family: 4 }, { address: "192.168.1.20", family: 4 }],
+    [{ address: "fd12:3456::1", family: 6 }]
+  ];
+  for (const records of privateResolutions) {
+    let fetchCalls = 0;
+    const state = await resolveImplementationResources(projectPath, {
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response("never reached", { status: 200 });
+      },
+      lookupImpl: async () => records
+    });
+    assert.equal(fetchCalls, 0, JSON.stringify(records));
+    assert.equal(state.resources[0].resolution_status, "bundled-fallback");
+    assert.equal(state.resources[0].reason_code, "INVALID_IMPLEMENTATION_RESOURCE");
+    assert.match(state.resources[0].reason, /resolves to/);
+  }
 });
 
 test("latest resource policies reject SemVer prereleases below a stable baseline", async (t) => {
@@ -1773,7 +1860,8 @@ test("latest resource policies reject SemVer prereleases below a stable baseline
     }]
   };
   const state = await resolveImplementationResources(projectPath, {
-    fetchImpl: async () => new Response(JSON.stringify(remoteManifest), { status: 200 })
+    fetchImpl: async () => new Response(JSON.stringify(remoteManifest), { status: 200 }),
+    lookupImpl: publicAddressLookup
   });
 
   assert.equal(state.resources[0].resolution_status, "bundled-fallback");
@@ -1791,7 +1879,8 @@ test("expected unavailable resources fail after recording resolution state", asy
 
   await assert.rejects(
     resolveImplementationResources(projectPath, {
-      fetchImpl: async () => new Response("unavailable", { status: 503 })
+      fetchImpl: async () => new Response("unavailable", { status: 503 }),
+      lookupImpl: publicAddressLookup
     }),
     (error) => error.code === "EXPECTED_IMPLEMENTATION_RESOURCE_UNAVAILABLE"
   );
