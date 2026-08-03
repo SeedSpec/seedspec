@@ -51,6 +51,14 @@ export {
 } from "./context-preparation.js";
 export { inspectPackage, formatInspection } from "./inspect.js";
 export { formatPackageLint, lintPackage } from "./lint.js";
+export { buildSearchCorpus } from "./search-corpus.js";
+export {
+  createSearchIndex,
+  extractMarkdownSections,
+  readSearchSection,
+  searchIndex,
+  tokenizeSearchText
+} from "./search.js";
 export { initPackage } from "./init.js";
 export {
   AUTHORING_AREAS,

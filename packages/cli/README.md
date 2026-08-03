@@ -58,6 +58,8 @@ seedspec audit <package-path> --status
 seedspec docs authoring
 seedspec inspect <package-path> --json
 seedspec begin <package-path-or-github-url>
+seedspec shell <package-path-or-github-url>
+seedspec shell <package-path-or-github-url> --jsonl
 seedspec digest <package-path>
 seedspec capability-conformance <package-path> <capability-id> [--result <yaml>]
 seedspec conformance [cases.yaml] [--json] [--output <report.json>]
@@ -74,6 +76,12 @@ seedspec prompt [package-path-or-github-url]
 surfaces package-author intent, applied-intent, configuration,
 implementation-profile, context-module, ordered-task, supporting-material,
 trust, and verification-plan choices before implementation begins.
+
+`seedspec shell` keeps one validated package and its declared documentation
+corpus active for repeated inspection and deterministic lexical search. The
+interactive terminal and JSONL agent stream use the same read-only session
+engine. Search results preserve source role, authority, path, heading, and line
+metadata. See `seedspec docs shell` for commands and boundaries.
 
 The `context` commands expose the Protocol 0.3 integration lifecycle.
 `discover` reads inert integration descriptors. `validate` loads an adapter
