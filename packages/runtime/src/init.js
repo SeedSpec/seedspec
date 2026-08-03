@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
+import { protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
 import { validatePackage } from "./validate.js";
 
@@ -46,7 +47,7 @@ export async function initPackage(kind, outputDirectory) {
   const root = path.resolve(outputDirectory);
   const title = titleFromDirectory(root);
   const manifest = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     id: idFromDirectory(root),
     name: title,
     version: "0.1.0",

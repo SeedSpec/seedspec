@@ -3,7 +3,7 @@ import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { SeedSpecError } from "./errors.js";
 
-function lexicalCompare(left, right) {
+export function lexicalCompare(left, right) {
   return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
 }
 

@@ -1,12 +1,9 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
+import { protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
-import { pathExists, readYamlFile, resolvePackagePath } from "./files.js";
+import { pathExists, portablePath, readYamlFile, resolvePackagePath } from "./files.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
-
-function portablePath(...segments) {
-  return segments.join("/");
-}
 
 function packageDirectoryName(packageId) {
   return packageId.replace(/[^a-z0-9.-]/g, "-");
@@ -64,7 +61,7 @@ export async function materializeTasks(records, workspace) {
   await mkdir(referenceRoot, { recursive: true });
 
   const index = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     packages: []
   };
 

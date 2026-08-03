@@ -1,4 +1,5 @@
 import path from "node:path";
+import { protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
 import { readYamlFile } from "./files.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
@@ -91,7 +92,7 @@ export async function resolveAppliedIntent(inputPath, records) {
   }
 
   const resolved = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     status: unresolved.length > 0 ? "review" : "affirmed",
     packages: records.map((record) => packageIntentSource(
       record,

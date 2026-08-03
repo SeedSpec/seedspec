@@ -883,7 +883,7 @@ load a skill, execute a script or command, fetch a remote URL, invoke an
 adapter, or adopt an external workflow. Those actions require specific user or
 execution-environment direction outside core resolution.
 
-### 9.3 Implementation targets
+### 9.4 Implementation targets
 
 Technical preferences MAY contain `implementation_targets` conforming to
 `technical-preferences.schema.json`. A target declares:

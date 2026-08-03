@@ -8,11 +8,12 @@ import {
   AUTHORING_TARGETS,
   resolveAuthoringStateDirectory
 } from "./authoring.js";
+import { AUTHORING_CANDIDATE_FORMAT } from "./authoring/core/candidates.js";
 import { isResolvedQuestion } from "./authoring/core/entries.js";
 import { AUTHORING_CHANGE_PROPOSAL_FORMAT } from "./authoring/core/proposals.js";
 import { SeedSpecError } from "./errors.js";
 import { resolvePackageLocation } from "./files.js";
-import { computeDirectoryDigest } from "./integrity.js";
+import { computeDirectoryDigest, lexicalCompare } from "./integrity.js";
 import { validatePackage } from "./validate.js";
 
 export const AUTHORING_WORKSPACE_SNAPSHOT_FORMAT = "1";
@@ -22,10 +23,6 @@ export const AUTHORING_WORKSPACE_REVISION_ALGORITHM = "seedspec-authoring-worksp
 const TERMINAL_OUTCOMES = new Set(["reviewed", "completed", "abandoned", "superseded"]);
 const SATISFIED_OUTCOMES = new Set(["reviewed", "completed"]);
 
-
-function lexicalCompare(left, right) {
-  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
-}
 
 function mediaType(relativePath) {
   const extension = path.extname(relativePath).toLowerCase();
@@ -257,7 +254,7 @@ async function readYamlState(filePath, resource, diagnostics) {
   }
 }
 
-async function inspectReviewState(stateRoot, stateExists) {
+async function inspectReviewState(stateRoot, stateExists, packageDraftDigest = null) {
   if (!stateExists) {
     return {
       status: "not-created",
@@ -270,6 +267,7 @@ async function inspectReviewState(stateRoot, stateExists) {
       passes: [],
       current: null,
       questions: { total: 0, open: 0, resolved: 0, items: [] },
+      candidates: { total: 0, open: 0, accepted: 0, stale: 0, items: [] },
       proposals: { total: 0, proposed: 0, accepted: 0, rejected: 0, applied: 0, items: [] },
       diagnostics: []
     };
@@ -325,6 +323,30 @@ async function inspectReviewState(stateRoot, stateExists) {
       details: []
     });
   }
+  const candidateState = await readYamlState(
+    path.join(stateRoot, "candidates", "index.yaml"),
+    "candidates/index.yaml",
+    diagnostics
+  );
+  const rawCandidateItems = Array.isArray(candidateState?.candidates)
+    ? candidateState.candidates
+    : [];
+  if (candidateState && !Array.isArray(candidateState.candidates)) {
+    diagnostics.push({
+      code: "INVALID_AUTHORING_STATE",
+      resource: "candidates/index.yaml",
+      message: "candidates/index.yaml must contain a candidates array",
+      details: []
+    });
+  }
+  const candidateItems = rawCandidateItems.map((candidate) => ({
+    ...candidate,
+    stale: Boolean(
+      packageDraftDigest
+      && candidate.package_draft_digest_before
+      && candidate.package_draft_digest_before !== packageDraftDigest
+    )
+  }));
 
   const passes = [];
   const passesRoot = path.join(stateRoot, "passes");
@@ -388,6 +410,13 @@ async function inspectReviewState(stateRoot, stateExists) {
       open: questionItems.filter((question) => !isResolvedQuestion(question)).length,
       resolved: questionItems.filter((question) => isResolvedQuestion(question)).length,
       items: questionItems
+    },
+    candidates: {
+      total: candidateItems.length,
+      open: candidateItems.filter(({ status }) => status === "open").length,
+      accepted: candidateItems.filter(({ status }) => status === "accepted").length,
+      stale: candidateItems.filter(({ stale }) => stale).length,
+      items: candidateItems
     },
     proposals: {
       total: proposalItems.length,
@@ -464,7 +493,7 @@ export async function inspectAuthoringWorkspace(inputPath, {
   const documents = await collectDocuments(packageRoot);
   const draftDigest = await computeDirectoryDigest(packageRoot);
   const stateDigest = stateInfo ? await computeDirectoryDigest(stateRoot) : null;
-  const review = await inspectReviewState(stateRoot, Boolean(stateInfo));
+  const review = await inspectReviewState(stateRoot, Boolean(stateInfo), draftDigest);
 
   let manifestHints = {};
   try {
@@ -524,6 +553,10 @@ export async function inspectAuthoringWorkspace(inputPath, {
       questions: {
         ...review.questions,
         items: sanitizeValue(review.questions.items, replacements)
+      },
+      candidates: {
+        ...review.candidates,
+        items: sanitizeValue(review.candidates.items, replacements)
       },
       proposals: {
         ...review.proposals,
@@ -604,6 +637,10 @@ export async function createAuthoringWorkspace(inputPath, {
     writeIfMissing(path.join(stateRoot, "change-proposals.yaml"), stringifyYaml({
       authoring_change_proposals_version: AUTHORING_CHANGE_PROPOSAL_FORMAT,
       proposals: []
+    })),
+    writeIfMissing(path.join(stateRoot, "candidates", "index.yaml"), stringifyYaml({
+      authoring_candidates_version: AUTHORING_CANDIDATE_FORMAT,
+      candidates: []
     }))
   ]);
 
@@ -634,12 +671,18 @@ export function formatAuthoringWorkspaceSnapshot(snapshot) {
     accepted: 0,
     applied: 0
   };
+  const candidates = snapshot.review.candidates ?? {
+    open: 0,
+    accepted: 0,
+    stale: 0
+  };
   const lines = [
     "SeedSpec authoring",
     `Draft: ${packageName}`,
     `Status: ${snapshot.package.status}`,
     `Documents: ${snapshot.documents.length}`,
     `Questions: ${snapshot.review.questions.open} open, ${snapshot.review.questions.resolved} resolved`,
+    `Candidates: ${candidates.open} open, ${candidates.accepted} accepted, ${candidates.stale} stale`,
     `Changes: ${proposals.proposed} proposed, ${proposals.accepted} accepted, ${proposals.applied} applied`
   ];
   if (snapshot.review.current) {

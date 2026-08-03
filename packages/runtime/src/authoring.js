@@ -125,15 +125,6 @@ async function writeIfMissing(filePath, content) {
   }
 }
 
-function assertKnownArea(area) {
-  if (![...AUTHORING_AREAS, ...LEGACY_AUTHORING_AREAS].includes(area)) {
-    throw new SeedSpecError(`Unknown authoring review area: ${area}`, {
-      code: "INVALID_AUTHORING_AREA",
-      details: [`supported: ${AUTHORING_AREAS.join(", ")}`]
-    });
-  }
-}
-
 function assertArea(area) {
   if (!AUTHORING_AREAS.includes(area)) {
     throw new SeedSpecError(`Unknown authoring review area: ${area}`, {

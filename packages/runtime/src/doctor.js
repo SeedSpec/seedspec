@@ -19,6 +19,7 @@ import {
   schemaDirectory
 } from "@seedspec/protocol";
 import { runConformanceSuite } from "./conformance.js";
+import { lexicalCompare } from "./integrity.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { validatePackage } from "./validate.js";
 
@@ -28,10 +29,6 @@ const runtimeVersion = JSON.parse(
 
 function digest(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-}
-
-function lexicalCompare(left, right) {
-  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
 }
 
 function safeBundlePath(relativePath) {

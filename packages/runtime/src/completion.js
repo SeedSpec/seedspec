@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
+import { protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
 import { pathExists, readYamlFile } from "./files.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
@@ -89,7 +90,7 @@ export async function resolveCompletionScope(scopePath, records) {
     .map((record) => record.manifest.id)
     .filter((id) => !coveredPackages.has(id));
   const scope = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     status: uncoveredPackages.length > 0 ? "review" : "recorded",
     items,
     uncovered_packages: uncoveredPackages
@@ -106,7 +107,7 @@ export async function resolveCompletionScope(scopePath, records) {
 
 export function createInitialVerificationState(scope) {
   return {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     scope_digest: completionScopeDigest(scope),
     status: "not-started",
     items: scope.items

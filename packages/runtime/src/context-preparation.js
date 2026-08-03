@@ -1,14 +1,16 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { cp, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   protocolRelease,
-  protocolReleaseDigest
+  protocolReleaseDigest,
+  protocolVersion
 } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
-import { pathExists, resolvePackagePath } from "./files.js";
+import { canonicalDigest } from "./receipts.js";
+import { pathExists, portablePath, resolvePackagePath } from "./files.js";
 import {
   computeDirectoryDigest,
   computeFileDigest,
@@ -20,26 +22,6 @@ import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 const runtimeVersion = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8")
 ).version;
-
-function canonicalValue(value) {
-  if (Array.isArray(value)) return value.map(canonicalValue);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, canonicalValue(value[key])])
-    );
-  }
-  return value;
-}
-
-function canonicalDigest(value) {
-  return `sha256:${createHash("sha256")
-    .update(JSON.stringify(canonicalValue(value)), "utf8")
-    .digest("hex")}`;
-}
-
-function portablePath(...parts) {
-  return parts.join("/");
-}
 
 function isWithin(parent, candidate) {
   const relative = path.relative(parent, candidate);
@@ -565,7 +547,7 @@ export async function prepareContext(inputPath, requestPath, outputPath, {
     const contextIndexDigest = await computeFileDigest(indexPath);
     const bundleSubject = {
       bundle_version: "1",
-      protocol_version: "0.3",
+      protocol_version: protocolVersion,
       request: {
         digest: requestDigest,
         summary: request.summary,
