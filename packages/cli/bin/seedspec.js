@@ -20,6 +20,7 @@ import {
   createAuthorEvaluation,
   createAdapterRegistry,
   decideDocumentChange,
+  decideClarificationCandidate,
   discoverAuthoringWorkspace,
   discoverFeatures,
   discoverProviders,
@@ -36,6 +37,7 @@ import {
   listAuthoringGuidanceTopics,
   listAuthoringSchemas,
   proposeDocumentChange,
+  recordClarificationCandidate,
   recordObservations,
   reviewArea,
   readAuthoringSchema,
@@ -195,6 +197,7 @@ Commands:
   author status       Show the draft and current review
   author review       Print the complete versioned agent operating brief
   author questions    Show authoring-session questions and resolutions
+  author candidates   Show clarification candidates and author dispositions
   author changes      Inspect proposed, accepted, rejected, and applied changes
   author check        Check structure, guidance, and publication readiness
   author history      Show completed and current review passes
@@ -209,6 +212,8 @@ never has to survive shell quoting:
   author record         Record findings, questions, inventory, contradictions
   author answer         Record the author's answer, or decline a question
   author attach-source  Attach source material the review may draw findings from
+  author candidate      Record one consequential clarification candidate
+  author candidate-decide Record the author's candidate disposition
   author propose        Record an inspectable document replacement
   author decide         Record explicit author acceptance or rejection
   author apply          Apply one accepted proposal through the engine
@@ -344,7 +349,7 @@ async function readOperationInput(options) {
   try {
     return JSON.parse(source);
   } catch (error) {
-    throw new Error(`Operation payload is not valid JSON: ${error.message}`);
+    throw new Error(`Operation payload is not valid JSON: ${error.message}`, { cause: error });
   }
 }
 
@@ -354,6 +359,9 @@ function authorNextCommand(snapshot) {
   }
   if (snapshot.review.proposals.proposed > 0 || snapshot.review.proposals.accepted > 0) {
     return "Unsettled changes: `npx @seedspec/cli author changes`";
+  }
+  if (snapshot.review.candidates?.open > 0) {
+    return "Unsettled clarification: `npx @seedspec/cli author candidates`";
   }
   if (snapshot.review.current || !snapshot.review.complete) {
     return "Next: `npx @seedspec/cli author review`";
@@ -402,6 +410,35 @@ function formatAuthoringHistory(snapshot) {
   lines.push("");
   for (const pass of snapshot.review.passes) {
     lines.push(`- ${pass.id}: ${pass.area} — ${pass.outcome}`);
+  }
+  return lines.join("\n");
+}
+
+function formatAuthoringCandidates(snapshot) {
+  const candidates = snapshot.review.candidates?.items ?? [];
+  const summary = snapshot.review.candidates ?? { open: 0, accepted: 0, stale: 0 };
+  const lines = [
+    "SeedSpec clarification candidates",
+    `${summary.open} open, ${summary.accepted} accepted, ${summary.stale} stale`
+  ];
+  if (candidates.length === 0) {
+    return [...lines, "", "No clarification candidates recorded."].join("\n");
+  }
+  lines.push(
+    "",
+    "Candidates are authoring evidence. They are not package intent until accepted meaning is applied through a document proposal."
+  );
+  for (const candidate of candidates) {
+    lines.push(
+      "",
+      `${candidate.id} — ${candidate.status}${candidate.stale ? "; stale" : ""}`,
+      `Issue: ${candidate.issue}`,
+      `Alternatives: ${(candidate.alternatives ?? []).join(" | ")}`,
+      `Inference: ${candidate.basis?.inference ?? "No inference recorded."}`
+    );
+    if (candidate.disposition?.meaning) {
+      lines.push(`Author meaning: ${candidate.disposition.meaning}`);
+    }
   }
   return lines.join("\n");
 }
@@ -464,6 +501,8 @@ async function run() {
         "record",
         "answer",
         "attach-source",
+        "candidate",
+        "candidate-decide",
         "propose",
         "decide",
         "apply",
@@ -471,6 +510,7 @@ async function run() {
         "status",
         "review",
         "questions",
+        "candidates",
         "changes",
         "check",
         "history",
@@ -497,7 +537,17 @@ async function run() {
       } else if (action === "prompt") {
         rejectUnknownOptions(options, []);
         process.stdout.write(`${formatAuthoringStarterPrompt()}\n`);
-      } else if (["record", "answer", "attach-source", "propose", "decide", "apply", "reviewed"].includes(action)) {
+      } else if ([
+        "record",
+        "answer",
+        "attach-source",
+        "candidate",
+        "candidate-decide",
+        "propose",
+        "decide",
+        "apply",
+        "reviewed"
+      ].includes(action)) {
         rejectUnknownOptions(options, ["state", "json", "pass", "revision"]);
         const context = await resolveAuthoringContext(positional[1], oneOption(options, "state"));
         const input = await readOperationInput(options);
@@ -517,6 +567,21 @@ async function run() {
             })
             : action === "attach-source"
               ? attachSource(context.packageRoot, { ...shared, source: input.source ?? input })
+              : action === "candidate"
+                ? recordClarificationCandidate(context.packageRoot, {
+                  ...shared,
+                  pass,
+                  candidate: input.candidate ?? input
+                })
+                : action === "candidate-decide"
+                  ? decideClarificationCandidate(context.packageRoot, {
+                    ...shared,
+                    candidateId: input.candidate_id ?? input.candidateId,
+                    decision: input.decision,
+                    decidedBy: input.decided_by ?? input.decidedBy ?? "author",
+                    meaning: input.meaning,
+                    rationale: input.rationale
+                  })
               : action === "propose"
                 ? proposeDocumentChange(context.packageRoot, {
                   ...shared,
@@ -568,6 +633,7 @@ async function run() {
           status: ["state", "json"],
           review: ["area", "target", "state", "status", "summary", "json"],
           questions: ["state", "json"],
+          candidates: ["state", "json"],
           changes: ["state", "json"],
           check: ["state", "json"],
           history: ["state", "json"],
@@ -612,7 +678,7 @@ async function run() {
               statusOnly: options.has("status"),
               summary: options.has("summary")
             })}\n`);
-        } else if (action === "questions" || action === "changes" || action === "history") {
+        } else if (["questions", "candidates", "changes", "history"].includes(action)) {
           const snapshot = await inspectAuthoringWorkspace(context.packageRoot, {
             stateDirectory: context.stateRoot,
             toolVersion: CLI_VERSION
@@ -621,12 +687,15 @@ async function run() {
             ? `${JSON.stringify(
               action === "questions"
                 ? snapshot.review.questions
+                : action === "candidates" ? snapshot.review.candidates
                 : action === "changes" ? snapshot.review.proposals : snapshot.review.passes,
               null,
               2
             )}\n`
             : `${action === "questions"
               ? formatAuthoringQuestions(snapshot)
+              : action === "candidates"
+                ? formatAuthoringCandidates(snapshot)
               : action === "changes"
                 ? formatAuthoringChanges(snapshot)
                 : formatAuthoringHistory(snapshot)}\n`);

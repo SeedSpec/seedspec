@@ -14,8 +14,10 @@
     "release:verify": "node ./scripts/verify-release.mjs",
     "release:pack": "npm pack --workspace @seedspec/protocol --dry-run && npm pack --workspace @seedspec/runtime --dry-run && npm pack --workspace @seedspec/cli --dry-run",
     "check:names": "node ./scripts/check-clean-names.mjs",
+    "lint": "eslint packages/protocol/src packages/runtime/src packages/runtime/test packages/cli/src packages/cli/bin packages/cli/test scripts eslint.config.js",
+    "typecheck": "tsc -p tsconfig.json",
     "validate:fixtures": "node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/comprehensive-application && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/portable-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/revision-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/profiled-workflow",
-    "check": "npm run release:verify && npm run check:names && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures",
+    "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures",
     "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/cases.yaml"
   },
   "engines": {
@@ -25,5 +27,11 @@
     "type": "git",
     "url": "https://github.com/SeedSpec/seedspec.git"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.2",
+    "eslint": "^10.8.0",
+    "typescript": "^7.0.2"
+  }
 }

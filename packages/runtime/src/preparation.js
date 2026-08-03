@@ -10,8 +10,7 @@ export const PREPARATION_FORMAT = "1";
 
 export async function preparePackage(inputPath, {
   stateDirectory,
-  toolVersion = "unknown",
-  statusOnly = false
+  toolVersion = "unknown"
 } = {}) {
   const [record, lint] = await Promise.all([
     validatePackage(inputPath),

@@ -1,4 +1,3 @@
-import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 import { listPackageArtifacts } from "./artifacts.js";
 import { artifactReview, componentReview } from "./guidance.js";

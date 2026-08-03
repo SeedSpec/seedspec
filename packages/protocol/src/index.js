@@ -13,7 +13,9 @@ export const conformanceBundlePath = fileURLToPath(
   new URL("../conformance-bundle.json", import.meta.url)
 );
 const protocolReleaseBytes = readFileSync(protocolReleasePath);
-export const protocolRelease = Object.freeze(JSON.parse(protocolReleaseBytes));
+export const protocolRelease = Object.freeze(
+  JSON.parse(protocolReleaseBytes.toString("utf8"))
+);
 export const protocolVersion = protocolRelease.protocol_family;
 export const conformanceSuiteVersion = protocolRelease.conformance.suite_version;
 export const protocolReleaseDigest = `sha256:${createHash("sha256")

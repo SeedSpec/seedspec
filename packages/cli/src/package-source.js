@@ -113,7 +113,9 @@ async function cloneGitHubRepository(source, checkoutDirectory) {
     });
   } catch (error) {
     const detail = error?.stderr?.trim();
-    throw new Error(`Unable to acquire GitHub package${detail ? `: ${detail}` : ""}`);
+    throw new Error(`Unable to acquire GitHub package${detail ? `: ${detail}` : ""}`, {
+      cause: error
+    });
   }
 }
 
