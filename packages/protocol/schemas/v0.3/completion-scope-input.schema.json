@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/completion-scope-input.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/completion-scope-input.schema.json",
   "title": "SeedSpec Completion Scope Input 0.3",
   "type": "object",
   "additionalProperties": false,

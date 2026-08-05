@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/integration-descriptor.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/integration-descriptor.schema.json",
   "title": "SeedSpec Format Integration Descriptor",
   "type": "object",
   "additionalProperties": false,

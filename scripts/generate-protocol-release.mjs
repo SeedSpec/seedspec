@@ -183,6 +183,11 @@ const release = {
   source,
   compatibility: [
     {
+      from_release: "0.3.0",
+      status: "revalidate",
+      notes: "Protocol 0.3 package source requires no rewrite. Revalidate packages and regenerate resolved handoffs under exact release 0.3.1."
+    },
+    {
       from_release: "0.2.3",
       status: "unsupported",
       notes: "Protocol 0.3 is a clean authoring cut. Reauthor the package with a required primary context module and regenerate all resolved handoffs."

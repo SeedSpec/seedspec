@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/conformance-report.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/conformance-report.schema.json",
   "title": "SeedSpec Conformance Report",
   "type": "object",
   "additionalProperties": false,

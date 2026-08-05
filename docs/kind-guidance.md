@@ -7,10 +7,39 @@ Manifest `kind` describes the shape the author believes best fits the seed. It
 does not determine composition position, add required subject matter, or define
 a completeness checklist.
 
-## Source-bound use
+## Kind-aware exploration
 
-The reference authoring workflow uses `kind` to understand authored language,
-not to search for missing topics.
+The reference authoring workflow uses `kind` as a private exploration lens, not
+as a list of mandatory questions or required sections. Default shaping examines
+only branches activated by the supplied idea, an approved source, or an
+accepted decision.
+
+The initial lenses are:
+
+- `solution` — overall outcome, package boundaries, system interactions, shared
+  authority, and system-level success;
+- `application` — users, core interaction, product authority, state, lifecycle,
+  external boundaries, and observable success;
+- `feature` — host behavior, entry points, changed behavior, states,
+  compatibility, and observable success;
+- `component` — responsibility, interface, state ownership, failure contract,
+  and host compatibility;
+- `workflow` — trigger, inputs, stages, decision ownership, failure, recovery,
+  and completion;
+- `automation` — trigger, action, safeguards, repetition, failure, recovery,
+  and observable completion;
+- `configuration` — variation meaning, options, defaults, effects, invalid
+  combinations, and adoption boundaries; and
+- `integration` — participating systems, exchange direction, mapping,
+  authority, failure, and compatibility.
+
+The agent privately compares plausible interpretations. When two competent
+teams could build materially different products, it asks the author one
+question and recommends an answer. When they would build different
+implementations of the same product, it leaves the choice delegated.
+
+`--minimal` disables exploratory use of the lens. The kind still helps the
+agent interpret supplied language.
 
 For example:
 
@@ -25,11 +54,11 @@ For example:
 - when an `integration` seed declares mappings or directionality, the agent can
   identify conflicts among those declarations.
 
-An application that never mentions permissions does not have a permission
-finding merely because its kind is `application`. An automation that never
-mentions retry behavior does not acquire a retry finding. The author may ask to
-brainstorm those topics, but that is optional expansion rather than review of
-the authored seed.
+An application that never activates an authority relationship does not acquire
+a permission question merely because its kind is `application`. An automation
+that never introduces repetition or failure does not acquire a retry question.
+Exploration can follow a consequential relationship already present in the
+idea; it cannot add unrelated domain scope.
 
 ## Validation and review are different
 

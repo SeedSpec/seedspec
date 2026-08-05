@@ -29,8 +29,9 @@ hint for tools, not a commitment.
 ## 2. Write a rough seed
 
 Open `seed.md` and describe what you want to exist. Write it the way you would
-explain it to a colleague. Do not try to be complete, and do not write
-requirements.
+explain it to a colleague. Record the requirements and boundaries you already
+know. Do not manufacture completeness or add requirements only because similar
+products often have them.
 
 A real starting point looks like this:
 
@@ -53,6 +54,13 @@ seed than two pages of invented requirements.
 ```bash
 npx @seedspec/cli author prompt
 ```
+
+Exploration is the default. The agent asks whether to shape a practical first
+specification with recommended defaults or conduct deeper discovery. Use
+`--deep` to begin with the deeper decision-tree interview. Use `--minimal` when
+the supplied material should receive only literal, necessary shaping.
+
+Suggested meaning still requires author acceptance.
 
 Paste what it prints into your agent. It will run `author review` and get a
 complete brief — you do not need to explain SeedSpec to it.
@@ -110,8 +118,9 @@ success criteria — not a summary of them.
 
 ## What you are not doing
 
-- **Not writing requirements.** A seed is a starting point that grows into a
-  particular result, not a contract that pins one down.
+- **Not manufacturing completeness.** A seed carries the requirements you know
+  during authoring. Project-specific requirements can be affirmed later without
+  being misattributed to the package author.
 - **Not designing the implementation.** Stack, architecture, and hosting belong
   to whoever builds it.
 - **Not aiming for complete.** Reviewing an area and deciding it is fine as-is

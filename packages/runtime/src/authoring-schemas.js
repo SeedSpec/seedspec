@@ -10,7 +10,11 @@ export const AUTHORING_SCHEMA_FORMAT = "1";
 // protocol conformance surface.
 const AUTHORING_SCHEMAS = Object.freeze({
   result: "authoring-pass-result.schema.json",
-  changes: "authoring-change-proposals.schema.json"
+  changes: "authoring-change-proposals.schema.json",
+  candidates: "authoring-candidates.schema.json",
+  "probe-brief": "authoring-probe-brief.schema.json",
+  "probe-result": "authoring-probe-result.schema.json",
+  "probe-runs": "authoring-probe-runs.schema.json"
 });
 
 const schemaDirectory = path.join(

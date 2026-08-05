@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/authoring/v1/authoring-candidates.schema.json",
+  "title": "SeedSpec authoring candidates",
+  "description": "Durable clarification candidates and author dispositions in one authoring workspace. Candidate state is advisory first-party authoring evidence, never package-author intent or SeedSpec Protocol conformance surface.",
+  "type": "object",
+  "required": ["authoring_candidates_version", "candidates"],
+  "properties": {
+    "authoring_candidates_version": { "const": "1" },
+    "candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/candidate" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "pass",
+        "status",
+        "issue",
+        "alternatives",
+        "assumed_default",
+        "basis",
+        "materiality",
+        "affected",
+        "recommended_disposition",
+        "package_draft_digest_before",
+        "workspace_revision_before",
+        "recorded_at",
+        "disposition",
+        "proposal_ids"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^candidate-[a-z0-9-]+$" },
+        "kind": { "const": "clarification" },
+        "pass": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": [
+            "open",
+            "accepted",
+            "declined",
+            "delegated",
+            "deferred",
+            "retained-ambient"
+          ]
+        },
+        "issue": { "type": "string", "minLength": 1 },
+        "alternatives": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "assumed_default": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "basis": {
+          "type": "object",
+          "required": ["actor", "source_claims", "inference"],
+          "properties": {
+            "actor": { "enum": ["authoring-agent", "receiving-model"] },
+            "source_claims": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["reference", "statement"],
+                "properties": {
+                  "reference": { "type": "string", "minLength": 1 },
+                  "statement": { "type": "string", "minLength": 1 }
+                },
+                "additionalProperties": false
+              }
+            },
+            "inference": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "materiality": { "enum": ["critical", "material"] },
+        "affected": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "outcome",
+              "architecture",
+              "configuration",
+              "authority",
+              "resources",
+              "completion-scope",
+              "verification",
+              "cost",
+              "operational-ownership",
+              "feasibility"
+            ]
+          }
+        },
+        "recommended_disposition": {
+          "enum": ["ask", "delegate", "retain-ambient", "no-action"]
+        },
+        "question": { "type": "string", "minLength": 2, "pattern": "\\?$" },
+        "occurrence": {
+          "type": "object",
+          "required": ["id", "probe_run_id", "comparison_group_ids"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^occurrence-[a-z0-9-]+$" },
+            "probe_run_id": { "type": "string", "pattern": "^run-[a-z0-9-]+$" },
+            "comparison_group_ids": {
+              "type": "array",
+              "maxItems": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "retention": {
+          "type": "object",
+          "required": ["classification", "portable_package"],
+          "properties": {
+            "classification": { "const": "local-authoring" },
+            "portable_package": { "const": "excluded" }
+          },
+          "additionalProperties": false
+        },
+        "package_draft_digest_before": { "$ref": "#/$defs/digest" },
+        "workspace_revision_before": { "$ref": "#/$defs/digest" },
+        "recorded_at": { "type": "string", "format": "date-time" },
+        "disposition": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/disposition" }
+          ]
+        },
+        "proposal_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "disposition": {
+      "type": "object",
+      "required": ["outcome", "by", "meaning", "rationale", "decided_at"],
+      "properties": {
+        "outcome": { "enum": ["accept", "decline", "delegate", "defer", "retain-ambient"] },
+        "by": { "const": "author" },
+        "meaning": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "rationale": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "decided_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": { "enum": ["accept", "delegate", "retain-ambient"] }
+            },
+            "required": ["outcome"]
+          },
+          "then": {
+            "properties": {
+              "meaning": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

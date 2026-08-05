@@ -5,6 +5,55 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.3.1 — 2026-08-04
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.3` |
+| Exact protocol release / `@seedspec/protocol` | `0.3.1` |
+| Conformance suite | `0.3.1` |
+| `@seedspec/runtime` | `0.3.1` |
+| `@seedspec/cli` | `0.3.1` |
+
+SeedSpec 0.3.1 keeps the Protocol 0.3 package vocabulary and establishes the
+basic agent-guided authoring baseline before local web authoring begins.
+
+### Agent-guided authoring
+
+- Add default, deep, and minimal shaping modes. Default shaping starts with a
+  kind-aware lens and asks whether the author wants recommended defaults or
+  deeper discovery.
+- Add version-matched requirements and composition guidance without turning
+  generic checklists into package requirements.
+- Add opaque clarification candidates for consequential product ambiguity,
+  explicit author dispositions, and proposal-bound application of accepted
+  meaning.
+- Add frozen clarification probes with content-addressed preparation,
+  pre-execution verification, retained evidence, and failure quarantine.
+- Serialize authoring mutations with revision checks and a workspace lock.
+  Return compact receipts while complete records remain on disk.
+- Preserve declared context modules as fixed authoring inputs. Prevent accepted
+  meaning from leaking into those modules during ordinary package revision.
+- Add a frozen authoring-evaluation run contract. Exercise it with one Codex
+  run and one Claude run as limited evidence, not a causal model comparison.
+
+### CLI and runtime
+
+- Add a read-only package shell with deterministic lexical search across
+  declared package material and exact release documentation.
+- Reject non-global resource addresses after DNS resolution and reject unsafe
+  regular-expression patterns in untrusted schemas.
+- Add correctness-focused lint and JavaScript type gates to the release check.
+- Deduplicate runtime primitives and extract the generated agent guide without
+  changing its resolved output.
+
+### Exact-release relationship
+
+- Keep source packages on protocol family `0.3` without source rewriting.
+- Require validation and regenerated handoffs when moving from exact release
+  `0.3.0` to `0.3.1` because release-bound documents, schemas, conformance
+  metadata, and receipts have new identities.
+
 ## 0.3.0 — 2026-08-02
 
 | Surface | Version |

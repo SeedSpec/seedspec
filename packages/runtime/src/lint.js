@@ -126,6 +126,40 @@ async function successMaterialDiagnostics(record) {
   return [];
 }
 
+function starterMaterialDiagnostics(record) {
+  const diagnostics = [];
+  if (record.definition.includes(
+    "Describe what should exist or change, who it is for, and why it matters."
+  )) {
+    diagnostics.push(diagnostic(
+      "STARTER_INTENT_PLACEHOLDER",
+      "review",
+      "definition",
+      "The primary intent still contains starter scaffold text.",
+      "Replace the scaffold with the product direction the author supplied and confirmed."
+    ));
+  }
+  if (record.manifest.description === `Describe the ${record.manifest.kind}'s intended outcome.`) {
+    diagnostics.push(diagnostic(
+      "STARTER_DESCRIPTION_PLACEHOLDER",
+      "review",
+      "description",
+      "The package description still contains starter placeholder text.",
+      "Replace the placeholder with a concise description of the confirmed product direction."
+    ));
+  }
+  if (record.manifest.id === "org.example.seedspec" && record.manifest.name === "Seedspec") {
+    diagnostics.push(diagnostic(
+      "STARTER_IDENTITY_PLACEHOLDER",
+      "review",
+      "id",
+      "The package still uses the generic starter identity.",
+      "Replace the starter name and package ID with an identity derived from the confirmed product direction."
+    ));
+  }
+  return diagnostics;
+}
+
 /**
  * A declared capability is a promise to whoever composes this package. A
  * promise with no way to observe it is hope: the composing agent inherits the
@@ -158,6 +192,7 @@ async function capabilityAcceptanceDiagnostics(record) {
 export async function lintPackage(inputPath) {
   const record = await validatePackage(inputPath);
   const diagnostics = [
+    ...starterMaterialDiagnostics(record),
     ...await successMaterialDiagnostics(record),
     ...await capabilityAcceptanceDiagnostics(record),
     ...implementationDetailDiagnostics(record.manifest.kind, record.definition),

@@ -25,7 +25,7 @@ test("search corpus contains declared package material and exact release documen
   });
 
   assert.equal(corpus.package.digest, record.digest);
-  assert.equal(corpus.protocol.release, "0.3.0");
+  assert.equal(corpus.protocol.release, "0.3.1");
   assert.equal(corpus.protocol.documents.length, 4);
   assert(corpus.sources.some((source) => source.path === "intent/allowance-tracker.md"));
   assert(corpus.sources.some((source) => source.path === "acceptance/criteria.md"));

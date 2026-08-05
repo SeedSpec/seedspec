@@ -32,6 +32,8 @@ export async function preparePackage(inputPath, {
   const phase = publishCheck.ready
     ? "ready-to-pack"
     : review.current?.outcome === "needs-author"
+      || review.candidates.open > 0
+      || review.candidates.accepted_unapplied > 0
       || review.proposals.proposed > 0
       || review.proposals.accepted > 0
       ? "author-resolution"
@@ -41,6 +43,8 @@ export async function preparePackage(inputPath, {
     baseline: "completed",
     "guided-review": review.complete ? "completed" : review.current ? "available" : "optional",
     "author-resolution": review.questions.open > 0
+      || review.candidates.open > 0
+      || review.candidates.accepted_unapplied > 0
       || review.proposals.proposed > 0
       || review.proposals.accepted > 0
       ? "available"
@@ -68,12 +72,12 @@ export async function preparePackage(inputPath, {
       {
         id: "guided-review",
         status: phaseStatuses["guided-review"],
-        purpose: "Optionally work through four source-bound conversations; good enough is a valid outcome."
+        purpose: "Work through four kind-aware authoring conversations; good enough is a valid outcome."
       },
       {
         id: "author-resolution",
         status: phaseStatuses["author-resolution"],
-        purpose: "Resolve optional session questions and decide or apply document proposals without turning them into protocol obligations."
+        purpose: "Resolve optional session questions and clarification candidates, then decide or apply document proposals without turning model inference into package intent."
       },
       {
         id: "publish-check",

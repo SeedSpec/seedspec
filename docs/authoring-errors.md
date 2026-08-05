@@ -80,8 +80,10 @@ my-solution/
 └── authoring/    workspace state that does not
 ```
 
-The conventional default is `<parent>/authoring` when the package directory is
-named `seedspec`, and `<package>.seedspec-authoring` otherwise.
+The conventional layout is always `<project>/seedspec` with
+`<project>/authoring`. A non-conventional package path uses
+`<package>.seedspec-authoring` only when the caller does not select a state
+directory.
 
 ### `AUTHORING_WORKSPACE_MISMATCH`
 
@@ -112,7 +114,7 @@ You should rarely see this. Use the recording commands rather than editing the
 file directly:
 
 ```bash
-echo '{"summary":"...","disposition":"improved"}' \
+echo '{"expected_revision":"<workspace-revision>","summary":"...","disposition":"improved"}' \
   | npx @seedspec/cli author reviewed --json -
 ```
 
@@ -128,7 +130,14 @@ your change still applies, and send it with the current revision.
 npx @seedspec/cli author status --json   # .workspace.revision
 ```
 
-Locally, omitting the revision skips the check.
+CLI mutations require the revision. They also use a workspace lock so the
+revision check and write cannot race another local process.
+
+### `AUTHORING_WORKSPACE_BUSY`
+
+Another local mutation owns the authoring workspace lock. Do not run mutation
+commands concurrently. Wait for the active command to finish, read the current
+revision, and then decide whether the pending change still applies.
 
 ### `AUTHORING_PASS_ACTIVE`
 
@@ -137,7 +146,7 @@ You asked for one thread while another is still open.
 Close the current one, or let the engine pick:
 
 ```bash
-echo '{"summary":"...","disposition":"good-enough"}' \
+echo '{"expected_revision":"<workspace-revision>","summary":"...","disposition":"good-enough"}' \
   | npx @seedspec/cli author reviewed --json -
 npx @seedspec/cli author review          # no --area
 ```
@@ -169,7 +178,7 @@ for you.
 ### `INVALID_AUTHORING_AREA` / `INVALID_AUTHORING_TARGET`
 
 An unrecognized thread or coaching depth. Areas: `seed`, `coherence`,
-`success`, `supporting-material`. Depths: `capture`, `shape` (default),
+`success`, `supporting-material`. Depths: `minimal`, `shape` (default), `deep`,
 `harden`, `compose`, `package` — see `author guidance --topic depth`.
 
 ### `INVALID_AUTHORING_STATE`
@@ -196,12 +205,14 @@ The path given does not exist.
 | `AUTHORING_SOURCE_EXISTS` | A source with that id is already attached. Choose another id or leave it out and let one be assigned. |
 | `AUTHORING_CHANGE_EMPTY` | The replacement content is byte-identical to the current document. Do not create a proposal. |
 | `INVALID_AUTHORING_DOCUMENT_PATH` | The path escapes the package, names a non-file, or has no existing package parent directory. Use a portable package-relative text path. |
+| `AUTHORING_CONTEXT_MODULE_READ_ONLY` | The path is inside a declared non-primary context module. Maintain the module through its native workflow, then resume authoring against the updated package. |
 | `AUTHORING_DOCUMENT_NOT_TEXT` | The target is not valid UTF-8 text. The first authoring change operation does not edit binary files. |
 | `UNKNOWN_AUTHORING_CHANGE_PROPOSAL` | The proposal id is not in `change-proposals.yaml`. Run `author changes`. |
 | `AUTHORING_CHANGE_ALREADY_DECIDED` | The requested transition is terminal. A rejected or applied proposal cannot change again; an accepted proposal can only be rejected or applied. |
 | `AUTHORING_CHANGE_STALE` | Package or target-document bytes changed after proposal. Reject the old proposal, then inspect current content and create a fresh proposal. |
 | `AUTHORING_CHANGE_PENDING` | A thread has a proposed or accepted change. Reject it or accept and apply it before closing the thread. |
 | `AUTHORING_CHANGE_NOT_ACCEPTED` | The proposal is proposed, rejected, or already applied. Only an accepted proposal can be applied. |
+| `AUTHORING_CANDIDATE_STALE` | The package changed before an open candidate was decided, or no unchanged applied document still anchors accepted meaning for reuse. Re-establish the current meaning before using that candidate. |
 | `AUTHORING_STATE_FILE_MISSING` | An expected workspace file is absent. `author create` restores the scaffolding without touching existing records. |
 | `AUTHORING_STATE_NOT_READABLE` | A workspace file exists but could not be read — usually permissions. |
 | `INVALID_PACKAGE_PATH` | The path is not a SeedSpec package directory or `seedspec.yaml`. |

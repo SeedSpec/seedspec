@@ -110,7 +110,7 @@ An organization packages recurring solution knowledge that would otherwise
 live in shared documents, tickets, example repositories, and a few employees'
 memories. Internal authors can preserve company terminology, security and data
 rules, approved integration patterns, configuration choices, domain skills,
-examples, and verification practices without forcing every team onto one
+examples, and evidence practices without forcing every team onto one
 framework.
 
 For example, an enterprise may maintain one approved customer-support widget

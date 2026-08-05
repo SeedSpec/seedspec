@@ -100,7 +100,7 @@ A failed resolve never publishes a partially updated handoff.
 - the same exact release, package bytes, and resolution inputs produce
   byte-identical protocol-owned output;
 - re-resolution replaces protocol-owned derived output as one commit;
-- implementation notes and verification evidence are preserved;
+- implementation notes and recorded evidence are preserved;
 - verification state becomes stale when its bound completion scope changes;
   and
 - material copied from removed additions or declarations is removed from the
@@ -266,7 +266,7 @@ but suite execution is outside the core protocol operation.
 ## Reference-tool commands
 
 The reference CLI also exposes commands such as `begin`, `inspect`, `lint`,
-`audit`, `conformance`, `doctor`, `completion`, and `verify-lock`. They compose
+`review`, `conformance`, `doctor`, `completion`, and `verify-lock`. They compose
 or explain protocol behavior but are not additional normative operations.
 
 In particular:
@@ -274,4 +274,4 @@ In particular:
 - `conformance` evaluates the release's portable behavioral suite;
 - `doctor` checks whether one installed toolchain is internally coherent;
 - `begin` presents the safe pre-resolution handoff; and
-- `lint` and `audit` produce quality guidance distinct from package validity.
+- `lint` and `review` produce quality guidance distinct from package validity.

@@ -1,162 +1,162 @@
 {
   "manifest_version": "1",
   "protocol_family": "0.3",
-  "release_id": "0.3.0",
+  "release_id": "0.3.1",
   "status": "experimental",
   "schema_package": {
     "name": "@seedspec/protocol",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "schemas": [
     {
       "path": "packages/protocol/schemas/v0.3/application.schema.json",
-      "digest": "sha256:0b9c64704464334f65f55812e4b40e8a071888060d8b02ab54a23a00670333c1"
+      "digest": "sha256:f135079f77c2169c51d105bcea87a9ed4ee7dd36f3f2cb55bf81d6924945970d"
     },
     {
       "path": "packages/protocol/schemas/v0.3/applied-intent-input.schema.json",
-      "digest": "sha256:6db75d3333e16b64f5775a0c0dec06ebcdaf075a64efdbca5c2573d92dfc7714"
+      "digest": "sha256:4efe1f1636bee181deba46437ca33b1e9c6977fa8e50590d966966f22d483ca3"
     },
     {
       "path": "packages/protocol/schemas/v0.3/artifact-index.schema.json",
-      "digest": "sha256:d82952e8aa14e2a610e62d82c0b9d62a49acc10c2e934fafd93c8796ca64808e"
+      "digest": "sha256:a5d54db0d6ac97a46f79e63992e13760df3a8d49bd1e801d9aef2610065479ff"
     },
     {
       "path": "packages/protocol/schemas/v0.3/artifact-selections.schema.json",
-      "digest": "sha256:7fe82e5eabaea62f03298a616c0e45d2c5000e8533ff7e9bd4ca9ac5cca9ebce"
+      "digest": "sha256:4658e56a3ad97fd07d49b2bb0b969446d2e1e45430b0ade7475afd3ee34762f5"
     },
     {
       "path": "packages/protocol/schemas/v0.3/capability-conformance-result.schema.json",
-      "digest": "sha256:0118a55db7a76e4f364ebcb6003367f0a80d364bbd2623a874b167acafed331b"
+      "digest": "sha256:6bcbcdc94324e5bbe08c3f9ac485664f34d6467da7caeb248738b8b94e7c378b"
     },
     {
       "path": "packages/protocol/schemas/v0.3/capability-conformance-suite.schema.json",
-      "digest": "sha256:7fff15b0cc31eeb3be7630c92e10fbd65e05e8ff5c2e1428c42aee2f6db4f85c"
+      "digest": "sha256:9b472e5cc4dcd82be5e9ef00a53da93efa8b6b75a94c31bf2cca55847a260527"
     },
     {
       "path": "packages/protocol/schemas/v0.3/capability-scenarios.schema.json",
-      "digest": "sha256:4228e8c1df6a47e90d297e18b95a0d5be10fde60e94119e03baa3bb0f4230114"
+      "digest": "sha256:7fb1a4bf5b7daeaeb33b0f7e0e7a64aa45adb0ef553610ddbd2af10d2fe90e47"
     },
     {
       "path": "packages/protocol/schemas/v0.3/completion-scope-input.schema.json",
-      "digest": "sha256:a24822a1e584cf410bc400db0426dd7e3db16bc374309da2ddb1b5b08123f84d"
+      "digest": "sha256:cc6eb926981c4c11bd645d973a88b8ec3fa1db1987217868ed67edc8d0ea9a2a"
     },
     {
       "path": "packages/protocol/schemas/v0.3/completion-scope.schema.json",
-      "digest": "sha256:47708b5e95da243ae6143216a0b211178f4318a80c3758b818d020e8ce805914"
+      "digest": "sha256:660488cd7489aa93516df4d717cacb11a621ef31ecfd793536b2c48a4a273d6e"
     },
     {
       "path": "packages/protocol/schemas/v0.3/component-index.schema.json",
-      "digest": "sha256:86ffd92c998313a3c1eb12ba1e21120258c750d5fe6af121e104084f3307c684"
+      "digest": "sha256:f9626606ecab0cc9ba52e1a50620ea3a3b15028745555e53caac428f9da5a83d"
     },
     {
       "path": "packages/protocol/schemas/v0.3/component.schema.json",
-      "digest": "sha256:dbf22ecc8c6898794e3f53473547e049ff1866aa9ce9392bc619e27f6a5e6198"
+      "digest": "sha256:c5491bbf26f4471d7a691564f3348f5f22dc38804221247fd67d834890507100"
     },
     {
       "path": "packages/protocol/schemas/v0.3/configuration-selections.schema.json",
-      "digest": "sha256:eb0ab9cd45a4341b509cef57078aae45a08ea731b10fedeba741491423f66ee0"
+      "digest": "sha256:d6cb6fddf135ed0b1aedf1a9f740a3877ec346d343da09fd0cd7b69f46835278"
     },
     {
       "path": "packages/protocol/schemas/v0.3/conformance-report.schema.json",
-      "digest": "sha256:f48adaad50713adb7f0af82d8fd9c4cc7c58aecfc1967720e1c43e857b7fd457"
+      "digest": "sha256:25b2746ceccb04e39315e767cdf95ba546330ea81028de7872fd0fac08a3acf7"
     },
     {
       "path": "packages/protocol/schemas/v0.3/conformance.schema.json",
-      "digest": "sha256:65f0282ef4a47336f5bef4669b30563bc6417e01ce9fc7953b43895616022b8d"
+      "digest": "sha256:f49a0079dfe0068b60bc6c2081f76248808b6d4d39e7dd383611d0e6db51cb47"
     },
     {
       "path": "packages/protocol/schemas/v0.3/context-bundle.schema.json",
-      "digest": "sha256:f4f599d537403b03bb0afa1cd4a896ab61cd6c2012c89838a31d7ea2720ed961"
+      "digest": "sha256:a63d8b2570fc33f86cd262af525d7a1141c5fcf71264e3e9701647a94d013f18"
     },
     {
       "path": "packages/protocol/schemas/v0.3/context-index.schema.json",
-      "digest": "sha256:693c80bc04a3162f2bc9e00312512cdedcaa7cfe5b5c864415fd22854790d0e3"
+      "digest": "sha256:1c3bada1d0fd9439b4d2f0f6de10b341b3a035507f34b68c6292f44721129422"
     },
     {
       "path": "packages/protocol/schemas/v0.3/context-preparation-receipt.schema.json",
-      "digest": "sha256:a2c01a300f2428be1796c2bccfa241088cb4420c42075c460ff774f94d6966e8"
+      "digest": "sha256:55994054efcf66818d1e6a6b053c680aa6122f2f436ebd6f7eb0169d543401bf"
     },
     {
       "path": "packages/protocol/schemas/v0.3/context-request.schema.json",
-      "digest": "sha256:c5823c61a99506a40d9c9e31a87cf7f8db281935be2a80bc47adf4cc5e51228e"
+      "digest": "sha256:a21184d1cb1b5dcaa34ceb1b59606d217e2f983c442d383737cdf7096a609056"
     },
     {
       "path": "packages/protocol/schemas/v0.3/context-use-receipt.schema.json",
-      "digest": "sha256:f9bc72ea8a5efedbd072de3a4a0fc91097c429c6db81fc9d25fa9d6915a604f6"
+      "digest": "sha256:cd8527314dad8e5f504f46bf5b6de2833b10d597f4fac7f2703e6ad444f36f7e"
     },
     {
       "path": "packages/protocol/schemas/v0.3/feature.schema.json",
-      "digest": "sha256:522e33ef58ca063e9867333108120749a7b832ebfce77b675e3d51afd6ccc2dc"
+      "digest": "sha256:5408077f3fa40bd2a4ec2c11b263e64c755065e457187310ca5e88722ccba20d"
     },
     {
       "path": "packages/protocol/schemas/v0.3/implementation-profile-state.schema.json",
-      "digest": "sha256:2bd3d203ca8be98bda6c1ea5ab68090e208485384721f9fca89e2c0c33f8d774"
+      "digest": "sha256:c874f9ffd4744c459475a60cc5a5fcd3ea6e1ab267b7109024cff2951362bf2e"
     },
     {
       "path": "packages/protocol/schemas/v0.3/implementation-resource-index.schema.json",
-      "digest": "sha256:5196f254e64dfd0637cc670708ea4c3db3b8ea503769259732532f48c3bc1f4e"
+      "digest": "sha256:4826d66dea5464c28fb268ec81335d9dcb95dd8853cc22d244ef1acbbacc0882"
     },
     {
       "path": "packages/protocol/schemas/v0.3/implementation-resource-manifest.schema.json",
-      "digest": "sha256:ef3bf9870e780f5abb4d4add536a9b52d251364525695fe900279c8a52e6df49"
+      "digest": "sha256:f0d4610fee1d12067747f940e5ebb8eef415d04f2866b44ad8d5c60c1ee922df"
     },
     {
       "path": "packages/protocol/schemas/v0.3/implementation-resource-state.schema.json",
-      "digest": "sha256:edf39ff824e1b46caa3054b6f1af777f7f6ad8555122705551406d65f1570bec"
+      "digest": "sha256:c3682fcd96ee78307d96b9e3048521928981764645a12f427821078b947e7b93"
     },
     {
       "path": "packages/protocol/schemas/v0.3/integration-descriptor.schema.json",
-      "digest": "sha256:7cb10e1839f5a0cf74a83304f42a309682f3ae24da5e1c6c6f6c7de0eabf8984"
+      "digest": "sha256:1f5e8aac98d67c061de6449e11d968a5870048143bab2f282f04d1fedacd5883"
     },
     {
       "path": "packages/protocol/schemas/v0.3/lock.schema.json",
-      "digest": "sha256:6de0557006f9cb36ed62df3e49cf5a37aead58dd4b9f86c1b042b8c38e5a1fb0"
+      "digest": "sha256:ba72a7eeef5bb3934bd8ddd7caed5c0c2806f8e6ebe44afd4009fb03403398be"
     },
     {
       "path": "packages/protocol/schemas/v0.3/project.schema.json",
-      "digest": "sha256:f9bbc04d7fec12a71da9d13b4610b7e56c49638e70955c133c4b47fabca44c67"
+      "digest": "sha256:eb7c83a0acba79485b866704d9e3643edbf2dad596f6df20cb0c6d827fa36e79"
     },
     {
       "path": "packages/protocol/schemas/v0.3/protocol-release.schema.json",
-      "digest": "sha256:bd4c67dfe61f2b367b279a1db951a770664f83ef3ef996d06b7f7367b62797f9"
+      "digest": "sha256:ffd73e99548a907264afff6d76abcf006a012a592e56e3b28c9a6e372da00356"
     },
     {
       "path": "packages/protocol/schemas/v0.3/resolution-receipt.schema.json",
-      "digest": "sha256:4b9eed4b3beb74332a3bfb047187303e54751ec847d6092b56ad28b27a87bf43"
+      "digest": "sha256:7cc2e304ffec7c07e3251340ad095793a7410f0939fb569cf25093a823aa5f98"
     },
     {
       "path": "packages/protocol/schemas/v0.3/resolved-config.schema.json",
-      "digest": "sha256:127a6196bc05f86d8dece23d66d848699234a1ef1ccf2256d9226b12631e9ecd"
+      "digest": "sha256:5c377e0380d632c3b1b1fe39e2604551453dbd399ee071c5d3c603db7d6fe64c"
     },
     {
       "path": "packages/protocol/schemas/v0.3/resolved-intent.schema.json",
-      "digest": "sha256:1c9208b62bed2f01a1145df9634fd34a67b7341ba43cae4a1e8cfc08d2eabdd0"
+      "digest": "sha256:35a79168ed11531422bbebff01e58c04264e9849ae7b6af1f59dbbad425153b5"
     },
     {
       "path": "packages/protocol/schemas/v0.3/seedspec.schema.json",
-      "digest": "sha256:2b2743e6bc3da4c77c033eb9c199c3547380d41d3e3ab3a2b1af1ec78522dd6b"
+      "digest": "sha256:8c3f22b0cf146ae33b4c57223904f244796f6ec8be470c002d4700a81fba0831"
     },
     {
       "path": "packages/protocol/schemas/v0.3/task-index.schema.json",
-      "digest": "sha256:cf57a2808933940cdd82fb08acce3759787185fade7e2b503c9085dc2f45ad0e"
+      "digest": "sha256:8181cc0e3f018b23ef99b4a83b83458c3a82d831f904a1bf9dba6cf8c690f210"
     },
     {
       "path": "packages/protocol/schemas/v0.3/task-runbook.schema.json",
-      "digest": "sha256:b23ffd3064aeb7459208525739b84862f09a1993fdb28105df6963b1615c3794"
+      "digest": "sha256:bb9f38263b16d8dfac2e6778dd7fa0f2609a78b934a160f936f19da543b58991"
     },
     {
       "path": "packages/protocol/schemas/v0.3/technical-preferences.schema.json",
-      "digest": "sha256:cb92d2b28e457db52f6a3875f1a167632e63efed1168031a4e7712723904394b"
+      "digest": "sha256:0e30a78e0e4cc9d425ca0689db84072498185ace50fbda7a31b8fcfccb6e5faa"
     },
     {
       "path": "packages/protocol/schemas/v0.3/verification-state.schema.json",
-      "digest": "sha256:7dfc4e7c71603abcf2fb3a6079cb1a18372bca70e0a8fb2c592506bbf589e5ed"
+      "digest": "sha256:fa46bb70a5f86448580e4fa9ebe203b9a6cf76e1caf3683e18e0f0e79d86720f"
     }
   ],
   "documents": [
     {
       "path": "documents/01-language.md",
-      "digest": "sha256:a765d466c7a6465c309200d051e467fa8fe35a33faac485c204d0d6ded712273"
+      "digest": "sha256:dc22b35db342640710252b7da6b02b2bfe30b4ab4bd824e85f87a77b9461b8c5"
     },
     {
       "path": "documents/protocol.md",
@@ -164,11 +164,11 @@
     },
     {
       "path": "documents/operations.md",
-      "digest": "sha256:c9bba1821860a3dc9237ee9557a2f18ff3ece733f6d2f5a008af5cc1d6173582"
+      "digest": "sha256:9fce1c3cfcb5cfe364433457dbaef9e9581d3e6bb124452097a75bc5f5a0950e"
     },
     {
       "path": "documents/migrations.md",
-      "digest": "sha256:ebeafd1f42f84649e91b5e913e751e773ec08742978bf6eee8bad9b29f10b313"
+      "digest": "sha256:9a06edca610235d6f37f266e351c4620f338a00b66e87c146e829b98eaa6a617"
     }
   ],
   "operations": [
@@ -183,26 +183,31 @@
     "capability-conformance"
   ],
   "conformance": {
-    "suite_version": "0.3.0",
+    "suite_version": "0.3.1",
     "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
-    "index_digest": "sha256:3bc846ee4d6878ee2220e1392d4fe979f7db92624ef7cad61270fcf5626953f8",
-    "bundle_digest": "sha256:344043bd3bf33fe015d35be4bc09536925e6ba106124c0d719e8ce27d0a62cd3"
+    "index_digest": "sha256:f2f4de68fe7d9384959542e214cd0b488cc3ea7df584efeca978e3b86e6ef738",
+    "bundle_digest": "sha256:b03e2d1b23ce8c028677bab67669bf7fda599ecd6beee10fa1345a1c46ccb555"
   },
   "implementations": {
     "runtime": {
       "name": "@seedspec/runtime",
-      "version": "0.3.0"
+      "version": "0.3.1"
     },
     "cli": {
       "name": "@seedspec/cli",
-      "version": "0.3.0"
+      "version": "0.3.1"
     }
   },
   "source": {
     "repository": "https://github.com/SeedSpec/seedspec"
   },
   "compatibility": [
+    {
+      "from_release": "0.3.0",
+      "status": "revalidate",
+      "notes": "Protocol 0.3 package source requires no rewrite. Revalidate packages and regenerate resolved handoffs under exact release 0.3.1."
+    },
     {
       "from_release": "0.2.3",
       "status": "unsupported",

@@ -51,7 +51,7 @@ runbooks can help an agent realize the intent. They remain subordinate guidance:
 discovering or selecting them does not make them product intent, grant execution
 authority, or prove that their advice was followed.
 
-### Evidence: what has actually been observed or verified
+### Evidence: what has actually been observed
 
 Package evidence, baseline evidence, realization evidence, and outcome evidence
 have different subjects. SeedSpec keeps those subjects explicit so evidence for
