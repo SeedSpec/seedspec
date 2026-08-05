@@ -124,6 +124,40 @@ One Skill can serve both roles, but separate modules usually narrow discovery.
 A bridge cannot redefine the target format. It cannot add requirements, grant
 authority, or authorize scripts and tools.
 
+## Import task Skills
+
+A standalone task Skill can publish optional CLI import configuration in its
+root `seedspec.yaml`:
+
+```yaml
+skill:
+  entrypoint: SKILL.md
+  include:
+    - LICENSE
+    - SKILL.md
+    - agents/
+    - references/
+  defaults:
+    applies_to:
+      purposes: [implement]
+      audiences: [implementing-agent]
+```
+
+Run a dry import plan:
+
+```text
+seedspec context add <package> --skill <path-or-github-url>
+```
+
+Add `--write` to copy the declared files and write the context-module
+declaration. Repeated `--purpose` and `--audience` options override the matching
+repository defaults. If the source has no configuration, the CLI infers
+`SKILL.md` and existing standard Skill directories. It leaves applicability
+unrestricted.
+
+The consuming package records the resolved declaration. Later context
+preparation does not consult the Skill repository.
+
 ## Applicability
 
 Modules and bindings can constrain four dimensions:

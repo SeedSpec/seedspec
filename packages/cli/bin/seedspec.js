@@ -17,6 +17,7 @@ import {
   auditPackage,
   applyDocumentChange,
   applyIntegrationBridgePlan,
+  applySkillImportPlan,
   beginPackage,
   computeDirectoryDigest,
   createAuthoringWorkspace,
@@ -56,6 +57,7 @@ import {
   formatContextValidation,
   formatIntegrationBridgePlan,
   formatIntegrationDiscovery,
+  formatSkillImportPlan,
   formatProviderDiscovery,
   formatPackageAgentPrompt,
   formatInspection,
@@ -86,6 +88,7 @@ import {
   prepareContext,
   prepareClarificationProbe,
   planIntegrationBridges,
+  planSkillImport,
   publishCheckPackage,
   recordImplementationResourceUse,
   recordClarificationProbeRun,
@@ -175,6 +178,7 @@ Usage:
   seedspec context prepare <project-path> --request <yaml> --output <directory> [--integration <path>] [--json]
   seedspec context record-use <prepared-context-path> --input <json> [--output <json>] [--json]
   seedspec context author <package-path> --integration <path> [--write] [--state <directory>] [--json]
+  seedspec context add <package-path> --skill <path-or-github-url> [--purpose <purpose>] [--audience <audience>] [--write] [--json]
   seedspec resources <path> [--show <resource-id>] [--json]
   seedspec resolve-resources <project-path> [--json]
   seedspec record-resource-use <project-path> <package-id> <resource-id> <consulted|skipped> [--reason <text>] [--json]
@@ -1193,6 +1197,36 @@ async function run() {
         process.stdout.write(options.has("json")
           ? `${JSON.stringify(result ?? plan, null, 2)}\n`
           : `${formatIntegrationBridgePlan(plan)}${result ? `\nApplied package digest: ${result.digest}` : "\nDry run. Add --write to apply."}\n`);
+        break;
+      }
+      if (action === "add") {
+        rejectUnknownOptions(options, ["skill", "purpose", "audience", "write", "dry-run", "json"]);
+        if (options.has("write") && options.has("dry-run")) {
+          throw new Error("Choose either --write or --dry-run");
+        }
+        const packagePath = requirePositional(positional, 1, "package path");
+        const skillInput = oneOption(options, "skill");
+        if (!skillInput) throw new Error("Option --skill is required");
+        const result = await withPackageSource(
+          skillInput,
+          async ({ packagePath: skillPath }) => {
+            const plan = await planSkillImport(packagePath, skillPath, {
+              ...(options.has("purpose") ? { purposes: options.get("purpose") } : {}),
+              ...(options.has("audience") ? { audiences: options.get("audience") } : {})
+            });
+            const applied = options.has("write") ? await applySkillImportPlan(plan) : null;
+            return {
+              plan: {
+                ...plan,
+                source: { ...plan.source, path: skillInput }
+              },
+              applied
+            };
+          }
+        );
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result.applied ?? result.plan, null, 2)}\n`
+          : `${formatSkillImportPlan(result.plan)}${result.applied ? `\nApplied package digest: ${result.applied.digest}` : "\nDry run. Add --write to apply."}\n`);
         break;
       }
       throw new Error(`Unknown context action: ${action}`);

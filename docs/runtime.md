@@ -47,6 +47,7 @@ seedspec context adapters --integration <path> [--integration <path>] [--json]
 seedspec context discover <package-path> --integration <path> [--json]
 seedspec context validate <package-path> <module> --integration <path> [--adapter <id>] [--json]
 seedspec context author <package-path> --integration <path> [--write] [--state <directory>] [--json]
+seedspec context add <package-path> --skill <path-or-github-url> [--purpose <purpose>] [--audience <audience>] [--write] [--json]
 seedspec context prepare <project-path> --request <yaml> --output <directory> [--integration <path>] [--json]
 seedspec context record-use <prepared-context-path> --input <json> [--output <json>] [--json]
 seedspec discover-features <root-package-path> --catalog <path> [--catalog <path>] [--json]
@@ -249,9 +250,12 @@ to context modules. `context discover` reads integration metadata without
 loading code. `context adapters` lists adapters loaded from explicitly supplied
 integration sources. `context validate` invokes one registered validator.
 `context author` proposes bridge installation and requires `--write` to mutate a
-package. `context prepare` selects request-specific context and writes a bundle
-and receipt. `context record-use` binds reported consultation to that bundle.
-The core runtime bundles no external-format adapter.
+package. `context add` proposes a task-Skill import from a local path or public
+GitHub URL. It reads optional repository defaults and requires `--write` to copy
+files or change the package. `context prepare` selects request-specific context
+and writes a bundle and receipt. `context record-use` binds reported
+consultation to that bundle. The core runtime bundles no external-format
+adapter.
 
 `discover-features` recursively inspects local catalog directories and reports each valid feature as `candidate` or `review`. It may show capability, revision, compatibility-scope, and conflict declarations, but it never makes a compatibility verdict or selects a feature. Remote registry search and package acquisition remain separate catalog responsibilities.
 

@@ -68,6 +68,7 @@ seedspec conformance [cases.yaml] [--json] [--output <report.json>]
 seedspec context discover <package-path> --integration <path> [--json]
 seedspec context validate <package-path> <module> --integration <path> [--adapter <id>] [--json]
 seedspec context author <package-path> --integration <path> [--write] [--json]
+seedspec context add <package-path> --skill <path-or-github-url> [--purpose <purpose>] [--audience <audience>] [--write] [--json]
 seedspec context prepare <project-path> --request <yaml> --output <directory> [--integration <path>] [--json]
 seedspec context record-use <prepared-context-path> --input <json> [--output <json>] [--json]
 seedspec docs implementing
@@ -88,12 +89,16 @@ metadata. See `seedspec docs shell` for commands and boundaries.
 The `context` commands expose the Protocol 0.3 integration lifecycle.
 `discover` reads inert integration descriptors. `validate` loads an adapter
 only from an explicitly supplied integration. `author` proposes bridge Skills
-and changes package files only with `--write`. `prepare` creates a
-request-specific digest-bound bundle. `record-use` records consumer-reported
-consultation separately.
+and changes package files only with `--write`. `add` imports a task Skill from
+a local path or public GitHub URL. It reads optional defaults from the Skill
+repository's `seedspec.yaml`. Explicit `--purpose` and `--audience` values
+override matching repository defaults. `prepare` creates a request-specific
+digest-bound bundle. `record-use` records consumer-reported consultation
+separately.
 
-`begin` and the root package input to `resolve` also accept public GitHub
-repository URLs and GitHub `/tree/<ref>/<package-path>` URLs:
+`begin`, the root package input to `resolve`, and the `context add --skill`
+source accept public GitHub repository URLs and GitHub
+`/tree/<ref>/<package-path>` URLs:
 
 ```bash
 seedspec begin \

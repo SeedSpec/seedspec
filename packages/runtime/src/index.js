@@ -40,6 +40,11 @@ export {
   planIntegrationBridges
 } from "./integration-authoring.js";
 export {
+  applySkillImportPlan,
+  formatSkillImportPlan,
+  planSkillImport
+} from "./skill-import.js";
+export {
   formatContextValidation,
   validateContextModule
 } from "./context-validation.js";

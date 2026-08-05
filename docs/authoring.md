@@ -319,6 +319,13 @@ Use `seedspec context discover` to inspect compatible integrations. Use
 `seedspec context author` for a dry-run bridge plan. Add `--write` only after
 the plan matches the intended module IDs, paths, and bindings.
 
+Use `seedspec context add <package> --skill <path-or-github-url>` when the
+author selects a standalone task Skill. Review its dry-run files,
+applicability, destination, and digest. Add `--write` only after they match the
+author's selection. The command reads optional publisher defaults from the
+Skill repository's `seedspec.yaml`; explicit purpose and audience options
+override them.
+
 Prefer a bridge whose scope matches the target module and purpose. Do not use a
 bridge to add requirements absent from the native format. Preserve task Skills
 as independent modules when they perform domain work rather than explain how to
