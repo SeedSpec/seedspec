@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/authoring/v1/authoring-probe-result.schema.json",
+  "title": "SeedSpec clarification probe result",
+  "description": "One structured receiving-model interpretation from a frozen clarification probe. The result is authoring evidence, not package intent.",
+  "type": "object",
+  "required": [
+    "authoring_probe_result_version",
+    "outcome",
+    "interpretation",
+    "materially_different_interpretations",
+    "source_claims",
+    "inference",
+    "candidate",
+    "no_action"
+  ],
+  "properties": {
+    "authoring_probe_result_version": { "const": "1" },
+    "outcome": { "enum": ["candidate", "no-action"] },
+    "interpretation": { "type": "string", "minLength": 1 },
+    "materially_different_interpretations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "source_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["reference", "statement"],
+        "properties": {
+          "reference": { "type": "string", "minLength": 1 },
+          "statement": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "inference": { "type": "string", "minLength": 1 },
+    "candidate": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "issue",
+            "question",
+            "alternatives",
+            "assumed_default",
+            "materiality",
+            "affected",
+            "recommended_disposition"
+          ],
+          "properties": {
+            "kind": { "const": "clarification" },
+            "issue": { "type": "string", "minLength": 1 },
+            "question": { "type": "string", "minLength": 2, "pattern": "\\?$" },
+            "alternatives": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "assumed_default": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "null" }
+              ]
+            },
+            "materiality": { "enum": ["critical", "material"] },
+            "affected": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "outcome",
+                  "architecture",
+                  "configuration",
+                  "authority",
+                  "resources",
+                  "completion-scope",
+                  "verification",
+                  "cost",
+                  "operational-ownership",
+                  "feasibility"
+                ]
+              }
+            },
+            "recommended_disposition": { "enum": ["ask", "delegate", "retain-ambient"] }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "no_action": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["reason", "retained_latitude"],
+          "properties": {
+            "reason": { "type": "string", "minLength": 1 },
+            "retained_latitude": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "outcome": { "const": "candidate" } },
+        "required": ["outcome"]
+      },
+      "then": {
+        "properties": {
+          "candidate": { "type": "object" },
+          "no_action": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "outcome": { "const": "no-action" } },
+        "required": ["outcome"]
+      },
+      "then": {
+        "properties": {
+          "candidate": { "type": "null" },
+          "no_action": { "type": "object" }
+        }
+      }
+    }
+  ]
+}

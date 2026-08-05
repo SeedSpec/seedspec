@@ -20,7 +20,9 @@ import test from "node:test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   AUTHORING_AREAS,
+  AUTHORING_CANDIDATE_FORMAT,
   AUTHORING_CHANGE_PROPOSAL_FORMAT,
+  AUTHORING_PROBE_RUN_FORMAT,
   QUESTION_RESOLUTIONS,
   discoverProviders,
   readBundledResource,
@@ -50,6 +52,7 @@ import {
   computeFileDigest,
   createAuthorEvaluation,
   decideDocumentChange,
+  decideClarificationCandidate,
   discoverAuthoringWorkspace,
   formatAuthoringWorkspaceSnapshot,
   discoverFeatures,
@@ -72,11 +75,14 @@ import {
   packPackage,
   planIntegrationBridges,
   prepareContext,
+  prepareClarificationProbe,
   preparePackage,
   proposeDocumentChange,
   publishCheckPackage,
   readIntegrationDescriptor,
   recordImplementationResourceUse,
+  recordClarificationCandidate,
+  recordClarificationProbeRun,
   recordContextUse,
   resolveImplementationResources,
   resolveProject,
@@ -84,7 +90,10 @@ import {
   upgradePackage,
   validateContextModule,
   verifyProjectLock,
-  validatePackage
+  validatePackage,
+  verifyClarificationProbe,
+  authoringWorkspaceLockPath,
+  withAuthoringWorkspaceMutationLock
 } from "../src/index.js";
 import {
   compileConfigurationSchema,
@@ -98,12 +107,15 @@ const root = path.resolve(packageRoot, "../..");
 const allowance = path.join(root, "conformance/fixtures/comprehensive-application");
 const savings = path.join(root, "conformance/fixtures/portable-feature");
 const resourcesFixture = path.join(root, "conformance/fixtures/implementation-resources");
+const contextModulesFixture = path.join(root, "conformance/fixtures/context-modules");
 const contextIntegration = path.join(root, "conformance/integrations/example-context");
 const contextRequest = path.join(root, "conformance/fixtures/context-request-review.yaml");
 const contextUse = path.join(root, "conformance/fixtures/context-use-review.json");
 const streaks = path.join(root, "conformance/fixtures/revision-feature");
 const hubspotMetric = path.join(root, "conformance/fixtures/profiled-workflow");
 const fixtures = path.join(packageRoot, "test/fixtures");
+const ambiguousAuthoring = path.join(fixtures, "authoring-ambiguous-delivery");
+const delegatedAuthoring = path.join(fixtures, "authoring-delegated-delivery");
 
 async function temporaryDirectory(t) {
   const directory = await mkdtemp(path.join(tmpdir(), "seedspec-v02-"));
@@ -171,6 +183,8 @@ const realizationVerification = Object.freeze({
   timing: "completion",
   evidence: "required"
 });
+
+const publicAddressLookup = async () => [{ address: "203.0.113.10", family: 4 }];
 
 async function createImplementationResourcePackage(t, {
   includeCanonical = true,
@@ -302,6 +316,21 @@ async function createNestedCompositionPackage(t) {
   await initPackage("component", widgetPath);
   await initPackage("component", controlPath);
   await writeFile(
+    path.join(parentPath, "seed.md"),
+    "# Family hub\n\nProvide a family hub that supplies household events to a shared widget.\n",
+    "utf8"
+  );
+  await writeFile(
+    path.join(widgetPath, "seed.md"),
+    "# Shared widget\n\nPresent household events and delegate selection controls without owning the household record.\n",
+    "utf8"
+  );
+  await writeFile(
+    path.join(controlPath, "seed.md"),
+    "# Selection control\n\nPresent supplied selection options and emit a requested selection change.\n",
+    "utf8"
+  );
+  await writeFile(
     path.join(parentPath, "success.md"),
     "# Family hub success\n\nA household member can use the shared widget from the family hub.\n",
     "utf8"
@@ -317,6 +346,10 @@ async function createNestedCompositionPackage(t) {
     "utf8"
   );
 
+  const controlManifestPath = path.join(controlPath, "seedspec.yaml");
+  const controlManifest = parseYaml(await readFile(controlManifestPath, "utf8"));
+  controlManifest.description = "A control for choosing from supplied selection options.";
+  await writeFile(controlManifestPath, stringifyYaml(controlManifest), "utf8");
   const control = await validatePackage(controlPath);
   await mkdir(path.join(widgetPath, "integrations"), { recursive: true });
   await writeFile(
@@ -326,6 +359,7 @@ async function createNestedCompositionPackage(t) {
   );
   const widgetManifestPath = path.join(widgetPath, "seedspec.yaml");
   const widgetManifest = parseYaml(await readFile(widgetManifestPath, "utf8"));
+  widgetManifest.description = "A shared widget for presenting household events.";
   widgetManifest.components.integration = "integrations/";
   widgetManifest.composition = {
     includes: [{
@@ -348,6 +382,7 @@ async function createNestedCompositionPackage(t) {
   );
   const parentManifestPath = path.join(parentPath, "seedspec.yaml");
   const parentManifest = parseYaml(await readFile(parentManifestPath, "utf8"));
+  parentManifest.description = "A family hub that presents household events through a shared widget.";
   parentManifest.components.integration = "integrations/";
   parentManifest.composition = {
     includes: [{
@@ -413,6 +448,38 @@ test("kind is a tooling hint rather than a composition gate", async (t) => {
   assert.equal(featureAsRoot.lock.root.kind, "feature");
   assert.equal(workflow.manifest.kind, "workflow");
   assert.equal(customKind.manifest.kind, "com.example.kind.agent");
+});
+
+test("configuration schemas with explosive regex patterns are rejected deterministically", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "explosive-pattern");
+  await cp(allowance, packagePath, { recursive: true });
+  const schemaPath = path.join(packagePath, "configuration", "schema.json");
+  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+  schema.properties.pattern_probe = { type: "string", pattern: "^(a+)+$" };
+  await writeFile(schemaPath, JSON.stringify(schema, null, 2), "utf8");
+
+  await assert.rejects(
+    validatePackage(packagePath),
+    (error) => error.code === "INVALID_CONFIGURATION_SCHEMA"
+      && error.details.some((detail) => /unanchored repetition/u.test(detail))
+  );
+});
+
+test("common anchored repetition patterns in configuration schemas remain valid", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "anchored-pattern");
+  await cp(allowance, packagePath, { recursive: true });
+  const schemaPath = path.join(packagePath, "configuration", "schema.json");
+  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+  schema.properties.pattern_probe = {
+    type: "string",
+    pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+  };
+  await writeFile(schemaPath, JSON.stringify(schema, null, 2), "utf8");
+
+  const validated = await validatePackage(packagePath);
+  assert.equal(validated.manifest.id, "org.seedspec.fixtures.comprehensive-application");
 });
 
 test("bundled composition resolves recursively and preserves every integration seam", async (t) => {
@@ -560,13 +627,15 @@ test("a sparse seed does not acquire invented domain gaps and separate success i
     "# Success\n\nA visitor can browse available ice cream, place an order, and see a confirmation.\n",
     "utf8"
   );
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.description = "A friendly website for browsing ice cream and placing an order.";
+  await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
 
   const lint = await lintPackage(packagePath);
   assert.deepEqual(lint.diagnostics, []);
   assert.doesNotMatch(JSON.stringify(lint), /tax|refund|identity|retry|hosting|accessibility/iu);
 
-  const manifestPath = path.join(packagePath, "seedspec.yaml");
-  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
   delete manifest.components;
   await writeFile(manifestPath, stringifyYaml(manifest), "utf8");
   const withoutSuccess = await lintPackage(packagePath);
@@ -579,6 +648,74 @@ test("a sparse seed does not acquire invented domain gaps and separate success i
   });
   assert.equal(publish.ready, false);
   assert.equal(publish.checks.find(({ id }) => id === "success-material").status, "failed");
+});
+
+test("starter intent and description remain visible until the author replaces them", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "seedspec");
+  const stateDirectory = path.join(output, "authoring");
+  await initPackage("workflow", packagePath);
+
+  const lint = await lintPackage(packagePath);
+  assert.ok(lint.diagnostics.some(({ code }) => code === "STARTER_INTENT_PLACEHOLDER"));
+  assert.ok(lint.diagnostics.some(({ code }) => code === "STARTER_DESCRIPTION_PLACEHOLDER"));
+  assert.ok(lint.diagnostics.some(({ code }) => code === "STARTER_IDENTITY_PLACEHOLDER"));
+  const audit = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0-test"
+  });
+  assert.match(audit.current.instructions, /unfilled starter scaffold/u);
+  assert.match(audit.current.instructions, /author's current conversation as the supplied seed/u);
+  assert.match(audit.current.instructions, /descriptive name, package ID, and concise description/u);
+  assert.match(audit.current.instructions, /Copy question, candidate, and proposal IDs exactly/u);
+  assert.match(
+    audit.current.instructions,
+    /author's current messages, current package, and active workspace/u
+  );
+  assert.match(audit.current.instructions, /Never ask the author to reconfirm meaning/u);
+  const publish = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0-test"
+  });
+  assert.equal(publish.ready, false);
+  assert.equal(publish.checks.find(({ id }) => id === "starter-content").status, "failed");
+});
+
+test("a fresh agent receives settled author meaning before it asks another question", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "seedspec");
+  const stateDirectory = path.join(output, "authoring");
+  await initPackage("workflow", packagePath);
+  await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0-test"
+  });
+  const recorded = await recordObservations(packagePath, {
+    stateRoot: stateDirectory,
+    entries: [{
+      type: "question",
+      question: "Should this remain a lightweight personal maintenance reminder?"
+    }]
+  });
+  await answerQuestion(packagePath, {
+    stateRoot: stateDirectory,
+    questionId: recorded.recorded[0].id,
+    answer: "Yes. Record recurring home-maintenance tasks and show what is due next."
+  });
+
+  const resumed = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0-test"
+  });
+  assert.match(resumed.current.instructions, /## Session continuity/u);
+  assert.match(resumed.current.instructions, /Should this remain a lightweight personal maintenance reminder/u);
+  assert.match(resumed.current.instructions, /Record recurring home-maintenance tasks and show what is due next/u);
+  assert.match(resumed.current.instructions, /Never ask the author to repeat or reconfirm settled meaning/u);
+  assert.match(resumed.current.instructions, /confirmed direction authorizes you to draft an exact proposal/u);
+  assert.match(resumed.current.instructions, /do not ask separately whether the author wants the scaffold replaced/u);
+  assert.match(resumed.current.instructions, /create exact starter-replacement proposals without another question/u);
+  assert.match(resumed.current.instructions, /An answered question records author authority, not package content/u);
+  assert.match(resumed.current.instructions, /Confirmed meaning absent from package documents requires an exact proposal/u);
 });
 
 test("authoring review is source-bound and advances after an author disposition", async (t) => {
@@ -600,8 +737,9 @@ test("authoring review is source-bound and advances after an author disposition"
   assert.match(first.current.instructions, /restriction on what may become a finding; it is not an instruction to search/);
   assert.match(first.current.instructions, /Save cross-document inconsistency, stale counts/);
   assert.match(first.current.instructions, /Every factual claim must come from the active authored material/);
-  assert.match(first.current.instructions, /one or two plain sentences reflecting the central product direction/);
+  assert.match(first.current.instructions, /When the direction is not confirmed, write one or two plain sentences reflecting it/);
   assert.match(first.current.instructions, /Active attached sources: none/);
+  assert.match(first.current.instructions, /After recording a reviewed disposition, rerun `npx @seedspec\/cli author review`/u);
 
   // The brief states response length exactly once. Two competing caps made the
   // agent hedge, and a rule repeated four times made responses evasive.
@@ -616,9 +754,24 @@ test("authoring review is source-bound and advances after an author disposition"
   // Depth is served on request rather than embedded up front, because stacked
   // guidance measurably reduced coverage while multiplying cost.
   assert.match(first.current.instructions, /npx @seedspec\/cli author guidance --topic review-model/);
+  assert.match(
+    first.current.instructions,
+    /detailed approved requirements, source precedence, or unresolved author-owned choices/u
+  );
   assert.doesNotMatch(first.current.instructions, /## Internal review model/);
   assert.match(formatAuthoringGuidance("review-model"), /Coherence/);
-  assert.match(formatAuthoringGuidance("source-boundary"), /Absence is not a gap/);
+  assert.match(formatAuthoringGuidance("source-boundary"), /Absence alone is not a gap/);
+  const requirementsGuidance = formatAuthoringGuidance("requirements");
+  assert.match(requirementsGuidance, /Treat unapproved or informational material as evidence only/u);
+  assert.match(requirementsGuidance, /attachment alone does not place their bytes in the distributable package/u);
+  assert.match(requirementsGuidance, /fresh planning agent/u);
+  assert.match(requirementsGuidance, /declare that document as a context module/u);
+  assert.match(requirementsGuidance, /explicitly unresolved choice marked author-owned or non-delegable/u);
+  assert.match(requirementsGuidance, /Do not close the applicable review thread/u);
+  assert.match(requirementsGuidance, /reuse its candidate ID for coordinated later proposals/u);
+  assert.match(requirementsGuidance, /at least one applied document that anchors the meaning remains unchanged/u);
+  assert.match(requirementsGuidance, /Expansion proposes optional new meaning/u);
+  assert.match(requirementsGuidance, /Contraction proposes removal or generalization/u);
   assert.throws(
     () => formatAuthoringGuidance("nope"),
     (error) => error.code === "UNKNOWN_AUTHORING_GUIDANCE"
@@ -692,6 +845,48 @@ test("authoring review supports source-bound targeted areas and keeps state outs
     }),
     (error) => error.code === "AUTHORING_STATE_INSIDE_PACKAGE"
   );
+});
+
+test("authoring exposes declared supporting material and fixes context module bodies", async (t) => {
+  const output = await temporaryDirectory(t);
+  const resourceAudit = await auditPackage(resourcesFixture, {
+    area: "supporting-material",
+    stateDirectory: path.join(output, "resource-authoring"),
+    toolVersion: "0.18.0-test"
+  });
+  assert.match(resourceAudit.current.instructions, /Existing non-primary context modules are fixed inputs to this authoring cycle/u);
+  assert.match(resourceAudit.current.instructions, /Other implementation resources, profiles, tasks, artifacts, reference material, and evidence are visible authored package material/u);
+  assert.match(resourceAudit.current.instructions, /Declared implementation-resource policy: `agent-delegated`/u);
+  assert.match(resourceAudit.current.instructions, /Declared implementation resources \(1; preserve by default; never auto-activate\)/u);
+  assert.match(resourceAudit.current.instructions, /`org\.example\.guidance\.authorization` \(skill; available; 0\.1\.0; exact\)/u);
+  assert.match(resourceAudit.current.instructions, /bundled at `guidance\/authorization\/`@0\.1\.0, digest-bound/u);
+  assert.match(resourceAudit.current.instructions, /Treat every existing non-primary context-module body as a fixed input/u);
+  assert.match(resourceAudit.current.instructions, /Preserve other existing supporting bodies and declarations byte-for-byte by default/u);
+  assert.match(resourceAudit.current.instructions, /Do not perform a general quality audit of a skill, evaluation, context module, artifact, or reference implementation/u);
+  assert.match(resourceAudit.current.instructions, /Do not open every supporting body by default/u);
+  assert.match(resourceAudit.current.instructions, /For supporting material other than fixed context modules, propose a body edit only when the author explicitly asks/u);
+  assert.match(resourceAudit.current.instructions, /changing their bytes without a matching declaration update breaks validation/u);
+  assert.match(resourceAudit.current.instructions, /Never install or invoke a package-scoped skill, execute a tool or evaluation, fetch a remote resource/u);
+
+  const contextAudit = await auditPackage(contextModulesFixture, {
+    area: "supporting-material",
+    stateDirectory: path.join(output, "context-authoring"),
+    toolVersion: "0.18.0-test"
+  });
+  assert.match(contextAudit.current.instructions, /Declared context modules \(3; visible package context\)/u);
+  assert.match(contextAudit.current.instructions, /`primary-intent` \(org\.seedspec\.intent\.markdown; primary intent\)/u);
+  assert.match(contextAudit.current.instructions, /`refund-safety` \(org\.example\.context\.behavior@1\.0\.0; supporting; fixed input; read-only in authoring\)/u);
+  assert.match(contextAudit.current.instructions, /bridges `review-behavior`/u);
+  assert.match(contextAudit.current.instructions, /`review-behavior` \(io\.agentskills\.skill; supporting; fixed input; read-only in authoring\)/u);
+
+  const artifactAudit = await auditPackage(allowance, {
+    area: "supporting-material",
+    stateDirectory: path.join(output, "artifact-authoring"),
+    toolVersion: "0.18.0-test"
+  });
+  assert.match(artifactAudit.current.instructions, /Declared task runbook: `tasks\.yaml` \(preserve by default\)/u);
+  assert.match(artifactAudit.current.instructions, /Declared passive artifacts \(1; preserve by default; never auto-activate\)/u);
+  assert.match(artifactAudit.current.instructions, /`chore-reference` \(org\.example\.artifact\.reference-markdown; path `reference\/capabilities\/chores-1\.0\.0\.md`\)/u);
 });
 
 test("reviewed authoring areas accept pinned npm CLI commands", async (t) => {
@@ -792,13 +987,63 @@ test("an active source-bound pass receives the latest conversation and record br
   );
 });
 
-test("the authoring starter prompt is short and delegates detail to the CLI brief", () => {
+test("the authoring starter prompt selects shape, deep, and minimal postures", () => {
   const prompt = formatAuthoringStarterPrompt();
-  assert.equal(
-    prompt,
-    "Co-author the SeedSpec in this directory with me. Run `npx @seedspec/cli author review` and follow the complete operating brief it returns. Do not change package documents without my explicit approval."
-  );
-  assert.doesNotMatch(prompt, /source-bound|review area|configuration|success material/iu);
+  assert.match(prompt, /idea to shape/iu);
+  assert.match(prompt, /practical first specification/iu);
+  assert.match(prompt, /deeper discovery pass/iu);
+  assert.match(prompt, /one consequential product question at a time/iu);
+  assert.match(prompt, /--target shape/u);
+
+  const deep = formatAuthoringStarterPrompt({ mode: "deep" });
+  assert.match(deep, /every consequential aspect/iu);
+  assert.match(deep, /decision tree in dependency order/iu);
+  assert.match(deep, /recommended answer/iu);
+  assert.match(deep, /one question at a time/iu);
+  assert.match(deep, /--target deep/u);
+
+  const minimal = formatAuthoringStarterPrompt({ mode: "minimal" });
+  assert.match(minimal, /authoring boundary/iu);
+  assert.match(minimal, /Do not brainstorm/u);
+  assert.match(minimal, /--target minimal/u);
+
+  const explore = formatAuthoringStarterPrompt({ explore: true });
+  assert.equal(explore, prompt);
+});
+
+test("authoring briefs persist kind-aware shape, deep, and minimal guidance", async (t) => {
+  const output = await temporaryDirectory(t);
+  const shape = await auditPackage(allowance, {
+    stateDirectory: path.join(output, "shape"),
+    target: "shape",
+    toolVersion: "0.17.0-test"
+  });
+  assert.equal(shape.target, "shape");
+  assert.match(shape.current.instructions, /Exploration posture: `shape`/u);
+  assert.match(shape.current.instructions, /application lens/u);
+  assert.match(shape.current.instructions, /materially different products/u);
+  assert.match(shape.current.instructions, /roadmap or vision/u);
+  assert.match(shape.current.instructions, /product behavior.*technical architecture/isu);
+
+  const deep = await auditPackage(allowance, {
+    stateDirectory: path.join(output, "deep"),
+    target: "deep",
+    toolVersion: "0.17.0-test"
+  });
+  assert.equal(deep.target, "deep");
+  assert.match(deep.current.instructions, /decision tree/u);
+  assert.match(deep.current.instructions, /recommended answer/u);
+  assert.match(deep.current.instructions, /Do not formulate document proposals until/u);
+
+  const minimal = await auditPackage(allowance, {
+    stateDirectory: path.join(output, "minimal"),
+    target: "minimal",
+    toolVersion: "0.17.0-test"
+  });
+  assert.equal(minimal.target, "minimal");
+  assert.match(minimal.current.instructions, /Treat the supplied material as the authoring boundary/u);
+  assert.match(minimal.current.instructions, /Do not brainstorm/u);
+  assert.doesNotMatch(minimal.current.instructions, /selected exploration posture is explicit authorization/u);
 });
 
 test("authoring audit status is read-only and accepts portable workspace paths", async (t) => {
@@ -891,7 +1136,7 @@ test("authoring workspaces can begin before a valid package exists", async (t) =
   const stateDirectory = path.join(output, "authoring-state");
   const created = await createAuthoringWorkspace(packagePath, {
     stateDirectory,
-    target: "capture",
+    target: "minimal",
     toolVersion: "0.2.0-test"
   });
 
@@ -902,7 +1147,7 @@ test("authoring workspaces can begin before a valid package exists", async (t) =
   assert.equal(created.snapshot.package.status, "invalid");
   assert.equal(created.snapshot.documents.length, 0);
   assert.equal(created.snapshot.review.status, "available");
-  assert.equal(created.snapshot.review.target, "capture");
+  assert.equal(created.snapshot.review.target, "minimal");
 
   const repeated = await createAuthoringWorkspace(packagePath, {
     stateDirectory,
@@ -912,7 +1157,7 @@ test("authoring workspaces can begin before a valid package exists", async (t) =
   assert.equal(repeated.created, false);
   assert.equal(repeated.snapshot.workspace.id, created.snapshot.workspace.id);
   assert.equal(repeated.snapshot.workspace.revision, created.snapshot.workspace.revision);
-  assert.equal(repeated.snapshot.review.target, "capture");
+  assert.equal(repeated.snapshot.review.target, "minimal");
 
   await initPackage("application", packagePath);
   const audit = await auditPackage(packagePath, {
@@ -1651,7 +1896,7 @@ test("author-declared implementation resources are validated, preserved, and res
   };
   const resolvedState = await resolveImplementationResources(
     path.join(fixture.output, "project"),
-    { fetchImpl }
+    { fetchImpl, lookupImpl: publicAddressLookup }
   );
   assert.equal(resolvedState.status, "resolved");
   assert.equal(resolvedState.resources[0].resolution_status, "online");
@@ -1712,7 +1957,8 @@ test("canonical resource failure uses and reports a bundled fallback", async (t)
     fetchImpl: async () => new Response("unavailable", {
       status: 503,
       statusText: "Unavailable"
-    })
+    }),
+    lookupImpl: publicAddressLookup
   });
 
   assert.equal(state.status, "degraded");
@@ -1740,13 +1986,65 @@ test("canonical resource redirects cannot reach literal private hosts", async (t
         status: 302,
         headers: { location: "https://127.0.0.1/internal" }
       });
-    }
+    },
+    lookupImpl: publicAddressLookup
   });
 
   assert.equal(fetchCalls, 1);
   assert.equal(state.resources[0].resolution_status, "bundled-fallback");
   assert.equal(state.resources[0].reason_code, "INVALID_IMPLEMENTATION_RESOURCE");
   assert.match(state.resources[0].reason, /local or private network host/);
+});
+
+test("canonical resource redirects cannot reach unroutable or non-global address forms", async (t) => {
+  const fixture = await createImplementationResourcePackage(t);
+  const projectPath = path.join(fixture.output, "project");
+  await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
+  const blockedTargets = [
+    "https://0.0.0.0/internal",
+    "https://100.64.1.2/internal",
+    "https://[fd00::1]/internal",
+    "https://[fe80::1]/internal",
+    "https://[::ffff:127.0.0.1]/internal",
+    "https://[::]/internal"
+  ];
+  for (const target of blockedTargets) {
+    const state = await resolveImplementationResources(projectPath, {
+      fetchImpl: async () => new Response(null, {
+        status: 302,
+        headers: { location: target }
+      }),
+      lookupImpl: publicAddressLookup
+    });
+    assert.equal(state.resources[0].resolution_status, "bundled-fallback", target);
+    assert.equal(state.resources[0].reason_code, "INVALID_IMPLEMENTATION_RESOURCE", target);
+    assert.match(state.resources[0].reason, /local or private network host/, target);
+  }
+});
+
+test("hostnames resolving to private addresses are rejected before any request", async (t) => {
+  const fixture = await createImplementationResourcePackage(t);
+  const projectPath = path.join(fixture.output, "project");
+  await resolveProject(fixture.packagePath, { outputDirectory: projectPath });
+  const privateResolutions = [
+    [{ address: "10.0.0.5", family: 4 }],
+    [{ address: "203.0.113.10", family: 4 }, { address: "192.168.1.20", family: 4 }],
+    [{ address: "fd12:3456::1", family: 6 }]
+  ];
+  for (const records of privateResolutions) {
+    let fetchCalls = 0;
+    const state = await resolveImplementationResources(projectPath, {
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response("never reached", { status: 200 });
+      },
+      lookupImpl: async () => records
+    });
+    assert.equal(fetchCalls, 0, JSON.stringify(records));
+    assert.equal(state.resources[0].resolution_status, "bundled-fallback");
+    assert.equal(state.resources[0].reason_code, "INVALID_IMPLEMENTATION_RESOURCE");
+    assert.match(state.resources[0].reason, /resolves to/);
+  }
 });
 
 test("latest resource policies reject SemVer prereleases below a stable baseline", async (t) => {
@@ -1773,7 +2071,8 @@ test("latest resource policies reject SemVer prereleases below a stable baseline
     }]
   };
   const state = await resolveImplementationResources(projectPath, {
-    fetchImpl: async () => new Response(JSON.stringify(remoteManifest), { status: 200 })
+    fetchImpl: async () => new Response(JSON.stringify(remoteManifest), { status: 200 }),
+    lookupImpl: publicAddressLookup
   });
 
   assert.equal(state.resources[0].resolution_status, "bundled-fallback");
@@ -1791,7 +2090,8 @@ test("expected unavailable resources fail after recording resolution state", asy
 
   await assert.rejects(
     resolveImplementationResources(projectPath, {
-      fetchImpl: async () => new Response("unavailable", { status: 503 })
+      fetchImpl: async () => new Response("unavailable", { status: 503 }),
+      lookupImpl: publicAddressLookup
     }),
     (error) => error.code === "EXPECTED_IMPLEMENTATION_RESOURCE_UNAVAILABLE"
   );
@@ -2977,8 +3277,8 @@ test("CLI validates and inspects the comprehensive application fixture", async (
 
   const versionInfo = JSON.parse(version.stdout);
   assert.equal(versionInfo.protocol_version, "0.3");
-  assert.equal(versionInfo.conformance_suite_version, "0.3.0");
-  assert.equal(versionInfo.cli_version, "0.3.0");
+  assert.equal(versionInfo.conformance_suite_version, "0.3.1");
+  assert.equal(versionInfo.cli_version, "0.3.1");
   assert.equal(shortVersion.stdout.trim(), versionInfo.cli_version);
   assert.equal(JSON.parse(doctor.stdout).status, "healthy");
   assert.match(implementingDocs.stdout, /Resolution is offline and atomic/);
@@ -3078,10 +3378,10 @@ test("CLI executes the complete context integration lifecycle", async (t) => {
 
 test("installation doctor verifies the exact release and bundled suite", async () => {
   const result = await inspectInstallation({
-    cliVersion: "0.3.0"
+    cliVersion: "0.3.1"
   });
   assert.equal(result.status, "healthy");
-  assert.equal(result.protocol_release.id, "0.3.0");
+  assert.equal(result.protocol_release.id, "0.3.1");
   assert.ok(result.checks.every((check) => check.status === "passed"));
   assert.ok(result.checks.some((check) => check.id === "offline-smoke-test"));
 });
@@ -3116,14 +3416,15 @@ test("CLI review emits source-bound agent instructions, status, and bundled docu
     "coherence"
   ]);
 
-  assert.match(audit.stdout, /Tool version: `0\.3\.0`/);
+  assert.match(audit.stdout, /Tool version: `0\.3\.1`/);
   assert.match(audit.stdout, /Internal focus: 2 of 4 — Coherence/);
   assert.match(audit.stdout, /Absence is not a gap/);
-  assert.match(audit.stdout, /After recording a reviewed disposition, rerun `npx @seedspec\/cli author review`/);
+  assert.match(audit.stdout, /This pass was opened for one explicit area/u);
+  assert.match(audit.stdout, /Do not reopen the same area unless the author asks/u);
   assert.doesNotMatch(audit.stdout, /Internal review progress:/);
   assert.match(status.stdout, /2\. Coherence — in-progress/);
   assert.doesNotMatch(status.stdout, /## Area objective/);
-  assert.match(docs.stdout, /SeedSpec CLI: 0\.3\.0/);
+  assert.match(docs.stdout, /SeedSpec CLI: 0\.3\.1/);
   assert.match(docs.stdout, /Coherence objective/);
 });
 
@@ -3138,7 +3439,7 @@ test("CLI creates an authoring workspace around an empty draft", async (t) => {
     "create",
     packagePath,
     "--target",
-    "capture",
+    "minimal",
     "--state",
     stateDirectory,
     "--json"
@@ -3147,7 +3448,7 @@ test("CLI creates an authoring workspace around an empty draft", async (t) => {
   assert.equal(result.authoring_workspace_operation_version, "1");
   assert.equal(result.created, true);
   assert.equal(result.snapshot.package.status, "invalid");
-  assert.equal(result.snapshot.review.target, "capture");
+  assert.equal(result.snapshot.review.target, "minimal");
   assert.doesNotMatch(created.stdout, new RegExp(output.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
 });
 
@@ -3506,6 +3807,31 @@ test("closing a thread records evidence the engine produced itself", async (t) =
   assert.notEqual(next.current.area, "seed");
 });
 
+test("a success review cannot close while observable success is still a placeholder", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await initPackage("workflow", packagePath);
+  const opened = await auditPackage(packagePath, {
+    area: "success",
+    stateDirectory,
+    toolVersion: "0.3.0"
+  });
+
+  assert.match(opened.current.instructions, /If the confirmed meaning is absent from the document, propose exact replacement wording/u);
+  await assert.rejects(
+    reviewArea(packagePath, {
+      stateRoot: stateDirectory,
+      summary: "The author defined an observable result in conversation.",
+      disposition: "improved"
+    }),
+    (error) => error.code === "AUTHORING_SUCCESS_MATERIAL_REQUIRED"
+  );
+  const snapshot = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(snapshot.review.current.area, "success");
+  assert.equal(snapshot.review.current.outcome, "in-progress");
+});
+
 test("attached sources become review context instead of an unwritable file", async (t) => {
   const output = await temporaryDirectory(t);
   const packagePath = path.join(output, "package");
@@ -3529,6 +3855,7 @@ test("attached sources become review context instead of an unwritable file", asy
   const refreshed = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.2.0" });
   assert.match(refreshed.current.instructions, /notes\/allocation-policy\.md/);
   assert.doesNotMatch(refreshed.current.instructions, /Active attached sources: none/);
+  assert.match(refreshed.current.instructions, /author guidance --topic requirements/u);
 
   await assert.rejects(
     attachSource(packagePath, {
@@ -3537,6 +3864,564 @@ test("attached sources become review context instead of an unwritable file", asy
     }),
     (error) => error.code === "INVALID_AUTHORING_INPUT"
   );
+});
+
+test("accepted clarification meaning reaches package bytes through the existing change gate", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(ambiguousAuthoring, packagePath, { recursive: true });
+  const opened = await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+  const documentPath = path.join(packagePath, "definition", "workflow.md");
+  const beforeContent = await readFile(documentPath, "utf8");
+  const before = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+
+  await assert.rejects(
+    recordClarificationCandidate(packagePath, {
+      stateRoot: stateDirectory,
+      expectedRevision: before.workspace.revision,
+      candidate: {
+        issue: "The source permits two delivery routes.",
+        alternatives: ["Email", "Team channel"],
+        basis: {
+          source_claims: [{
+            reference: "definition/workflow.md",
+            statement: "Send the summary each Friday."
+          }],
+          inference: "The source does not identify the delivery route."
+        },
+        affected: ["operations"]
+      }
+    }),
+    (error) => error.code === "INVALID_AUTHORING_INPUT"
+      && error.details.some((detail) => detail.includes("supported: outcome, architecture"))
+  );
+
+  const recorded = await recordClarificationCandidate(packagePath, {
+    stateRoot: stateDirectory,
+    expectedRevision: before.workspace.revision,
+    candidate: {
+      kind: "clarification",
+      issue: "The source permits two delivery routes for the weekly summary.",
+      alternatives: ["Deliver by email", "Deliver through a team channel"],
+      assumed_default: "Deliver by email",
+      basis: {
+        actor: "authoring-agent",
+        source_claims: [{
+          reference: "definition/workflow.md",
+          statement: "Send the summary each Friday."
+        }],
+        inference: "The source does not identify the delivery route."
+      },
+      materiality: "material",
+      affected: ["architecture", "resources", "verification"],
+      recommended_disposition: "ask"
+    }
+  });
+  assert.equal(recorded.candidate.status, "open");
+  assert.equal(recorded.candidate.pass, opened.current.id);
+  assert.match(recorded.candidate.id, /^candidate-[0-9a-f-]{36}$/u);
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+  const recordedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(recordedStatus.review.candidates.open, 1);
+  assert.equal(recordedStatus.review.candidates.items[0].basis.source_claims.length, 1);
+  assert.equal(recorded.snapshot, undefined);
+
+  await assert.rejects(
+    reviewArea(packagePath, {
+      stateRoot: stateDirectory,
+      summary: "The author reviewed closure behavior.",
+      disposition: "good-enough"
+    }),
+    (error) => error.code === "AUTHORING_CANDIDATE_PENDING"
+  );
+
+  const accepted = await decideClarificationCandidate(packagePath, {
+    stateRoot: stateDirectory,
+    expectedRevision: recorded.workspace.revision,
+    candidateId: recorded.candidate.id,
+    decision: "accept",
+    meaning: "Deliver the weekly summary by email.",
+    rationale: "Team leads use email for project reporting."
+  });
+  assert.equal(accepted.candidate.status, "accepted");
+  assert.equal(accepted.candidate.disposition.by, "author");
+  assert.equal(await readFile(documentPath, "utf8"), beforeContent);
+
+  const blockedPublish = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0"
+  });
+  assert.equal(blockedPublish.ready, false);
+  assert.equal(
+    blockedPublish.checks.find(({ id }) => id === "accepted-clarification-meaning").status,
+    "failed"
+  );
+
+  await assert.rejects(
+    proposeDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposal: {
+        path: "definition/workflow.md",
+        summary: "Use the accepted email delivery route",
+        content: `${beforeContent}\n\nDeliver the weekly summary by email.\n`,
+        basis: { kind: "agent-proposal", references: [recorded.candidate.id] }
+      }
+    }),
+    (error) => error.code === "AUTHORING_CANDIDATE_AUTHORITY_MISMATCH"
+  );
+
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/workflow.md",
+      summary: "Use the accepted email delivery route",
+      content: `${beforeContent}\n\nDeliver the weekly summary by email.\n`,
+      basis: { kind: "author-answer", references: [recorded.candidate.id] }
+    }
+  });
+  const proposedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const linked = proposedStatus.review.candidates.items.find(
+    ({ id }) => id === recorded.candidate.id
+  );
+  assert.deepEqual(linked.proposal_ids, [proposed.proposal.id]);
+
+  const proposalAccepted = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id,
+    decision: "accept"
+  });
+  await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposalAccepted.proposal.id
+  });
+  assert.equal(await readFile(documentPath, "utf8"), `${beforeContent}\n\nDeliver the weekly summary by email.\n`);
+
+  const acceptancePath = path.join(packagePath, "acceptance.md");
+  const acceptanceBefore = await readFile(acceptancePath, "utf8");
+  const coordinated = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "acceptance.md",
+      summary: "Observe the accepted email delivery route",
+      content: `${acceptanceBefore}\nThe Friday summary is delivered by email.\n`,
+      basis: { kind: "author-answer", references: [recorded.candidate.id] }
+    }
+  });
+  const coordinatedAccepted = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: coordinated.proposal.id,
+    decision: "accept"
+  });
+  await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: coordinatedAccepted.proposal.id
+  });
+  assert.equal(
+    await readFile(acceptancePath, "utf8"),
+    `${acceptanceBefore}\nThe Friday summary is delivered by email.\n`
+  );
+
+  const ready = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0"
+  });
+  assert.equal(ready.ready, true);
+  assert.equal(ready.review.accepted_unapplied_candidates, 0);
+  const afterApply = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(afterApply.review.candidates.stale, 0);
+  assert.deepEqual(
+    afterApply.review.candidates.items.find(({ id }) => id === recorded.candidate.id).proposal_ids,
+    [proposed.proposal.id, coordinated.proposal.id]
+  );
+
+  const closed = await reviewArea(packagePath, {
+    stateRoot: stateDirectory,
+    summary: "Weekly summaries use email delivery.",
+    disposition: "improved"
+  });
+  assert.equal(closed.reviewed.pass, opened.current.id);
+
+  const ledger = parseYaml(
+    await readFile(path.join(stateDirectory, "candidates", "index.yaml"), "utf8")
+  );
+  const validateLedger = compileConfigurationSchema(await readAuthoringSchema("candidates"));
+  assert.equal(validateLedger(ledger), true, formatSchemaErrors(validateLedger.errors).join("\n"));
+  assert.equal(ledger.authoring_candidates_version, AUTHORING_CANDIDATE_FORMAT);
+});
+
+test("stale clarification candidates cannot add intent and can still be declined", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(ambiguousAuthoring, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+
+  const recorded = await recordClarificationCandidate(packagePath, {
+    stateRoot: stateDirectory,
+    candidate: {
+      issue: "The source permits two delivery routes.",
+      alternatives: ["Email", "Team channel"],
+      assumed_default: "Email",
+      basis: {
+        actor: "receiving-model",
+        source_claims: [{
+          reference: "definition/workflow.md",
+          statement: "Send the summary each Friday."
+        }],
+        inference: "The delivery route is unspecified."
+      },
+      materiality: "material",
+      affected: ["architecture"],
+      recommended_disposition: "ask"
+    }
+  });
+  const documentPath = path.join(packagePath, "definition", "workflow.md");
+  const content = await readFile(documentPath, "utf8");
+  await writeFile(documentPath, `${content}\n\nThe author independently clarified another point.\n`, "utf8");
+
+  await assert.rejects(
+    decideClarificationCandidate(packagePath, {
+      stateRoot: stateDirectory,
+      candidateId: recorded.candidate.id,
+      decision: "accept",
+      meaning: "Deliver by email."
+    }),
+    (error) => error.code === "AUTHORING_CANDIDATE_STALE"
+  );
+
+  const declined = await decideClarificationCandidate(packagePath, {
+    stateRoot: stateDirectory,
+    candidateId: recorded.candidate.id,
+    decision: "decline",
+    rationale: "The changed source makes this question obsolete."
+  });
+  assert.equal(declined.candidate.status, "declined");
+  const snapshot = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(snapshot.review.candidates.open, 0);
+  assert.equal(snapshot.review.candidates.stale, 1);
+
+  await reviewArea(packagePath, {
+    stateRoot: stateDirectory,
+    summary: "The stale delivery question was declined.",
+    disposition: "good-enough"
+  });
+  const publish = await publishCheckPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0"
+  });
+  assert.equal(publish.ready, true);
+});
+
+test("accepted meaning reuse requires an unchanged applied document anchor", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(ambiguousAuthoring, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+
+  const recorded = await recordClarificationCandidate(packagePath, {
+    stateRoot: stateDirectory,
+    candidate: {
+      issue: "The weekly summary has no delivery route.",
+      alternatives: ["Email", "Team channel"],
+      assumed_default: "Email",
+      basis: {
+        source_claims: [{
+          reference: "definition/workflow.md",
+          statement: "Send the summary each Friday."
+        }],
+        inference: "The route changes observable delivery behavior."
+      }
+    }
+  });
+  await decideClarificationCandidate(packagePath, {
+    stateRoot: stateDirectory,
+    candidateId: recorded.candidate.id,
+    decision: "accept",
+    meaning: "Deliver the weekly summary by email."
+  });
+
+  const workflowPath = path.join(packagePath, "definition", "workflow.md");
+  const workflowBefore = await readFile(workflowPath, "utf8");
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/workflow.md",
+      summary: "Apply the accepted route",
+      content: `${workflowBefore}\n\nDeliver the weekly summary by email.\n`,
+      basis: { kind: "author-answer", references: [recorded.candidate.id] }
+    }
+  });
+  await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id,
+    decision: "accept"
+  });
+  await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id
+  });
+
+  await writeFile(
+    workflowPath,
+    `${workflowBefore}\n\nThe delivery route is unresolved again.\n`,
+    "utf8"
+  );
+  const acceptanceBefore = await readFile(path.join(packagePath, "acceptance.md"), "utf8");
+  await assert.rejects(
+    proposeDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposal: {
+        path: "acceptance.md",
+        summary: "Reuse meaning after its anchor changed",
+        content: `${acceptanceBefore}\nThe summary arrives by email.\n`,
+        basis: { kind: "author-answer", references: [recorded.candidate.id] }
+      }
+    }),
+    (error) => (
+      error.code === "AUTHORING_CANDIDATE_STALE"
+      && error.details.includes("No unchanged applied document currently anchors this accepted meaning.")
+    )
+  );
+});
+
+test("authoring probe fixtures separate ambiguity from explicit delegated variation", async () => {
+  const [ambiguous, delegated] = await Promise.all([
+    validatePackage(ambiguousAuthoring),
+    validatePackage(delegatedAuthoring)
+  ]);
+  const ambiguousIntent = await readFile(
+    path.join(ambiguousAuthoring, "definition", "workflow.md"),
+    "utf8"
+  );
+  const delegatedIntent = await readFile(
+    path.join(delegatedAuthoring, "definition", "workflow.md"),
+    "utf8"
+  );
+  assert.equal(ambiguous.manifest.kind, "workflow");
+  assert.equal(delegated.manifest.kind, "workflow");
+  assert.match(ambiguousIntent, /Send the summary each Friday/u);
+  assert.doesNotMatch(ambiguousIntent, /email or a team channel/u);
+  assert.match(delegatedIntent, /email or a team channel/u);
+  assert.match(delegatedIntent, /implementation may select either route/u);
+});
+
+function clarificationProbeConfiguration() {
+  return {
+    model: { provider: "anthropic", id: "claude-sonnet-5" },
+    runner: {
+      id: "claude-code-cli",
+      version: "2.0.64",
+      enforces_output_token_limit: false,
+      enforces_spend_limit: false
+    },
+    settings: { effort: "medium", tools: [] },
+    limits: {
+      model_context_tokens: 1_000_000,
+      max_input_tokens: 10_000,
+      max_output_tokens: 4_000,
+      max_attempts: 1,
+      max_retries: 0,
+      max_duration_ms: 120_000,
+      max_spend_usd: 0.25
+    },
+    pricing: {
+      currency: "USD",
+      basis: "subscription-list-price-equivalent",
+      input_per_million_usd: 2,
+      output_per_million_usd: 10,
+      source: "https://www.anthropic.com/claude/sonnet",
+      observed_at: "2026-08-03T12:00:00.000Z"
+    }
+  };
+}
+
+async function writeProbeExecution(bundle, brief, runId, result) {
+  await Promise.all([
+    writeFile(path.join(bundle, "probe-execution.json"), `${JSON.stringify({
+      authoring_probe_execution_version: "1",
+      run_id: runId,
+      brief_id: brief.id,
+      provider: "anthropic",
+      requested_model: "claude-sonnet-5",
+      served_model: "claude-sonnet-5",
+      runner: { id: "claude-code-cli", version: "2.0.64" },
+      status: "succeeded",
+      attempt: 1,
+      retry: false,
+      tools: [],
+      started_at: "2026-08-03T12:01:00.000Z",
+      finished_at: "2026-08-03T12:01:03.000Z",
+      usage: {
+        capture: "provider-reported",
+        input_tokens: 1800,
+        cached_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+        output_tokens: 240,
+        total_tokens: 2040,
+        cost_usd: 0.006
+      },
+      limitations: ["The runner did not enforce an output-token stop."]
+    }, null, 2)}\n`, "utf8"),
+    writeFile(path.join(bundle, "probe-result.json"), `${JSON.stringify(result, null, 2)}\n`, "utf8"),
+    writeFile(path.join(bundle, "raw-response.txt"), `${JSON.stringify(result)}\n`, "utf8")
+  ]);
+}
+
+test("a frozen probe records one candidate occurrence without a comparison claim", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  const bundle = path.join(output, "probe-bundle");
+  await cp(ambiguousAuthoring, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+  const before = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const prepared = await prepareClarificationProbe(packagePath, {
+    stateRoot: stateDirectory,
+    outputDirectory: bundle,
+    probe: clarificationProbeConfiguration(),
+    expectedRevision: before.workspace.revision,
+    now: () => "2026-08-03T12:00:00.000Z"
+  });
+  assert.equal(prepared.brief.preflight.status, "ready");
+  assert.equal(prepared.brief.execution.permitted_tools.length, 0);
+  assert.equal(prepared.brief.budget.limits.max_attempts, 1);
+  assert.equal(prepared.brief.visibility.no_authoritative_material_silently_truncated, true);
+  const transportSchema = JSON.parse(
+    await readFile(path.join(bundle, "result.schema.json"), "utf8")
+  );
+  assert.deepEqual(
+    transportSchema.properties.authoring_probe_result_version,
+    {
+      type: "string",
+      enum: ["1"],
+      description: 'The JSON string "1", not a number.'
+    }
+  );
+  assert.deepEqual(
+    transportSchema.properties.candidate.anyOf[1].required,
+    [
+      "kind",
+      "issue",
+      "question",
+      "alternatives",
+      "assumed_default",
+      "materiality",
+      "affected",
+      "recommended_disposition"
+    ]
+  );
+  assert.equal(
+    (await inspectAuthoringWorkspace(packagePath, { stateDirectory })).workspace.revision,
+    before.workspace.revision,
+    "preparing an external frozen bundle must not mutate authoring state"
+  );
+  const preflight = await verifyClarificationProbe(packagePath, {
+    stateRoot: stateDirectory,
+    bundleDirectory: bundle
+  });
+  assert.equal(preflight.ready, true);
+  await writeProbeExecution(bundle, prepared.brief, "run-ambiguous-delivery-1", {
+    authoring_probe_result_version: "1",
+    outcome: "candidate",
+    interpretation: "Prepare and deliver one summary to each team lead every Friday.",
+    materially_different_interpretations: [
+      "Send the summary by email.",
+      "Post the summary in a team channel."
+    ],
+    source_claims: [{
+      reference: "package:definition/workflow.md",
+      statement: "The workflow says to send the summary each Friday."
+    }],
+    inference: "The delivery route is unspecified and changes the integration and operational setup.",
+    candidate: {
+      kind: "clarification",
+      issue: "The delivery route is not established.",
+      question: "Should each weekly summary be delivered by email or through a team channel?",
+      alternatives: ["Email", "Team channel"],
+      assumed_default: "Email",
+      materiality: "material",
+      affected: ["architecture", "configuration", "operational-ownership"],
+      recommended_disposition: "ask"
+    },
+    no_action: null
+  });
+  const recorded = await recordClarificationProbeRun(packagePath, {
+    stateRoot: stateDirectory,
+    bundleDirectory: bundle,
+    expectedRevision: before.workspace.revision,
+    now: () => "2026-08-03T12:02:00.000Z"
+  });
+  assert.equal(recorded.run.outcome, "candidate");
+  assert.match(recorded.run.occurrence_id, /^occurrence-/u);
+  assert.deepEqual(recorded.run.comparison_group_ids, []);
+  const recordedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const retainedCandidate = recordedStatus.review.candidates.items[0];
+  assert.equal(retainedCandidate.occurrence.id, recorded.run.occurrence_id);
+  assert.deepEqual(retainedCandidate.occurrence.comparison_group_ids, []);
+  assert.equal(recordedStatus.review.probes.candidates, 1);
+  assert.equal(recordedStatus.review.candidates.open, 1);
+  assert.equal(recorded.snapshot, undefined);
+
+  const briefSchema = compileConfigurationSchema(await readAuthoringSchema("probe-brief"));
+  assert.equal(briefSchema(prepared.brief), true, formatSchemaErrors(briefSchema.errors).join("\n"));
+  const resultSchema = compileConfigurationSchema(await readAuthoringSchema("probe-result"));
+  const result = JSON.parse(await readFile(path.join(bundle, "probe-result.json"), "utf8"));
+  assert.equal(resultSchema(result), true, formatSchemaErrors(resultSchema.errors).join("\n"));
+  const runSchema = compileConfigurationSchema(await readAuthoringSchema("probe-runs"));
+  const runs = parseYaml(await readFile(path.join(stateDirectory, "probes", "index.yaml"), "utf8"));
+  assert.equal(runSchema(runs), true, formatSchemaErrors(runSchema.errors).join("\n"));
+  assert.equal(runs.authoring_probe_runs_version, AUTHORING_PROBE_RUN_FORMAT);
+  const candidateSchema = compileConfigurationSchema(await readAuthoringSchema("candidates"));
+  const candidates = parseYaml(
+    await readFile(path.join(stateDirectory, "candidates", "index.yaml"), "utf8")
+  );
+  assert.equal(candidateSchema(candidates), true, formatSchemaErrors(candidateSchema.errors).join("\n"));
+});
+
+test("an explicit implementation choice produces a durable no-action probe result", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  const bundle = path.join(output, "probe-bundle");
+  await cp(delegatedAuthoring, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+  const before = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const prepared = await prepareClarificationProbe(packagePath, {
+    stateRoot: stateDirectory,
+    outputDirectory: bundle,
+    probe: clarificationProbeConfiguration(),
+    now: () => "2026-08-03T13:00:00.000Z"
+  });
+  await writeProbeExecution(bundle, prepared.brief, "run-delegated-delivery-1", {
+    authoring_probe_result_version: "1",
+    outcome: "no-action",
+    interpretation: "The implementation selects email or a team channel for the actual environment.",
+    materially_different_interpretations: [],
+    source_claims: [{
+      reference: "package:definition/workflow.md",
+      statement: "The package explicitly permits either route and delegates selection to implementation."
+    }],
+    inference: "The route changes implementation details but not authored intent because authority is delegated.",
+    candidate: null,
+    no_action: {
+      reason: "The consequential variation is explicitly delegated to implementation.",
+      retained_latitude: ["Email or team-channel delivery"]
+    }
+  });
+  const recorded = await recordClarificationProbeRun(packagePath, {
+    stateRoot: stateDirectory,
+    bundleDirectory: bundle,
+    expectedRevision: before.workspace.revision,
+    now: () => "2026-08-03T13:02:00.000Z"
+  });
+  assert.equal(recorded.run.outcome, "no-action");
+  assert.equal(recorded.run.occurrence_id, null);
+  assert.equal(recorded.candidate, null);
+  const recordedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(recordedStatus.review.probes.no_action, 1);
+  assert.equal(recordedStatus.review.candidates.total, 0);
 });
 
 test("document proposals require an explicit author decision before engine application", async (t) => {
@@ -3565,10 +4450,14 @@ test("document proposals require an explicit author decision before engine appli
   });
   assert.equal(proposed.proposal.status, "proposed");
   assert.equal(proposed.proposal.pass, opened.current.id);
-  assert.equal(proposed.proposal.document.before_content, beforeContent);
-  assert.equal(proposed.proposal.document.after_content, afterContent);
+  assert.equal(proposed.proposal.document.before_content, undefined);
+  assert.equal(proposed.proposal.document.after_content, undefined);
   assert.equal(await readFile(documentPath, "utf8"), beforeContent);
-  assert.equal(proposed.snapshot.review.proposals.proposed, 1);
+  const proposedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(proposedStatus.review.proposals.proposed, 1);
+  assert.equal(proposedStatus.review.proposals.items[0].document.before_content, beforeContent);
+  assert.equal(proposedStatus.review.proposals.items[0].document.after_content, afterContent);
+  assert.equal(proposed.snapshot, undefined);
 
   await assert.rejects(
     reviewArea(packagePath, {
@@ -3588,7 +4477,7 @@ test("document proposals require an explicit author decision before engine appli
   });
   assert.equal(accepted.proposal.status, "accepted");
   assert.equal(accepted.proposal.decision.by, "author");
-  assert.equal(accepted.proposal.decisions.length, 1);
+  assert.equal(accepted.proposal.decisions, undefined);
   assert.equal(await readFile(documentPath, "utf8"), beforeContent);
 
   const blockedPublish = await publishCheckPackage(packagePath, {
@@ -3609,9 +4498,10 @@ test("document proposals require an explicit author decision before engine appli
   assert.equal(applied.proposal.status, "applied");
   assert.equal(applied.recovered, false);
   assert.equal(await readFile(documentPath, "utf8"), afterContent);
-  assert.equal(applied.snapshot.review.proposals.applied, 1);
-  assert.equal(applied.snapshot.review.proposals.proposed, 0);
-  assert.equal(applied.snapshot.review.proposals.accepted, 0);
+  const appliedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(appliedStatus.review.proposals.applied, 1);
+  assert.equal(appliedStatus.review.proposals.proposed, 0);
+  assert.equal(appliedStatus.review.proposals.accepted, 0);
 
   const result = parseYaml(await readFile(opened.current.result, "utf8"));
   assert.ok(result.changes.proposed.includes(proposed.proposal.id));
@@ -3623,6 +4513,115 @@ test("document proposals require an explicit author decision before engine appli
     disposition: "improved"
   });
   assert.equal(closed.reviewed.pass, opened.current.id);
+});
+
+test("an applied manifest identity change keeps the authoring workspace bound", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.id = "org.example.renamed-feature";
+  manifest.name = "Renamed Feature";
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "seedspec.yaml",
+      summary: "Replace the starter package identity",
+      content: stringifyYaml(manifest),
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  const accepted = await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id,
+    decision: "accept"
+  });
+  const applied = await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    expectedRevision: accepted.workspace.revision,
+    proposalId: proposed.proposal.id
+  });
+
+  const appliedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(appliedStatus.package.id, manifest.id);
+  assert.ok(applied.changed.some(({ kind }) => kind === "workspace"));
+  const workspace = parseYaml(await readFile(path.join(stateDirectory, "workspace.yaml"), "utf8"));
+  assert.equal(workspace.package.id, manifest.id);
+  const resumed = await auditPackage(packagePath, {
+    stateDirectory,
+    toolVersion: "0.3.0",
+    statusOnly: true
+  });
+  assert.equal(resumed.package.id, manifest.id);
+});
+
+test("accepted proposals for independent documents can apply in sequence", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(savings, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.3.0" });
+
+  const featurePath = path.join(packagePath, "definition", "feature.md");
+  const featureBefore = await readFile(featurePath, "utf8");
+  const featureAfter = `${featureBefore}\n\nClosed goals remain closed.\n`;
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const manifest = parseYaml(await readFile(manifestPath, "utf8"));
+  manifest.id = "org.example.independent-changes";
+  manifest.name = "Independent Changes";
+  const manifestAfter = stringifyYaml(manifest);
+
+  const featureProposal = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/feature.md",
+      summary: "Clarify goal closure",
+      content: featureAfter,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  const manifestProposal = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "seedspec.yaml",
+      summary: "Set the package identity",
+      content: manifestAfter,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+
+  await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: featureProposal.proposal.id,
+    decision: "accept"
+  });
+  await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: manifestProposal.proposal.id,
+    decision: "accept"
+  });
+  await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: featureProposal.proposal.id
+  });
+  const manifestApplied = await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: manifestProposal.proposal.id
+  });
+
+  assert.equal(await readFile(featurePath, "utf8"), featureAfter);
+  assert.equal(await readFile(manifestPath, "utf8"), manifestAfter);
+  assert.equal(manifestApplied.proposal.status, "applied");
+  const appliedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  assert.equal(appliedStatus.review.proposals.applied, 2);
+  assert.equal(appliedStatus.review.proposals.accepted, 0);
+  assert.equal(appliedStatus.package.id, manifest.id);
+  const workspace = parseYaml(await readFile(path.join(stateDirectory, "workspace.yaml"), "utf8"));
+  assert.equal(workspace.package.id, manifest.id);
 });
 
 test("rejected and stale document proposals never change package bytes", async (t) => {
@@ -3719,8 +4718,12 @@ test("an author can retract an accepted change that can no longer be applied", a
     rationale: "The author replaced it with different wording."
   });
   assert.equal(retracted.proposal.status, "rejected");
+  const retractedStatus = await inspectAuthoringWorkspace(packagePath, { stateDirectory });
+  const retainedProposal = retractedStatus.review.proposals.items.find(
+    ({ id }) => id === retracted.proposal.id
+  );
   assert.deepEqual(
-    retracted.proposal.decisions.map(({ outcome }) => outcome),
+    retainedProposal.decisions.map(({ outcome }) => outcome),
     ["accepted", "rejected"]
   );
   assert.equal(await readFile(documentPath, "utf8"), `${beforeContent}\nA different authored clarification.\n`);
@@ -3767,6 +4770,195 @@ test("authoring change paths stay inside existing package directories", async (t
   );
 });
 
+test("authoring document changes cannot enter fixed context module bodies", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(contextModulesFixture, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.19.0-test" });
+
+  for (const documentPath of [
+    "context/refund-safety/BEHAVIOR.md",
+    "context/refund-safety/references/traces.md",
+    "context/review-behavior/SKILL.md"
+  ]) {
+    const current = await readFile(path.join(packagePath, ...documentPath.split("/")), "utf8");
+    await assert.rejects(
+      proposeDocumentChange(packagePath, {
+        stateRoot: stateDirectory,
+        proposal: {
+          path: documentPath,
+          summary: "Rewrite declared context",
+          content: `${current}\nAuthoring rewrite.\n`,
+          basis: { kind: "author-answer", references: [] }
+        }
+      }),
+      (error) => (
+        error.code === "AUTHORING_CONTEXT_MODULE_READ_ONLY"
+        && error.message.includes(documentPath)
+      )
+    );
+  }
+
+  const primaryPath = path.join(packagePath, "definition", "solution.md");
+  const primary = await readFile(primaryPath, "utf8");
+  const proposal = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "definition/solution.md",
+      summary: "Clarify primary intent",
+      content: `${primary}\nPrimary intent clarification.\n`,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  assert.equal(proposal.proposal.status, "proposed");
+  assert.equal(await readFile(primaryPath, "utf8"), primary);
+
+  const resourcePackagePath = path.join(output, "resource-package");
+  const resourceStateDirectory = path.join(output, "resource-authoring-state");
+  await cp(resourcesFixture, resourcePackagePath, { recursive: true });
+  const resourceManifestPath = path.join(resourcePackagePath, "seedspec.yaml");
+  const resourceManifest = parseYaml(await readFile(resourceManifestPath, "utf8"));
+  resourceManifest.context.modules.push({
+    id: "authorization-guidance",
+    format: "io.agentskills.skill",
+    description: "Authorization guidance supplied as fixed context.",
+    entrypoint: "SKILL.md",
+    source: { kind: "resource", id: "org.example.guidance.authorization" }
+  });
+  await writeFile(resourceManifestPath, stringifyYaml(resourceManifest), "utf8");
+  await auditPackage(resourcePackagePath, {
+    stateDirectory: resourceStateDirectory,
+    toolVersion: "0.19.0-test"
+  });
+  const resourceBody = await readFile(
+    path.join(resourcePackagePath, "guidance", "authorization", "SKILL.md"),
+    "utf8"
+  );
+  await assert.rejects(
+    proposeDocumentChange(resourcePackagePath, {
+      stateRoot: resourceStateDirectory,
+      proposal: {
+        path: "guidance/authorization/SKILL.md",
+        summary: "Rewrite resource-backed context",
+        content: `${resourceBody}\nAuthoring rewrite.\n`,
+        basis: { kind: "author-answer", references: [] }
+      }
+    }),
+    (error) => error.code === "AUTHORING_CONTEXT_MODULE_READ_ONLY"
+  );
+
+  const artifactPackagePath = path.join(output, "artifact-package");
+  const artifactStateDirectory = path.join(output, "artifact-authoring-state");
+  await cp(allowance, artifactPackagePath, { recursive: true });
+  const artifactManifestPath = path.join(artifactPackagePath, "seedspec.yaml");
+  const artifactManifest = parseYaml(await readFile(artifactManifestPath, "utf8"));
+  artifactManifest.context.modules.push({
+    id: "chore-reference-context",
+    format: "org.example.context.reference",
+    description: "Chore reference supplied as fixed context.",
+    entrypoint: "chores-1.0.0.md",
+    source: { kind: "artifact", id: "chore-reference" }
+  });
+  await writeFile(artifactManifestPath, stringifyYaml(artifactManifest), "utf8");
+  await auditPackage(artifactPackagePath, {
+    stateDirectory: artifactStateDirectory,
+    toolVersion: "0.19.0-test"
+  });
+  const artifactBody = await readFile(
+    path.join(artifactPackagePath, "reference", "capabilities", "chores-1.0.0.md"),
+    "utf8"
+  );
+  await assert.rejects(
+    proposeDocumentChange(artifactPackagePath, {
+      stateRoot: artifactStateDirectory,
+      proposal: {
+        path: "reference/capabilities/chores-1.0.0.md",
+        summary: "Rewrite artifact-backed context",
+        content: `${artifactBody}\nAuthoring rewrite.\n`,
+        basis: { kind: "author-answer", references: [] }
+      }
+    }),
+    (error) => error.code === "AUTHORING_CONTEXT_MODULE_READ_ONLY"
+  );
+});
+
+test("application rechecks the fixed context module boundary", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(contextModulesFixture, packagePath, { recursive: true });
+
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const originalManifest = await readFile(manifestPath, "utf8");
+  const undeclaredManifest = parseYaml(originalManifest);
+  undeclaredManifest.context.modules = undeclaredManifest.context.modules.filter(
+    ({ id }) => id === undeclaredManifest.definition.module
+  );
+  await writeFile(manifestPath, stringifyYaml(undeclaredManifest), "utf8");
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.19.0-test" });
+
+  const modulePath = path.join(packagePath, "context", "refund-safety", "BEHAVIOR.md");
+  const before = await readFile(modulePath, "utf8");
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "context/refund-safety/BEHAVIOR.md",
+      summary: "Change currently undeclared material",
+      content: `${before}\nQueued rewrite.\n`,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id,
+    decision: "accept"
+  });
+
+  await writeFile(manifestPath, originalManifest, "utf8");
+  await assert.rejects(
+    applyDocumentChange(packagePath, {
+      stateRoot: stateDirectory,
+      proposalId: proposed.proposal.id
+    }),
+    (error) => error.code === "AUTHORING_CONTEXT_MODULE_READ_ONLY"
+  );
+  assert.equal(await readFile(modulePath, "utf8"), before);
+});
+
+test("the context boundary still permits a manifest repair proposal", async (t) => {
+  const output = await temporaryDirectory(t);
+  const packagePath = path.join(output, "package");
+  const stateDirectory = path.join(output, "authoring-state");
+  await cp(contextModulesFixture, packagePath, { recursive: true });
+  await auditPackage(packagePath, { stateDirectory, toolVersion: "0.19.0-test" });
+
+  const manifestPath = path.join(packagePath, "seedspec.yaml");
+  const validManifest = await readFile(manifestPath, "utf8");
+  await writeFile(manifestPath, "protocol_version: [invalid\n", "utf8");
+  const proposed = await proposeDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposal: {
+      path: "seedspec.yaml",
+      summary: "Restore the valid manifest",
+      content: validManifest,
+      basis: { kind: "author-answer", references: [] }
+    }
+  });
+  await decideDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id,
+    decision: "accept"
+  });
+  await applyDocumentChange(packagePath, {
+    stateRoot: stateDirectory,
+    proposalId: proposed.proposal.id
+  });
+
+  assert.equal(await readFile(manifestPath, "utf8"), validManifest);
+  assert.equal((await validatePackage(packagePath)).manifest.id, "org.seedspec.fixtures.context-modules");
+});
+
 test("the published authoring change schema remains outside protocol conformance", async () => {
   const schema = await readAuthoringSchema("changes");
   assert.equal(schema.properties.authoring_change_proposals_version.const, AUTHORING_CHANGE_PROPOSAL_FORMAT);
@@ -3799,6 +4991,35 @@ test("a mutation rejects a revision that no longer describes the workspace", asy
     }),
     (error) => error.code === "AUTHORING_REVISION_CONFLICT"
   );
+});
+
+test("the local authoring mutation lock rejects concurrent writers", async (t) => {
+  const output = await temporaryDirectory(t);
+  const stateDirectory = path.join(output, "authoring");
+  let release;
+  const held = withAuthoringWorkspaceMutationLock(
+    stateDirectory,
+    () => new Promise((resolve) => { release = resolve; })
+  );
+  const lockPath = authoringWorkspaceLockPath(stateDirectory);
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      await access(lockPath);
+      break;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  }
+  await access(lockPath);
+
+  await assert.rejects(
+    withAuthoringWorkspaceMutationLock(stateDirectory, async () => {}),
+    (error) => error.code === "AUTHORING_WORKSPACE_BUSY"
+  );
+
+  release();
+  await held;
+  await assert.rejects(access(lockPath), { code: "ENOENT" });
 });
 
 test("workspace revision has exactly one implementation", async (t) => {

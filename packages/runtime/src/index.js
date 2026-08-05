@@ -51,6 +51,14 @@ export {
 } from "./context-preparation.js";
 export { inspectPackage, formatInspection } from "./inspect.js";
 export { formatPackageLint, lintPackage } from "./lint.js";
+export { buildSearchCorpus } from "./search-corpus.js";
+export {
+  createSearchIndex,
+  extractMarkdownSections,
+  readSearchSection,
+  searchIndex,
+  tokenizeSearchText
+} from "./search.js";
 export { initPackage } from "./init.js";
 export {
   AUTHORING_AREAS,
@@ -70,6 +78,27 @@ export {
   isResolvedQuestion
 } from "./authoring/core/entries.js";
 export {
+  AUTHORING_CANDIDATE_AFFECTED_CONCERNS,
+  AUTHORING_CANDIDATE_DECISIONS,
+  AUTHORING_CANDIDATE_FORMAT,
+  AUTHORING_CANDIDATE_KINDS,
+  AUTHORING_CANDIDATE_MATERIALITY,
+  AUTHORING_CANDIDATE_RECOMMENDATIONS,
+  AUTHORING_CANDIDATE_STATUSES
+} from "./authoring/core/candidates.js";
+export {
+  AUTHORING_PROBE_BRIEF_FORMAT,
+  AUTHORING_PROBE_INSTRUCTION_ID,
+  AUTHORING_PROBE_INSTRUCTION_VERSION,
+  AUTHORING_PROBE_RESULT_FORMAT,
+  AUTHORING_PROBE_RUN_FORMAT,
+  clarificationProbeInstructions,
+  clarificationProbeResultSchema,
+  clarificationProbeTransportSchema,
+  validateClarificationProbeResult,
+  validateProbePreparationInput
+} from "./authoring/core/probes.js";
+export {
   AUTHORING_CHANGE_BASIS_KINDS,
   AUTHORING_CHANGE_DECISIONS,
   AUTHORING_CHANGE_PROPOSAL_FORMAT,
@@ -80,11 +109,17 @@ export {
   applyDocumentChange,
   answerQuestion,
   attachSource,
+  decideClarificationCandidate,
   decideDocumentChange,
   proposeDocumentChange,
+  recordClarificationCandidate,
   recordObservations,
   reviewArea
 } from "./authoring/operations.js";
+export {
+  authoringWorkspaceLockPath,
+  withAuthoringWorkspaceMutationLock
+} from "./authoring/lock.js";
 export {
   AUTHORING_SCHEMA_FORMAT,
   listAuthoringSchemas,
@@ -101,6 +136,14 @@ export {
   formatAuthoringWorkspaceSnapshot,
   inspectAuthoringWorkspace
 } from "./authoring-workspace.js";
+export {
+  AUTHORING_PROBE_EXECUTION_FORMAT,
+  formatClarificationProbePreflight,
+  formatClarificationProbePreparation,
+  prepareClarificationProbe,
+  recordClarificationProbeRun,
+  verifyClarificationProbe
+} from "./authoring-probes.js";
 export {
   computeDirectoryDigest,
   computeFileDigest,

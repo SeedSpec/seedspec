@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/capability-scenarios.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/capability-scenarios.schema.json",
   "title": "SeedSpec Capability Acceptance Scenarios 0.3",
   "type": "object",
   "additionalProperties": false,

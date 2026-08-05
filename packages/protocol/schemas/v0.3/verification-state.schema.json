@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/verification-state.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/verification-state.schema.json",
   "title": "SeedSpec Verification State 0.3",
   "type": "object",
   "additionalProperties": false,

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/artifact-selections.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/artifact-selections.schema.json",
   "title": "SeedSpec Artifact Selections 0.3",
   "type": "object",
   "additionalProperties": false,
@@ -37,4 +37,3 @@
     }
   }
 }
-

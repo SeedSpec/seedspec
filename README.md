@@ -92,12 +92,17 @@ npx @seedspec/cli --help
 npx @seedspec/cli version
 npx @seedspec/cli begin <package-path-or-github-url>
 npx @seedspec/cli prompt <package-path-or-github-url>
+npx @seedspec/cli shell <package-path-or-github-url>
 ```
 
 `seedspec begin` is the read-only starting point for an agent. It validates the
 package, inventories the available intent and supporting material, explains the
 trust boundary, and identifies the user choices needed before resolution or
 implementation.
+
+`seedspec shell` retains one validated package for repeated inspection,
+deterministic documentation search, and exact section retrieval. Add `--jsonl`
+for a prompt-free agent stream. The session remains read-only.
 
 `seedspec prompt` prints a short handoff a person can paste into ChatGPT,
 Codex, Claude, or another agent. A tool-capable agent follows it by running
@@ -136,6 +141,11 @@ agent records through operations that validate and write durable state:
 npx @seedspec/cli author record --json -         # findings, questions, inventory
 npx @seedspec/cli author answer --json -         # the author's answer, or a decline
 npx @seedspec/cli author attach-source --json -  # material the review may cite
+npx @seedspec/cli author candidate --json -      # consequential ambiguity
+npx @seedspec/cli author candidate-decide --json - # author disposition
+npx @seedspec/cli author probe-prepare --output <directory> --json - # freeze a probe
+npx @seedspec/cli author probe-check --bundle <directory> # verify before execution
+npx @seedspec/cli author probe-record --json -   # import one run result
 npx @seedspec/cli author propose --json -        # exact before/after document bytes
 npx @seedspec/cli author decide --json -         # explicit author acceptance or rejection
 npx @seedspec/cli author apply --json -          # engine application of an accepted proposal
@@ -146,14 +156,21 @@ The authoring workflow combines deterministic protocol checks with agent-guided
 semantic review. The CLI does not embed a model or silently rewrite package
 content. Proposed document replacements remain workspace state until the author
 accepts them and the engine applies them against unchanged bytes.
+Probe preparation is explicit and does not call a model. A runner must pass the
+frozen identity and budget preflight before execution. Imported results remain
+local evidence and produce one candidate occurrence or a no-action record.
 The author can reject an accepted but unapplied proposal without losing its
 earlier decision record.
-`npx @seedspec/cli author prompt` prints the short prompt a person gives
-an agent; the full review output then supplies the self-contained operating
-brief. Its review threads stay private while the author gets a short, natural
-conversation about the seed. The `--summary` option is the shorter human-facing
-CLI form. The front door may offer a bundled project-local authoring skill, but
-it must ask before exporting it and the skill is never required.
+`npx @seedspec/cli author prompt` prints the prompt a person gives an agent.
+Practical requirements exploration is the default. `--deep` requests a
+decision-tree interview; `--minimal` preserves the supplied material with the
+least shaping. Recommendations never become package meaning without author
+acceptance. The full review output then supplies the self-contained operating
+brief. Its review threads stay private while the author gets a natural
+conversation about the seed. The
+`--summary` option is the shorter human-facing CLI form. The front door may
+offer a bundled project-local authoring skill, but it must ask before exporting
+it and the skill is never required.
 
 See the [documentation index](docs/README.md), [authoring guidance](docs/authoring.md),
 [kind-aware authoring](docs/kind-guidance.md), [preparing and
@@ -239,6 +256,7 @@ packages/
 ├── runtime/     authoring, validation, resolution, and conformance library
 └── cli/         the seedspec command-line interface
 conformance/     portable conformance cases and fixtures
+authoring-evals/ private black-box authoring subjects and completed-run checks
 docs/            specification, guidance, use cases, evidence, and rationale
 skills/          authoring and implementation-handoff workflows
 ```

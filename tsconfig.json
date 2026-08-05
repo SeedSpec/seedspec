@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "types": ["node"]
+  },
+  "include": [
+    "packages/protocol/src/index.js",
+    "packages/runtime/src/errors.js",
+    "packages/runtime/src/integrity.js",
+    "packages/runtime/src/files.js"
+  ]
+}

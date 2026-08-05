@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/schemas/authoring/v1/authoring-probe-runs.schema.json",
+  "title": "SeedSpec authoring probe runs",
+  "description": "Local evidence from frozen clarification probe executions. Run and candidate-occurrence identities remain separate from comparison groups.",
+  "type": "object",
+  "required": ["authoring_probe_runs_version", "runs"],
+  "properties": {
+    "authoring_probe_runs_version": { "const": "1" },
+    "runs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/run" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "run": {
+      "type": "object",
+      "required": [
+        "id",
+        "brief_id",
+        "brief_digest",
+        "pass",
+        "package_draft_digest",
+        "workspace_revision",
+        "provider",
+        "requested_model",
+        "served_model",
+        "runner",
+        "status",
+        "validation",
+        "outcome",
+        "author_question",
+        "no_action",
+        "occurrence_id",
+        "candidate_id",
+        "comparison_group_ids",
+        "usage",
+        "limitations",
+        "retained_at",
+        "retention",
+        "artifacts"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^run-[a-z0-9-]+$" },
+        "brief_id": { "type": "string", "pattern": "^probe-[0-9a-f]{24}$" },
+        "brief_digest": { "$ref": "#/$defs/digest" },
+        "pass": { "type": "string", "minLength": 1 },
+        "package_draft_digest": { "$ref": "#/$defs/digest" },
+        "workspace_revision": { "$ref": "#/$defs/digest" },
+        "provider": { "type": "string", "minLength": 1 },
+        "requested_model": { "type": "string", "minLength": 1 },
+        "served_model": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "runner": { "type": "object" },
+        "status": { "enum": ["succeeded", "failed", "timed-out"] },
+        "validation": {
+          "type": "object",
+          "required": ["status", "errors"],
+          "properties": {
+            "status": { "enum": ["valid", "quarantined"] },
+            "errors": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          },
+          "additionalProperties": false
+        },
+        "outcome": { "enum": ["candidate", "no-action", "quarantined"] },
+        "author_question": {
+          "oneOf": [{ "type": "string", "minLength": 2 }, { "type": "null" }]
+        },
+        "no_action": {
+          "oneOf": [{ "type": "object" }, { "type": "null" }]
+        },
+        "occurrence_id": {
+          "oneOf": [
+            { "type": "string", "pattern": "^occurrence-[a-z0-9-]+$" },
+            { "type": "null" }
+          ]
+        },
+        "candidate_id": {
+          "oneOf": [
+            { "type": "string", "pattern": "^candidate-[a-z0-9-]+$" },
+            { "type": "null" }
+          ]
+        },
+        "comparison_group_ids": { "type": "array", "maxItems": 0 },
+        "usage": { "type": "object" },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "retained_at": { "type": "string", "format": "date-time" },
+        "retention": { "type": "object" },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "digest", "bytes"],
+            "properties": {
+              "file": { "type": "string", "minLength": 1 },
+              "digest": { "$ref": "#/$defs/digest" },
+              "bytes": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

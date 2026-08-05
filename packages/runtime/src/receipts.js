@@ -39,7 +39,7 @@ const PROTOCOL_OWNED_RESOLUTION_PATHS = Object.freeze([
   "additions"
 ]);
 
-function canonicalValue(value) {
+export function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
   if (value && typeof value === "object") {
     return Object.fromEntries(
@@ -51,7 +51,7 @@ function canonicalValue(value) {
   return value;
 }
 
-function canonicalDigest(value) {
+export function canonicalDigest(value) {
   return `sha256:${createHash("sha256")
     .update(JSON.stringify(canonicalValue(value)), "utf8")
     .digest("hex")}`;

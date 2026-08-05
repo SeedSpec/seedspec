@@ -6,7 +6,9 @@ import { resolvePackageLocation } from "./files.js";
 
 export async function upgradePackage(inputPath, {
   to = protocolRelease.release_id,
-  write = false
+  // Accepted for the documented dry-run-first contract; no migration can
+  // write yet because Protocol 0.3 is a clean cut.
+  write: _write = false
 } = {}) {
   if (to !== protocolRelease.release_id) {
     throw new SeedSpecError(`Unsupported SeedSpec upgrade target: ${to}`, {

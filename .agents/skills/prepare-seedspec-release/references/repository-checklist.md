@@ -25,7 +25,7 @@
 - Vendored schemas and protocol metadata exactly match the release package.
 - The harness records exact protocol, runtime, CLI, model, configuration, and
   artifact digests.
-- Existing tests and a clean 0.2 smoke run pass.
+- Existing tests and a current-family smoke run pass.
 - Published evidence states narrow findings and limitations; do not turn
   benchmark saturation into a broad quality claim.
 

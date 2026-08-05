@@ -9,14 +9,14 @@ every published artifact must identify the same exact release.
 
 - First-party release artifacts use the exact version in `release.json`.
 - The protocol family is the major/minor pair in `release.json`, currently
-  `0.2`.
+  `0.3`.
 - Published package versions do not use prerelease suffixes such as `-alpha`.
 - Seed packages authored by other publishers keep their own independent
   semantic versions. The default version for a newly initialized seed is
   `0.1.0`.
 - Exact schema identifiers and permanent website assets live under
   `https://seedspec.dev/releases/<release>/schemas/`.
-- `https://seedspec.dev/schemas/v0.2/` is a convenient family alias. It is not
+- `https://seedspec.dev/schemas/v0.3/` is a convenient family alias. It is not
   an immutable release identifier.
 - npm packages are published to the default `latest` tag. The project status
   communicates that releases below `1.0.0` are evolving.

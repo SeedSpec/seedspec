@@ -1,13 +1,10 @@
 import { cp, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
+import { protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
-import { pathExists, resolvePackagePath } from "./files.js";
+import { pathExists, portablePath, resolvePackagePath } from "./files.js";
 import { computeDirectoryDigest, computeFileDigest } from "./integrity.js";
-
-function portablePath(...parts) {
-  return parts.join("/");
-}
 
 function directoryName(id) {
   return id.replace(/[^a-zA-Z0-9.-]/gu, "-");
@@ -248,7 +245,7 @@ export async function materializeContextIndex(
   await mkdir(baseDirectory, { recursive: true });
 
   const index = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     modules: []
   };
 

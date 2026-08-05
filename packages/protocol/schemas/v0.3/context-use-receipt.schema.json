@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/context-use-receipt.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/context-use-receipt.schema.json",
   "title": "SeedSpec Reported Context Use Receipt",
   "type": "object",
   "additionalProperties": false,

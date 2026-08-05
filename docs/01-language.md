@@ -19,7 +19,7 @@ package-author intent
   -> resolved project handoff
   -> request-specific context preparation
   -> implementation in a user-chosen environment
-  -> separately recorded verification evidence
+  -> separately recorded realization evidence
 ```
 
 ## 1. Role of this document
@@ -237,7 +237,7 @@ It is derived protocol state, not a modified package and not an executable
 program.
 
 The resolved project separates deterministic protocol-owned output from
-preserved project memory such as implementation notes and verification
+preserved project memory such as implementation notes and recorded
 evidence. Re-resolution updates the former and preserves the latter according
 to their schemas and staleness rules.
 
@@ -290,7 +290,8 @@ The language lifecycle is:
    operation and only with required integrity checks.
 10. **Implement** — a user-chosen agent or environment realizes the resolved
    intent under its own authority.
-11. **Verify** — record evidence against the agreed subject and completion scope.
+11. **Record evidence** — bind observations to the agreed subject and
+    completion scope.
 12. **Re-resolve** — update protocol-owned state when packages or selections
     change while preserving designated project memory.
 
@@ -315,7 +316,7 @@ SeedSpec defines nine normative operations:
 
 The exact operation contracts are defined in `docs/operations.md`.
 
-Commands such as `begin`, `inspect`, `lint`, `audit`, `doctor`, and
+Commands such as `begin`, `inspect`, `lint`, `review`, `doctor`, and
 `conformance` are reference-tool experiences built on the language. They do not
 add protocol operations.
 

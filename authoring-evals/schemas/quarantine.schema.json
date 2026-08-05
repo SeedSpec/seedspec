@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/private/authoring-evals/quarantine.schema.json",
+  "title": "SeedSpec authoring evaluation quarantine record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authoring_eval_quarantine_version",
+    "contract_id",
+    "run_id",
+    "run_result_id",
+    "created_at",
+    "reasons",
+    "quarantine_id"
+  ],
+  "properties": {
+    "authoring_eval_quarantine_version": { "const": "1" },
+    "contract_id": { "type": ["string", "null"] },
+    "run_id": { "type": ["string", "null"] },
+    "run_result_id": { "type": "string", "pattern": "^run-result-[a-f0-9]{64}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "reasons": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "quarantine_id": { "type": "string", "pattern": "^quarantine-[a-f0-9]{64}$" }
+  }
+}

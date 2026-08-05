@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { lookup as dnsLookup } from "node:dns/promises";
 import {
   cp,
   mkdir,
@@ -10,18 +11,15 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { protocolVersion } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
-import { pathExists, readYamlFile, resolvePackagePath } from "./files.js";
+import { pathExists, portablePath, readYamlFile, resolvePackagePath } from "./files.js";
 import { computeDirectoryDigest } from "./integrity.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 
 const MAX_MANIFEST_BYTES = 256 * 1024;
 const MAX_RESOURCE_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_RESOURCE_TOTAL_BYTES = 10 * 1024 * 1024;
-
-function portablePath(...parts) {
-  return parts.join("/");
-}
 
 function directoryName(id) {
   return id.replace(/[^a-zA-Z0-9.-]/gu, "-");
@@ -38,6 +36,84 @@ function duplicateIds(items) {
     .filter((id) => seen.has(id) || !seen.add(id));
 }
 
+function parseIpv4Octets(hostname) {
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u.exec(hostname);
+  if (!match) return null;
+  const octets = match.slice(1).map(Number);
+  return octets.every((value) => value <= 255) ? octets : null;
+}
+
+function ipv4IsForbidden(octets) {
+  const [first, second] = octets;
+  return first === 0
+    || first === 10
+    || first === 127
+    || (first === 169 && second === 254)
+    || (first === 192 && second === 168)
+    || (first === 172 && second >= 16 && second <= 31)
+    || (first === 100 && second >= 64 && second <= 127);
+}
+
+function parseIpv6Groups(address) {
+  const bare = address.split("%")[0];
+  const halves = bare.split("::");
+  if (halves.length > 2) return null;
+  const expand = (section) => (section === "" ? [] : section.split(":"));
+  const headGroups = expand(halves[0]);
+  const tailGroups = halves.length === 2 ? expand(halves[1]) : [];
+  const trailing = tailGroups.length > 0 ? tailGroups : headGroups;
+  if (trailing.length > 0 && trailing[trailing.length - 1].includes(".")) {
+    const octets = parseIpv4Octets(trailing.pop());
+    if (!octets) return null;
+    trailing.push(
+      (((octets[0] << 8) | octets[1]) >>> 0).toString(16),
+      (((octets[2] << 8) | octets[3]) >>> 0).toString(16)
+    );
+  }
+  const missing = 8 - headGroups.length - tailGroups.length;
+  if (halves.length === 2 ? missing < 0 : missing !== 0) return null;
+  const groups = [
+    ...headGroups,
+    ...Array(halves.length === 2 ? missing : 0).fill("0"),
+    ...tailGroups
+  ].map((group) => (/^[0-9a-f]{1,4}$/u.test(group) ? Number.parseInt(group, 16) : Number.NaN));
+  return groups.length === 8 && groups.every(Number.isFinite) ? groups : null;
+}
+
+function ipv6IsForbidden(groups) {
+  const zeroThrough = (end) => groups.slice(0, end).every((group) => group === 0);
+  if (zeroThrough(8)) return true;
+  if (zeroThrough(7) && groups[7] === 1) return true;
+  if ((groups[0] & 0xfe00) === 0xfc00) return true;
+  if ((groups[0] & 0xffc0) === 0xfe80) return true;
+  if ((groups[0] & 0xffc0) === 0xfec0) return true;
+  if (zeroThrough(5) && (groups[5] === 0xffff || groups[5] === 0)) {
+    return ipv4IsForbidden([
+      groups[6] >> 8,
+      groups[6] & 0xff,
+      groups[7] >> 8,
+      groups[7] & 0xff
+    ]);
+  }
+  return false;
+}
+
+function hostIsForbidden(hostname) {
+  const host = hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost")) return true;
+  if (host.startsWith("[") && host.endsWith("]")) {
+    const groups = parseIpv6Groups(host.slice(1, -1));
+    return groups === null || ipv6IsForbidden(groups);
+  }
+  const octets = parseIpv4Octets(host);
+  if (octets) return ipv4IsForbidden(octets);
+  if (host.includes(":")) {
+    const groups = parseIpv6Groups(host);
+    return groups === null || ipv6IsForbidden(groups);
+  }
+  return false;
+}
+
 function assertHttpsUrl(value, label) {
   let url;
   try {
@@ -52,18 +128,35 @@ function assertHttpsUrl(value, label) {
       code: "INVALID_IMPLEMENTATION_RESOURCE"
     });
   }
-  const hostname = url.hostname.toLowerCase();
-  const privateIpv4 = /^(?:10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)/u;
-  if (
-    hostname === "localhost"
-    || hostname.endsWith(".localhost")
-    || hostname === "::1"
-    || hostname === "[::1]"
-    || privateIpv4.test(hostname)
-  ) {
+  if (hostIsForbidden(url.hostname)) {
     throw new SeedSpecError(`${label} must not target a local or private network host: ${value}`, {
       code: "INVALID_IMPLEMENTATION_RESOURCE"
     });
+  }
+}
+
+// Literal checks cannot see where a hostname points, so the fetch path also
+// vets every resolved address before connecting. Rebinding between this check
+// and the connection is out of scope for the reference runtime.
+async function assertPublicDnsResolution(lookupImpl, hostname, label) {
+  const host = hostname.toLowerCase();
+  if (host.startsWith("[") || parseIpv4Octets(host)) return;
+  let records;
+  try {
+    records = await lookupImpl(host, { all: true });
+  } catch (error) {
+    throw new SeedSpecError(`${label} hostname could not be resolved: ${host}`, {
+      code: "IMPLEMENTATION_RESOURCE_FETCH_FAILED",
+      details: [error?.message ?? String(error)]
+    });
+  }
+  for (const record of records ?? []) {
+    if (hostIsForbidden(String(record.address ?? ""))) {
+      throw new SeedSpecError(
+        `${label} must not target a local or private network host: ${host} resolves to ${record.address}`,
+        { code: "INVALID_IMPLEMENTATION_RESOURCE" }
+      );
+    }
   }
 }
 
@@ -329,7 +422,7 @@ export async function materializeImplementationResources(records, workspace) {
   );
 
   const index = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     policies: [],
     resources: []
   };
@@ -424,7 +517,7 @@ export function implementationResourceIndexDigest(index) {
 
 export function createInitialImplementationResourceState(index) {
   return {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     index_digest: implementationResourceIndexDigest(index),
     status: index.resources.length > 0 ? "not-resolved" : "resolved",
     resources: index.resources.map((resource) => ({
@@ -546,11 +639,14 @@ function assertResolvedVersion(resource, actualVersion) {
   }
 }
 
-async function fetchBytes(fetchImpl, url, limit, label) {
+async function fetchBytes(transport, url, limit, label) {
+  const { fetchImpl, lookupImpl } = transport;
   let currentUrl = url;
   let response;
   for (let redirectCount = 0; redirectCount <= 5; redirectCount += 1) {
-    assertHttpsUrl(currentUrl, redirectCount === 0 ? label : `${label} redirect`);
+    const hopLabel = redirectCount === 0 ? label : `${label} redirect`;
+    assertHttpsUrl(currentUrl, hopLabel);
+    await assertPublicDnsResolution(lookupImpl, new URL(currentUrl).hostname, hopLabel);
     response = await fetchImpl(currentUrl, {
       redirect: "manual",
       signal: AbortSignal.timeout(15_000)
@@ -592,9 +688,9 @@ async function fetchBytes(fetchImpl, url, limit, label) {
   return bytes;
 }
 
-async function downloadCanonicalResource(resource, destination, fetchImpl) {
+async function downloadCanonicalResource(resource, destination, transport) {
   const manifestBytes = await fetchBytes(
-    fetchImpl,
+    transport,
     resource.canonical.manifest_url,
     MAX_MANIFEST_BYTES,
     `Canonical manifest for ${resource.id}`
@@ -639,7 +735,7 @@ async function downloadCanonicalResource(resource, destination, fetchImpl) {
     filePaths.add(file.path);
     assertHttpsUrl(file.url, `Canonical resource file ${file.path}`);
     const bytes = await fetchBytes(
-      fetchImpl,
+      transport,
       file.url,
       MAX_RESOURCE_FILE_BYTES,
       `Canonical resource file ${file.path}`
@@ -743,7 +839,7 @@ function relativeResolvedDirectory(resource) {
   )}/`;
 }
 
-async function resolveOneResource(workspace, resource, fetchImpl) {
+async function resolveOneResource(workspace, resource, transport) {
   const destination = resolvedDirectory(workspace, resource);
   if (!resource.canonical) {
     try {
@@ -767,7 +863,7 @@ async function resolveOneResource(workspace, resource, fetchImpl) {
 
   const temporaryRoot = await mkdtemp(path.join(workspace, ".resource-download-"));
   try {
-    const downloaded = await downloadCanonicalResource(resource, temporaryRoot, fetchImpl);
+    const downloaded = await downloadCanonicalResource(resource, temporaryRoot, transport);
     await rm(destination, { recursive: true, force: true });
     await mkdir(path.dirname(destination), { recursive: true });
     await rename(temporaryRoot, destination);
@@ -821,7 +917,8 @@ function workspaceForProject(projectPath) {
 }
 
 export async function resolveImplementationResources(projectPath, {
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  lookupImpl = dnsLookup
 } = {}) {
   const workspace = workspaceForProject(projectPath);
   const indexPath = path.join(workspace, "implementation-resources.yaml");
@@ -865,7 +962,7 @@ export async function resolveImplementationResources(projectPath, {
 
   const resources = [];
   for (const resource of index.resources) {
-    const resolved = await resolveOneResource(workspace, resource, fetchImpl);
+    const resolved = await resolveOneResource(workspace, resource, { fetchImpl, lookupImpl });
     const earlier = previousUse.get(resourceKey(resource.package, resource.id));
     if (earlier) {
       resolved.use_status = earlier.use_status;
@@ -880,7 +977,7 @@ export async function resolveImplementationResources(projectPath, {
   const anyUnavailable = resources.some((resource) => resource.resolution_status === "unavailable");
   const anyFallback = resources.some((resource) => resource.resolution_status === "bundled-fallback");
   const state = {
-    protocol_version: "0.3",
+    protocol_version: protocolVersion,
     index_digest: implementationResourceIndexDigest(index),
     status: expectedUnavailable.length > 0
       ? "failed"

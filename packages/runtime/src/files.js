@@ -119,3 +119,7 @@ async function readMarkdownDirectory(directory) {
 
   return chunks.join("\n\n").trim();
 }
+
+export function portablePath(...parts) {
+  return parts.join("/");
+}

@@ -13,6 +13,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
   lstat,
+  mkdir,
   readFile,
   realpath,
   rename,
@@ -22,9 +23,16 @@ import {
 import path from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { SeedSpecError } from "../errors.js";
-import { computePackageDigest } from "../integrity.js";
+import { computeDirectoryDigest, computePackageDigest } from "../integrity.js";
 import { lintPackage } from "../lint.js";
 import { validatePackage } from "../validate.js";
+import {
+  AUTHORING_CANDIDATE_FORMAT,
+  AuthoringCandidateInputError,
+  assignAuthoringCandidateId,
+  validateAuthoringCandidateDecisionInput,
+  validateAuthoringCandidateInput
+} from "./core/candidates.js";
 import {
   AuthoringInputError,
   QUESTION_RESOLUTIONS,
@@ -44,14 +52,18 @@ import {
   validateAuthoringChangeProposalInput
 } from "./core/proposals.js";
 
-export const AUTHORING_OPERATION_FORMAT = "1";
+export const AUTHORING_OPERATION_FORMAT = "2";
 
 function fail(message, code, details = []) {
   throw new SeedSpecError(message, { code, details });
 }
 
 function toSeedSpecError(error) {
-  if (error instanceof AuthoringInputError || error instanceof AuthoringProposalInputError) {
+  if (
+    error instanceof AuthoringCandidateInputError
+    || error instanceof AuthoringInputError
+    || error instanceof AuthoringProposalInputError
+  ) {
     fail(error.message, error.code, error.details);
   }
   throw error;
@@ -145,6 +157,72 @@ async function readDocumentSnapshot(packageRoot, requestedPath) {
   };
 }
 
+function portablePathContains(rootPath, candidatePath) {
+  if (typeof rootPath !== "string" || rootPath.trim() === "") return false;
+  const normalizedRoot = rootPath
+    .replaceAll("\\", "/")
+    .replace(/^\.\//u, "")
+    .replace(/\/+$/u, "");
+  if (normalizedRoot === ".") return true;
+  return candidatePath === normalizedRoot || candidatePath.startsWith(`${normalizedRoot}/`);
+}
+
+function contextModuleLocalPath(manifest, module) {
+  const source = module?.source;
+  if (!source || typeof source !== "object") return null;
+  if (source.kind === "package") return source.path;
+  if (source.kind === "artifact") {
+    const artifacts = Array.isArray(manifest.artifacts) ? manifest.artifacts : [];
+    return artifacts.find(({ id }) => id === source.id)?.path ?? null;
+  }
+  if (source.kind === "resource") {
+    const resources = Array.isArray(manifest.implementation_resources?.resources)
+      ? manifest.implementation_resources.resources
+      : [];
+    return resources.find(({ id }) => id === source.id)?.bundled?.path ?? null;
+  }
+  return null;
+}
+
+async function authoringBoundaryManifest(packageRoot) {
+  let content;
+  try {
+    content = await readFile(path.join(packageRoot, "seedspec.yaml"), "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+  try {
+    const manifest = parseYaml(content);
+    return manifest && typeof manifest === "object" && !Array.isArray(manifest)
+      ? manifest
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function assertContextModuleAuthoringPath(packageRoot, documentPath) {
+  if (documentPath === "seedspec.yaml") return;
+  const manifest = await authoringBoundaryManifest(packageRoot);
+  if (!manifest) return;
+  const modules = Array.isArray(manifest.context?.modules) ? manifest.context.modules : [];
+  const protectedModule = modules.find((module) => (
+    module.id !== manifest.definition?.module
+    && portablePathContains(contextModuleLocalPath(manifest, module), documentPath)
+  ));
+  if (!protectedModule) return;
+  const sourcePath = contextModuleLocalPath(manifest, protectedModule);
+  fail(
+    `Authoring cannot change fixed context module ${protectedModule.id}: ${documentPath}`,
+    "AUTHORING_CONTEXT_MODULE_READ_ONLY",
+    [
+      `module source: ${sourcePath}`,
+      "Maintain the context module through its native workflow, then resume authoring against the updated package."
+    ]
+  );
+}
+
 async function readProposalState(stateRoot) {
   const state = (await readState(
     path.join(stateRoot, "change-proposals.yaml"),
@@ -161,6 +239,118 @@ async function readProposalState(stateRoot) {
 
 async function writeProposalState(stateRoot, state) {
   await writeState(path.join(stateRoot, "change-proposals.yaml"), state);
+}
+
+async function proposalStillAnchorsMeaning(packageRoot, proposal) {
+  try {
+    const document = await readDocumentSnapshot(packageRoot, proposal.document.path);
+    return document.digest === proposal.document.after_digest
+      && document.content === proposal.document.after_content;
+  } catch (error) {
+    if (
+      error instanceof SeedSpecError
+      && ["INVALID_AUTHORING_DOCUMENT_PATH", "AUTHORING_DOCUMENT_NOT_TEXT"].includes(error.code)
+    ) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function candidateHasCurrentMeaningAnchor(packageRoot, proposalState, candidateId) {
+  const anchors = proposalState.proposals.filter((proposal) => (
+    proposal.status === "applied"
+    && proposal.basis?.references?.includes(candidateId)
+  ));
+  for (const proposal of anchors) {
+    if (await proposalStillAnchorsMeaning(packageRoot, proposal)) return true;
+  }
+  return false;
+}
+
+function manifestWorkspaceFields(content) {
+  if (typeof content !== "string") return null;
+  try {
+    const manifest = parseYaml(content);
+    if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) return null;
+    return {
+      id: typeof manifest.id === "string" ? manifest.id : null,
+      version: typeof manifest.version === "string" ? manifest.version : null,
+      kind: typeof manifest.kind === "string" ? manifest.kind : null,
+      protocol_version: typeof manifest.protocol_version === "string"
+        ? manifest.protocol_version
+        : null
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function prepareWorkspaceManifestUpdate(packageRoot, stateRoot, proposal) {
+  if (proposal.document.path !== "seedspec.yaml") return null;
+  const before = manifestWorkspaceFields(proposal.document.before_content);
+  const after = manifestWorkspaceFields(proposal.document.after_content);
+  if (!before?.id || !after?.id) return null;
+
+  const workspacePath = path.join(stateRoot, "workspace.yaml");
+  const workspace = await readState(workspacePath, "authoring workspace");
+  if (!workspace) return null;
+  const recordedPath = workspace.package?.path;
+  const resolvedPath = path.isAbsolute(recordedPath ?? "")
+    ? path.resolve(recordedPath)
+    : path.resolve(path.dirname(workspacePath), recordedPath ?? "");
+  const recordedId = workspace.package?.id;
+  if (
+    resolvedPath !== path.resolve(packageRoot)
+    || (recordedId && recordedId !== before.id && recordedId !== after.id)
+  ) {
+    fail("Authoring workspace does not match this package", "AUTHORING_WORKSPACE_MISMATCH", [
+      `workspace: ${workspacePath}`,
+      `package: ${before.id}`
+    ]);
+  }
+
+  return { workspacePath, workspace, after };
+}
+
+async function applyWorkspaceManifestUpdate(prepared) {
+  if (!prepared) return false;
+  const { workspacePath, workspace, after } = prepared;
+  workspace.package ??= {};
+  const changed = workspace.package.id !== after.id
+    || workspace.package.version !== after.version
+    || workspace.package.kind !== after.kind
+    || workspace.protocol_version !== after.protocol_version;
+  if (!changed) return false;
+  workspace.package.id = after.id;
+  workspace.package.version = after.version;
+  workspace.package.kind = after.kind;
+  workspace.protocol_version = after.protocol_version;
+  await writeState(workspacePath, workspace);
+  return true;
+}
+
+function candidateStatePath(stateRoot) {
+  return path.join(stateRoot, "candidates", "index.yaml");
+}
+
+async function readCandidateState(stateRoot) {
+  const state = (await readState(
+    candidateStatePath(stateRoot),
+    "authoring candidates"
+  )) ?? {
+    authoring_candidates_version: AUTHORING_CANDIDATE_FORMAT,
+    candidates: []
+  };
+  if (!Array.isArray(state.candidates)) {
+    fail("Authoring candidate state must contain a candidates array", "INVALID_AUTHORING_STATE");
+  }
+  return state;
+}
+
+async function writeCandidateState(stateRoot, state) {
+  await mkdir(path.join(stateRoot, "candidates"), { recursive: true });
+  await writeState(candidateStatePath(stateRoot), state);
 }
 
 async function updatePassChange(stateRoot, passId, collection, proposalId) {
@@ -204,9 +394,9 @@ async function currentRevision(packageRoot, stateRoot) {
   return computeAuthoringRevision(packageRoot, stateRoot);
 }
 
-// Optimistic concurrency. Optional locally, where a single agent cannot race
-// itself; a hosted store passes it on every call so two browser tabs cannot
-// silently overwrite each other.
+// Optimistic concurrency. The runtime keeps this optional for direct API
+// compatibility. The CLI requires it because one agent can launch overlapping
+// commands, and a hosted store needs it for independent clients.
 async function assertRevision(packageRoot, stateRoot, expected) {
   const actual = await currentRevision(packageRoot, stateRoot);
   if (expected && expected !== actual) {
@@ -227,7 +417,6 @@ async function envelope({
   changed,
   extra = {}
 }) {
-  const { inspectAuthoringWorkspace } = await import("../authoring-workspace.js");
   return {
     authoring_operation_version: AUTHORING_OPERATION_FORMAT,
     operation,
@@ -239,11 +428,38 @@ async function envelope({
     },
     changed,
     ...extra,
-    snapshot: await inspectAuthoringWorkspace(packageRoot, { stateDirectory: stateRoot }),
     local: {
       state_root: stateRoot,
       package_root: packageRoot
     }
+  };
+}
+
+function candidateReceipt(candidate) {
+  return {
+    id: candidate.id,
+    pass: candidate.pass,
+    status: candidate.status,
+    issue: candidate.issue,
+    disposition: candidate.disposition ?? null,
+    proposal_ids: candidate.proposal_ids ?? []
+  };
+}
+
+function proposalReceipt(proposal) {
+  return {
+    id: proposal.id,
+    pass: proposal.pass,
+    status: proposal.status,
+    summary: proposal.summary,
+    document: {
+      path: proposal.document.path,
+      before_digest: proposal.document.before_digest,
+      after_digest: proposal.document.after_digest
+    },
+    decision: proposal.decision ?? null,
+    applied_at: proposal.applied_at ?? null,
+    package_digest_after: proposal.package_digest_after ?? null
   };
 }
 
@@ -440,7 +656,10 @@ export async function reviewArea(packageRoot, {
   }
   const previousRevision = await assertRevision(packageRoot, stateRoot, expectedRevision);
   const active = await resolveActivePass(stateRoot, requestedPass);
-  const proposalState = await readProposalState(stateRoot);
+  const [proposalState, candidateState] = await Promise.all([
+    readProposalState(stateRoot),
+    readCandidateState(stateRoot)
+  ]);
   const unsettledChanges = proposalState.proposals.filter(({ pass, status }) => (
     pass === active.id && ["proposed", "accepted"].includes(status)
   ));
@@ -451,11 +670,46 @@ export async function reviewArea(packageRoot, {
       unsettledChanges.map(({ id, status }) => `${id}: ${status}`)
     );
   }
+  const openCandidates = candidateState.candidates.filter(({ pass, status }) => (
+    pass === active.id && status === "open"
+  ));
+  if (openCandidates.length > 0) {
+    fail(
+      `Authoring pass ${active.id} has unsettled clarification candidates`,
+      "AUTHORING_CANDIDATE_PENDING",
+      openCandidates.map(({ id, issue }) => `${id}: ${issue}`)
+    );
+  }
+  const acceptedWithoutAppliedChange = candidateState.candidates.filter((candidate) => (
+    candidate.pass === active.id
+    && candidate.status === "accepted"
+    && !proposalState.proposals.some((proposal) => (
+      proposal.status === "applied"
+      && proposal.basis?.references?.includes(candidate.id)
+    ))
+  ));
+  if (acceptedWithoutAppliedChange.length > 0) {
+    fail(
+      `Authoring pass ${active.id} has accepted meaning not applied to the package`,
+      "AUTHORING_CANDIDATE_CHANGE_REQUIRED",
+      acceptedWithoutAppliedChange.map(({ id }) => id)
+    );
+  }
 
   const [record, lint] = await Promise.all([
     validatePackage(packageRoot),
     lintPackage(packageRoot)
   ]);
+  const unresolvedSuccessMaterial = active.request.area === "success" && outcome === "reviewed"
+    ? lint.diagnostics.filter(({ code }) => code.startsWith("SUCCESS_MATERIAL_"))
+    : [];
+  if (unresolvedSuccessMaterial.length > 0) {
+    fail(
+      `Authoring pass ${active.id} cannot close without authored observable success`,
+      "AUTHORING_SUCCESS_MATERIAL_REQUIRED",
+      unresolvedSuccessMaterial.map(({ code, message }) => `${code}: ${message}`)
+    );
+  }
   const digest = await computePackageDigest(packageRoot);
 
   const result = active.result;
@@ -556,6 +810,131 @@ export async function attachSource(packageRoot, {
 }
 
 /**
+ * Record one consequential clarification candidate. The record separates
+ * authored claims from model inference and remains advisory workspace state.
+ */
+export async function recordClarificationCandidate(packageRoot, {
+  stateRoot,
+  pass: requestedPass,
+  candidate: input,
+  expectedRevision = null,
+  now = () => new Date().toISOString()
+} = {}) {
+  let shaped;
+  try {
+    shaped = validateAuthoringCandidateInput(input);
+  } catch (error) {
+    toSeedSpecError(error);
+  }
+  const previousRevision = await assertRevision(packageRoot, stateRoot, expectedRevision);
+  const active = await resolveActivePass(stateRoot, requestedPass);
+  const [state, packageDraftDigest] = await Promise.all([
+    readCandidateState(stateRoot),
+    computeDirectoryDigest(packageRoot)
+  ]);
+  const id = assignAuthoringCandidateId(
+    new Set(state.candidates.map(({ id: existingId }) => existingId).filter(Boolean)),
+    () => randomUUID()
+  );
+  const candidate = {
+    id,
+    ...shaped,
+    pass: active.id,
+    status: "open",
+    package_draft_digest_before: packageDraftDigest,
+    workspace_revision_before: previousRevision,
+    recorded_at: now(),
+    disposition: null,
+    proposal_ids: []
+  };
+  state.candidates.push(candidate);
+  await writeCandidateState(stateRoot, state);
+
+  return envelope({
+    operation: "record-clarification-candidate",
+    packageRoot,
+    stateRoot,
+    previousRevision,
+    revisionChecked: Boolean(expectedRevision),
+    changed: [{ kind: "candidates", id }],
+    extra: { candidate: candidateReceipt(candidate) }
+  });
+}
+
+/**
+ * Record the author's disposition of one candidate. Accepting a meaning does
+ * not change package intent; a separate document proposal must carry it into
+ * the package.
+ */
+export async function decideClarificationCandidate(packageRoot, {
+  stateRoot,
+  candidateId,
+  decision,
+  decidedBy = "author",
+  meaning,
+  rationale,
+  expectedRevision = null,
+  now = () => new Date().toISOString()
+} = {}) {
+  let shaped;
+  try {
+    shaped = validateAuthoringCandidateDecisionInput({
+      candidateId,
+      decision,
+      decidedBy,
+      meaning,
+      rationale
+    });
+  } catch (error) {
+    toSeedSpecError(error);
+  }
+  const previousRevision = await assertRevision(packageRoot, stateRoot, expectedRevision);
+  const [state, packageDraftDigest] = await Promise.all([
+    readCandidateState(stateRoot),
+    computeDirectoryDigest(packageRoot)
+  ]);
+  const candidate = state.candidates.find(({ id }) => id === shaped.candidateId);
+  if (!candidate) {
+    fail(`Unknown authoring candidate: ${shaped.candidateId}`, "UNKNOWN_AUTHORING_CANDIDATE");
+  }
+  if (candidate.status !== "open") {
+    fail(
+      `Authoring candidate ${candidate.id} is already ${candidate.status}`,
+      "AUTHORING_CANDIDATE_ALREADY_DECIDED"
+    );
+  }
+  if (
+    !["decline", "defer"].includes(shaped.decision)
+    && candidate.package_draft_digest_before !== packageDraftDigest
+  ) {
+    fail(`Authoring candidate ${candidate.id} is stale`, "AUTHORING_CANDIDATE_STALE", [
+      `expected package: ${candidate.package_draft_digest_before}`,
+      `actual package: ${packageDraftDigest}`
+    ]);
+  }
+
+  candidate.status = shaped.status;
+  candidate.disposition = {
+    outcome: shaped.decision,
+    by: shaped.decidedBy,
+    meaning: shaped.meaning,
+    rationale: shaped.rationale,
+    decided_at: now()
+  };
+  await writeCandidateState(stateRoot, state);
+
+  return envelope({
+    operation: "decide-clarification-candidate",
+    packageRoot,
+    stateRoot,
+    previousRevision,
+    revisionChecked: Boolean(expectedRevision),
+    changed: [{ kind: "candidates", id: candidate.id }],
+    extra: { candidate: candidateReceipt(candidate) }
+  });
+}
+
+/**
  * Propose one complete text-document replacement without changing package
  * bytes. The before and after content make the change inspectable without a
  * frontend-specific diff format.
@@ -575,10 +954,13 @@ export async function proposeDocumentChange(packageRoot, {
   }
   const previousRevision = await assertRevision(packageRoot, stateRoot, expectedRevision);
   const active = await resolveActivePass(stateRoot, requestedPass);
-  const [document, packageDigest, state] = await Promise.all([
+  await assertContextModuleAuthoringPath(packageRoot, shaped.path);
+  const [document, packageDigest, state, candidateState, packageDraftDigest] = await Promise.all([
     readDocumentSnapshot(packageRoot, shaped.path),
     computePackageDigest(packageRoot),
-    readProposalState(stateRoot)
+    readProposalState(stateRoot),
+    readCandidateState(stateRoot),
+    computeDirectoryDigest(packageRoot)
   ]);
   const afterDigest = contentDigest(shaped.content);
   if (document.digest === afterDigest && document.content === shaped.content) {
@@ -588,6 +970,32 @@ export async function proposeDocumentChange(packageRoot, {
     shaped,
     new Set(state.proposals.map(({ id: existingId }) => existingId).filter(Boolean))
   );
+  const referencedCandidates = candidateState.candidates.filter(({ id: candidateId }) => (
+    shaped.basis.references.includes(candidateId)
+  ));
+  for (const candidate of referencedCandidates) {
+    if (candidate.status !== "accepted") {
+      fail(
+        `Authoring candidate ${candidate.id} is ${candidate.status}, not accepted`,
+        "AUTHORING_CANDIDATE_NOT_ACCEPTED"
+      );
+    }
+    const currentMeaningAnchor = candidate.package_draft_digest_before === packageDraftDigest
+      || await candidateHasCurrentMeaningAnchor(packageRoot, state, candidate.id);
+    if (!currentMeaningAnchor) {
+      fail(`Authoring candidate ${candidate.id} is stale`, "AUTHORING_CANDIDATE_STALE", [
+        `expected package: ${candidate.package_draft_digest_before}`,
+        `actual package: ${packageDraftDigest}`,
+        "No unchanged applied document currently anchors this accepted meaning."
+      ]);
+    }
+  }
+  if (referencedCandidates.length > 0 && shaped.basis.kind !== "author-answer") {
+    fail(
+      "An accepted clarification candidate must enter a proposal as an author answer",
+      "AUTHORING_CANDIDATE_AUTHORITY_MISMATCH"
+    );
+  }
   const proposal = {
     id,
     pass: active.id,
@@ -609,6 +1017,12 @@ export async function proposeDocumentChange(packageRoot, {
   };
   state.proposals.push(proposal);
   await writeProposalState(stateRoot, state);
+  for (const candidate of referencedCandidates) {
+    candidate.proposal_ids = [...new Set([...(candidate.proposal_ids ?? []), id])];
+  }
+  if (referencedCandidates.length > 0) {
+    await writeCandidateState(stateRoot, candidateState);
+  }
   await updatePassChange(stateRoot, active.id, "proposed", id);
 
   return envelope({
@@ -619,9 +1033,12 @@ export async function proposeDocumentChange(packageRoot, {
     revisionChecked: Boolean(expectedRevision),
     changed: [
       { kind: "change-proposals", id },
+      ...(referencedCandidates.length > 0
+        ? referencedCandidates.map(({ id: candidateId }) => ({ kind: "candidates", id: candidateId }))
+        : []),
       { kind: "pass-result", id: active.id }
     ],
-    extra: { proposal }
+    extra: { proposal: proposalReceipt(proposal) }
   });
 }
 
@@ -664,21 +1081,17 @@ export async function decideDocumentChange(packageRoot, {
   }
 
   if (shaped.decision === "accept") {
-    const [document, packageDigest] = await Promise.all([
-      readDocumentSnapshot(packageRoot, proposal.document.path),
-      computePackageDigest(packageRoot)
-    ]);
+    const document = await readDocumentSnapshot(packageRoot, proposal.document.path);
     if (
-      packageDigest !== proposal.package_digest_before
-      || document.digest !== proposal.document.before_digest
+      document.digest !== proposal.document.before_digest
       || document.content !== proposal.document.before_content
     ) {
       fail(
         `Authoring change proposal ${proposal.id} is stale`,
         "AUTHORING_CHANGE_STALE",
         [
-          `expected package: ${proposal.package_digest_before}`,
-          `actual package: ${packageDigest}`,
+          `expected document: ${proposal.document.before_digest}`,
+          `actual document: ${document.digest}`,
           `document: ${proposal.document.path}`
         ]
       );
@@ -712,7 +1125,7 @@ export async function decideDocumentChange(packageRoot, {
       { kind: "change-proposals", id: proposal.id },
       ...(passChanged ? [{ kind: "pass-result", id: proposal.pass }] : [])
     ],
-    extra: { proposal }
+    extra: { proposal: proposalReceipt(proposal) }
   });
 }
 
@@ -744,28 +1157,34 @@ export async function applyDocumentChange(packageRoot, {
     );
   }
 
+  const workspaceManifestUpdate = await prepareWorkspaceManifestUpdate(
+    packageRoot,
+    stateRoot,
+    proposal
+  );
+
   const document = await readDocumentSnapshot(packageRoot, proposal.document.path);
   const alreadyWritten = document.digest === proposal.document.after_digest
     && document.content === proposal.document.after_content;
   if (!alreadyWritten) {
-    const packageDigest = await computePackageDigest(packageRoot);
+    await assertContextModuleAuthoringPath(packageRoot, proposal.document.path);
     if (
-      packageDigest !== proposal.package_digest_before
-      || document.digest !== proposal.document.before_digest
+      document.digest !== proposal.document.before_digest
       || document.content !== proposal.document.before_content
     ) {
       fail(
         `Authoring change proposal ${proposal.id} is stale`,
         "AUTHORING_CHANGE_STALE",
         [
-          `expected package: ${proposal.package_digest_before}`,
-          `actual package: ${packageDigest}`,
+          `expected document: ${proposal.document.before_digest}`,
+          `actual document: ${document.digest}`,
           `document: ${proposal.document.path}`
         ]
       );
     }
     await writeTextAtomically(document.absolutePath, proposal.document.after_content);
   }
+  const workspaceChanged = await applyWorkspaceManifestUpdate(workspaceManifestUpdate);
 
   proposal.status = "applied";
   proposal.applied_at = now();
@@ -781,9 +1200,10 @@ export async function applyDocumentChange(packageRoot, {
     revisionChecked: Boolean(expectedRevision),
     changed: [
       { kind: "package-document", path: proposal.document.path },
+      ...(workspaceChanged ? [{ kind: "workspace" }] : []),
       { kind: "change-proposals", id: proposal.id },
       ...(passChanged ? [{ kind: "pass-result", id: proposal.pass }] : [])
     ],
-    extra: { proposal, recovered: alreadyWritten }
+    extra: { proposal: proposalReceipt(proposal), recovered: alreadyWritten }
   });
 }

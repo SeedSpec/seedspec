@@ -1,6 +1,6 @@
 {
   "name": "@seedspec/cli",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Author and use portable, agent-ready SeedSpec packages",
   "keywords": [
     "seedspec",
@@ -29,7 +29,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@seedspec/runtime": "0.3.0"
+    "@seedspec/runtime": "0.3.1"
   },
   "repository": {
     "type": "git",

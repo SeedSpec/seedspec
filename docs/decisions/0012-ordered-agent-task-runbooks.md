@@ -1,6 +1,6 @@
 # Decision 0012: Preserve package-authored tasks as ordered agent reminders
 
-- Status: accepted for Protocol 0.1 design alpha
+- Status: accepted; introduced in Protocol 0.2 and retained in Protocol 0.3
 - Date: 2026-07-22
 
 ## Context

@@ -1,6 +1,7 @@
 # Decision 0014: Make authoring source-bound and seed-oriented
 
-- Status: accepted for the reference authoring product
+- Status: accepted for the reference authoring product; default exploration
+  posture amended by [Decision 0019](0019-default-kind-aware-exploration.md)
 - Date: 2026-07-24
 
 ## Context
@@ -27,7 +28,9 @@ The default authoring workflow is source-bound.
 1. Absence is not a gap. A finding must cite authored or supplied material that
    creates the concern.
 2. Generic kind and domain checklists do not create missing requirements.
-3. Broader ideation is opt-in and produces optional suggestions.
+3. Broader ideation is opt-in and produces optional suggestions. Decision 0019
+   later makes grounded exploration inside the stated subject the default while
+   retaining this rule for unrelated scope.
 4. Genuine contradictions between authored claims must be resolved or expressed
    as intentional alternatives.
 5. Four private review threads replace the seven-pass default: seed, coherence,
@@ -67,8 +70,9 @@ That conversation is intentionally separate from source-bound review.
   changes rather than reconstructed as an exhaustive audit.
 - The web workbench can render the same inventory, findings, contradictions,
   suggestions, dispositions, and changes as the CLI.
-- The CLI's long operating brief carries the behavior contract to agents that
-  have no installed SeedSpec skill, while the prompt a human copies stays short.
+- The CLI's operating brief carries the complete behavior contract to agents
+  that have no installed SeedSpec skill. Decision 0019 later permits a longer
+  copied prompt so the selected exploration interaction begins before review.
 - Strong models may still inspect broadly to complete a task, so the active
   context boundary and prohibited author-facing patterns are stated explicitly
   rather than implied by the four review threads.

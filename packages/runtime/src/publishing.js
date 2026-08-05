@@ -56,6 +56,7 @@ export async function publishCheckPackage(inputPath, {
     })
   ]);
   const successDiagnostics = lint.diagnostics.filter(({ code }) => code.startsWith("SUCCESS_MATERIAL_"));
+  const starterDiagnostics = lint.diagnostics.filter(({ code }) => code.startsWith("STARTER_"));
 
   const checks = [
     check(
@@ -78,6 +79,13 @@ export async function publishCheckPackage(inputPath, {
         : successDiagnostics.map(({ message }) => message).join(" ")
     ),
     check(
+      "starter-content",
+      starterDiagnostics.length === 0 ? "passed" : "failed",
+      starterDiagnostics.length === 0
+        ? "Starter intent and description have been replaced"
+        : starterDiagnostics.map(({ message }) => message).join(" ")
+    ),
+    check(
       "authoring-review",
       review.complete ? "passed" : "advisory",
       review.complete
@@ -90,6 +98,20 @@ export async function publishCheckPackage(inputPath, {
       review.questions.open === 0
         ? "No open session questions"
         : `${review.questions.open} open authoring-session question(s); these are not automatically package content or future work`
+    ),
+    check(
+      "open-clarification-candidates",
+      review.candidates.open === 0 ? "passed" : "advisory",
+      review.candidates.open === 0
+        ? "No open clarification candidate"
+        : `${review.candidates.open} clarification candidate(s) still await author disposition`
+    ),
+    check(
+      "accepted-clarification-meaning",
+      review.candidates.accepted_unapplied === 0 ? "passed" : "failed",
+      review.candidates.accepted_unapplied === 0
+        ? "No accepted clarification meaning is missing from package bytes"
+        : `${review.candidates.accepted_unapplied} accepted clarification candidate(s) must be applied through a document proposal before packing`
     ),
     check(
       "accepted-authoring-changes",
@@ -133,12 +155,14 @@ export async function publishCheckPackage(inputPath, {
       state: review.state,
       complete: review.complete,
       open_questions: review.questions.open,
+      open_candidates: review.candidates.open,
+      accepted_unapplied_candidates: review.candidates.accepted_unapplied,
       proposed_changes: review.proposals.proposed,
       accepted_changes: review.proposals.accepted
     },
     limitations: [
       "Publish readiness confirms protocol integrity, stable bytes, and separate success material; it does not certify package quality or completeness.",
-      "Guided authoring review and local session-question closure are advisory, not universal publication gates.",
+      "Guided authoring review, local session-question closure, and undecided clarification candidates are advisory, not universal publication gates.",
       "Lint diagnostics are advisories unless a publisher applies a stricter policy.",
       "No implementation or outcome claim is created by this check."
     ]

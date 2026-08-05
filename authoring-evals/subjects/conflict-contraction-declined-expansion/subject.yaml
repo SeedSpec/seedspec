@@ -1,0 +1,93 @@
+authoring_eval_subject_version: "1"
+id: conflict-contraction-declined-expansion
+description: >-
+  A compact workflow subject with two conflicting approved sources, one
+  author-requested contraction, and one undecided expansion from an unapproved
+  workshop source.
+mode: shape
+starter:
+  package: package
+  sources:
+    - id: approved-product-brief
+      path: sources/product-brief.md
+      authority: approved-product-owner
+    - id: approved-security-policy
+      path: sources/security-policy.md
+      authority: approved-security-owner
+    - id: unapproved-workshop-ideas
+      path: sources/workshop-ideas.md
+      authority: unapproved-informational
+author_prompt: >-
+  Co-author this package. Resolve the approved delivery-channel conflict. Remove
+  the every-active-item inventory and full decision discussion while retaining
+  actionable stalled items and pending decisions. The deletion is intentional
+  and has no destination. Consider automatic escalation, but do not assume that
+  expansion is accepted.
+proxy_author:
+  decisions:
+    - id: confirm-contraction
+      answer: >-
+        Keep the Friday summary. Retain stalled items with owners and decision
+        titles with requested actions. Delete the broader inventory and full
+        discussion with no destination.
+    - id: resolve-delivery-conflict
+      answer: >-
+        Use only the authenticated team channel. Do not create an email
+        exception.
+    - id: decline-escalation-expansion
+      answer: >-
+        Keep automatic escalation outside this package. It creates no package
+        content, configuration, task, or implementation obligation.
+expectations:
+  documents:
+    - path: definition/workflow.md
+      contains:
+        - authenticated team channel
+        - requested action
+      contains_any:
+        - - do not send it by email
+          - Do not send the summary by email
+          - no email exception
+        - - no other destination
+          - no replacement destination
+          - not moved elsewhere
+          - not relocated
+      excludes:
+        - automatic escalation
+    - path: acceptance.md
+      contains:
+        - authenticated team channel
+        - requested action
+      contains_any:
+        - - no email exception
+          - not sent by email
+          - no summary is sent by email
+        - - no other destination
+          - no replacement destination
+          - not moved elsewhere
+          - not relocated
+      excludes:
+        - automatic escalation
+  state:
+    review_complete: true
+    questions:
+      open: 0
+      resolved: 1
+    candidates:
+      open: 0
+      accepted: 1
+      declined: 1
+    proposals:
+      applied: 3
+      paths:
+        - definition/workflow.md
+        - definition/workflow.md
+        - acceptance.md
+      required_paths:
+        - definition/workflow.md
+        - acceptance.md
+  candidate_meaning:
+    accepted_contains: authenticated team channel
+    declined_issue_contains: automatic escalation
+  authority:
+    applied_meaning_contains: authenticated team channel

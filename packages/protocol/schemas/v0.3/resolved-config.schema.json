@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.3.0/schemas/resolved-config.schema.json",
+  "$id": "https://seedspec.dev/releases/0.3.1/schemas/resolved-config.schema.json",
   "title": "Resolved SeedSpec Configuration 0.3",
   "type": "object",
   "additionalProperties": false,
@@ -22,7 +22,7 @@
       "additionalProperties": { "type": "string", "minLength": 1 }
     },
     "technical_preferences": {
-      "$ref": "https://seedspec.dev/releases/0.3.0/schemas/technical-preferences.schema.json"
+      "$ref": "https://seedspec.dev/releases/0.3.1/schemas/technical-preferences.schema.json"
     }
   },
   "$defs": {

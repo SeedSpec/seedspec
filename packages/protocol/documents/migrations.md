@@ -53,6 +53,11 @@ inventory, explicit source forms, and nested bridge bindings require authors to
 reauthor package structure against the `0.3` schemas. Resolved handoffs must be
 regenerated.
 
+Protocol release `0.3.1` keeps the `0.3` source-package structure. Packages from
+exact release `0.3.0` require no source rewrite. Validate source packages again
+and regenerate resolved handoffs under `0.3.1` so release-bound documents,
+schemas, conformance metadata, and receipts use the new exact identity.
+
 The reference CLI recognizes retired package shapes and returns
 `UNSUPPORTED_PROTOCOL_MIGRATION`. It does not rewrite them. This boundary is
 intentional while SeedSpec has no external adopters.

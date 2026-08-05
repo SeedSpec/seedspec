@@ -14,13 +14,15 @@ import path from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 import {
   protocolRelease,
-  protocolReleaseDigest
+  protocolReleaseDigest,
+  protocolVersion
 } from "@seedspec/protocol";
 import { SeedSpecError } from "./errors.js";
 import { readYamlFile } from "./files.js";
 import {
   computeDirectoryDigest,
-  computeSelectedDirectoryDigest
+  computeSelectedDirectoryDigest,
+  lexicalCompare
 } from "./integrity.js";
 import { PROTOCOL_OWNED_RESOLUTION_PATHS } from "./receipts.js";
 import { resolveProject } from "./resolve.js";
@@ -42,10 +44,6 @@ const runtimeVersion = JSON.parse(
 
 function contentDigest(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-}
-
-function lexicalCompare(left, right) {
-  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
 }
 
 async function computeConformanceBundleDigest(root) {
@@ -211,7 +209,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         configurationSelectionsPath = path.join(outputDirectory, "configuration-selections.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(configurationSelectionsPath, stringifyYaml({
-          protocol_version: "0.3",
+          protocol_version: protocolVersion,
           packages: records.map((record) => ({
             package: record.manifest.id,
             selection: "example"
@@ -225,7 +223,7 @@ async function executeCase(testCase, indexDirectory, outputDirectory) {
         appliedIntentPath = path.join(outputDirectory, "applied-intent.yaml");
         await mkdir(outputDirectory, { recursive: true });
         await writeFile(appliedIntentPath, stringifyYaml({
-          protocol_version: "0.3",
+          protocol_version: protocolVersion,
           packages: records.map((record) => ({
             package: record.manifest.id,
             use: "as-authored"
