@@ -22,7 +22,7 @@
     },
     {
       "path": "packages/protocol/schemas/v0.3/artifact-selections.schema.json",
-      "digest": "sha256:4658e56a3ad97fd07d49b2bb0b969446d2e1e45430b0ade7475afd3ee34762f5"
+      "digest": "sha256:03af102534977ca4eaadb43ad9854a1995f5a667ccebf1c4555a1a0b6baa5061"
     },
     {
       "path": "packages/protocol/schemas/v0.3/capability-conformance-result.schema.json",
