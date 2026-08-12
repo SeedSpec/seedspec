@@ -1,0 +1,12 @@
+{
+  "cli": [
+    "npx",
+    "@seedspec/cli"
+  ],
+  "package": "spec",
+  "bundle": ".seedspec/capabilities.accepted.yaml",
+  "stage": "implementation",
+  "evidence": ".seedspec/capability-implementation.yaml",
+  "telemetry": ".seedspec/capability-trace.jsonl",
+  "maxRepairTurns": 3
+}

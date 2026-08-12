@@ -14,12 +14,13 @@
     "release:verify": "node ./scripts/verify-release.mjs",
     "release:pack": "npm pack --workspace @seedspec/protocol --dry-run && npm pack --workspace @seedspec/runtime --dry-run && npm pack --workspace @seedspec/cli --dry-run",
     "check:names": "node ./scripts/check-clean-names.mjs",
-    "lint": "eslint packages/protocol/src packages/runtime/src packages/runtime/test packages/cli/src packages/cli/bin packages/cli/test authoring-evals/scripts authoring-evals/test scripts eslint.config.js",
+    "lint": "eslint packages/protocol/src packages/runtime/src packages/runtime/test packages/cli/src packages/cli/bin packages/cli/test authoring-evals/scripts authoring-evals/test experiments/capabilities-0.4 scripts eslint.config.js",
     "typecheck": "tsc -p tsconfig.json",
     "validate:fixtures": "node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/comprehensive-application && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/portable-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/revision-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/profiled-workflow",
     "authoring-evals:check": "node ./authoring-evals/scripts/check-subjects.mjs",
     "authoring-evals:test": "node --test ./authoring-evals/test/*.test.mjs",
-    "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures && npm run authoring-evals:check && npm run authoring-evals:test",
+    "capability-evals:test": "node --test ./experiments/capabilities-0.4/test/*.test.mjs",
+    "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures && npm run authoring-evals:check && npm run authoring-evals:test && npm run capability-evals:test",
     "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/cases.yaml"
   },
   "engines": {
