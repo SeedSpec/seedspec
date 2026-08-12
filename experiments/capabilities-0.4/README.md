@@ -140,7 +140,18 @@ provider-independent and does not maintain its own model catalog.
 
 This tests harness enforcement without building an agent runtime from scratch.
 The package currently targets the maintained `@earendil-works/pi-*` package
-names. It is not installed by the repository.
+names. Its dependency-pinned test exercises Pi extension registration, failed
+completion, repair delivery, successful termination, and hashed telemetry
+against the real SeedSpec CLI gate.
+
+Run the extension test with:
+
+```sh
+npm ci --ignore-scripts --prefix experiments/capabilities-0.4/pi-harness
+npm test --prefix experiments/capabilities-0.4/pi-harness
+```
+
+The extension has not yet run a live model through Pi.
 
 ## Current screen
 
@@ -210,8 +221,8 @@ Repeat on a second failure class before treating the mechanism as portable.
 - Extraction sees distributable package material. It does not yet import
   private authoring sources.
 - The CLI validates declared evidence. It does not execute package scripts.
-- The Pi extension is scaffolded but not installed or exercised against a live
-  provider in this repository.
+- The Pi extension lifecycle is tested without a live provider. Provider
+  authentication, model behavior, and live token telemetry remain untested.
 - Composition mappings remain agent judgments. The gate checks completeness
   and referential integrity, not semantic compatibility.
 - One package and three runs per condition are not an effect estimate.

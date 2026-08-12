@@ -21,6 +21,7 @@ model-treatment effect.
 - Hashed tool and gate telemetry.
 - Adapter from the existing downstream behavioral evaluator to capability
   verification evidence.
+- Dependency-pinned Pi extension test using the real SeedSpec CLI gate.
 
 ## Gate discrimination
 
@@ -98,6 +99,11 @@ verification by itself. Verification requires a source compatible with the
 declared method: tool, independent verifying agent, external system, or end
 user. This preserves implementing-agent evidence for implementation progress
 without treating self-attestation as proof.
+
+The Pi extension now has a provider-free lifecycle test. It registers both
+capability tools, blocks failed evidence, sends one repair follow-up, terminates
+after trusted evidence passes, and records hashed telemetry without raw prompts.
+This tests extension mechanics, not live model behavior.
 
 ## What the screen supports
 
