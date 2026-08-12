@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SeedSpec experimental capability proposal model output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_bundle_version", "package", "authorship", "capabilities"],
+  "properties": {
+    "capability_bundle_version": { "const": "0.4-experimental" },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "authorship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": { "status": { "const": "proposed" } }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capability" }
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "namespacedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+    },
+    "localId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "sourceRef": { "type": "string", "pattern": "^#[a-f0-9]{12}$" },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "stability", "path", "runner", "rubric"],
+      "properties": {
+        "kind": { "enum": ["script", "agent-review", "human-observation"] },
+        "stability": { "enum": ["deterministic", "nondeterministic"] },
+        "path": { "type": ["string", "null"] },
+        "runner": { "type": ["string", "null"] },
+        "rubric": { "type": ["string", "null"] }
+      }
+    },
+    "acceptanceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "verification"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "verification": { "$ref": "#/$defs/verification" }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "source_refs", "acceptance"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "acceptance": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/acceptanceCheck" }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "required"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "required": { "type": "boolean" }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["offers", "needs"],
+      "properties": {
+        "offers": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+        "needs": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "name",
+        "description",
+        "source_refs",
+        "outcomes",
+        "integration"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespacedId" },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "outcomes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/outcome" }
+        },
+        "integration": { "$ref": "#/$defs/integration" }
+      }
+    }
+  }
+}

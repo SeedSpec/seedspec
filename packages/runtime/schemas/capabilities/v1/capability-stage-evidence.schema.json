@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/experiments/capabilities/0.4/capability-stage-evidence.schema.json",
+  "title": "SeedSpec experimental capability stage evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_evidence_version", "bundle_digest", "stage", "records"],
+  "properties": {
+    "capability_evidence_version": { "const": "0.4-experimental" },
+    "bundle_digest": { "$ref": "#/$defs/digest" },
+    "stage": { "enum": ["implementation", "verification"] },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/record" }
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "namespacedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:\\.[a-z0-9][a-z0-9-]*){2,}$"
+    },
+    "localId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "reference"],
+      "properties": {
+        "source": { "enum": ["tool", "external-system", "implementing-agent", "end-user"] },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "outcome", "status", "evidence"],
+      "properties": {
+        "capability": { "$ref": "#/$defs/namespacedId" },
+        "outcome": { "$ref": "#/$defs/localId" },
+        "check": { "$ref": "#/$defs/localId" },
+        "status": { "enum": ["addressed", "not-addressed", "pass", "fail", "not-run"] },
+        "evidence": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evidence" }
+        },
+        "note": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    }
+  }
+}

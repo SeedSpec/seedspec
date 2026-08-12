@@ -193,6 +193,18 @@ export {
   inspectCapabilityConformance,
   validateCapabilityConformanceDeclarations
 } from "./capability-conformance.js";
+export {
+  CAPABILITY_BUNDLE_VERSION,
+  CAPABILITY_STAGE_REPORT_VERSION,
+  acceptCapabilityBundle,
+  capabilityBundleDigest,
+  evaluateCapabilityStage,
+  formatCapabilityAcceptance,
+  formatCapabilityExtraction,
+  formatCapabilityStageReport,
+  prepareCapabilityExtraction,
+  validateCapabilityBundle
+} from "./capability-workbench.js";
 export { formatConformanceResult, runConformanceSuite } from "./conformance.js";
 export {
   formatInstallationInspection,

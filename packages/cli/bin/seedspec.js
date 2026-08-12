@@ -18,6 +18,7 @@ import {
   applyDocumentChange,
   applyIntegrationBridgePlan,
   applySkillImportPlan,
+  acceptCapabilityBundle,
   beginPackage,
   computeDirectoryDigest,
   createAuthoringWorkspace,
@@ -51,6 +52,9 @@ import {
   formatClarificationProbePreparation,
   formatAuthorEvaluation,
   formatCapabilityConformance,
+  formatCapabilityAcceptance,
+  formatCapabilityExtraction,
+  formatCapabilityStageReport,
   formatConformanceResult,
   formatFeatureDiscovery,
   formatContextPreparation,
@@ -85,6 +89,7 @@ import {
   formatBundledResource,
   packPackage,
   preparePackage,
+  prepareCapabilityExtraction,
   prepareContext,
   prepareClarificationProbe,
   planIntegrationBridges,
@@ -94,6 +99,7 @@ import {
   recordClarificationProbeRun,
   resolveImplementationResources,
   resolveProject,
+  evaluateCapabilityStage,
   runtimeVersion,
   runBundledConformanceSuite,
   runConformanceSuite,
@@ -189,6 +195,9 @@ Usage:
   seedspec verify-lock <project-path> --package <package-path> [--package <package-path>]
   seedspec completion <project-path> [--json]
   seedspec capability-conformance <package-path> <capability-id> [--result <yaml>] [--json]
+  seedspec capabilities prepare <package-path> --output <directory> [--json]
+  seedspec capabilities accept <package-path> --bundle <yaml> --accepted-by <identity> --output <yaml> [--json]
+  seedspec capabilities check <package-path> --bundle <yaml> [--bundle <yaml>] [--stage <stage>] [--evidence <yaml>] [--json]
   seedspec resolve <root-package-path> [options]
   seedspec init <solution|application|feature|component|workflow|automation|configuration|integration> [--output <path>]
 
@@ -1350,6 +1359,51 @@ async function run() {
         ? `${JSON.stringify(result, null, 2)}\n`
         : `${formatCapabilityConformance(result)}\n`);
       break;
+    }
+    case "capabilities": {
+      const action = requirePositional(positional, 0, "capability action");
+      const packagePath = requirePositional(positional, 1, "package path");
+      if (action === "prepare") {
+        rejectUnknownOptions(options, ["output", "json"]);
+        const output = oneOption(options, "output");
+        if (!output) throw new Error("Option --output is required");
+        const result = await prepareCapabilityExtraction(packagePath, output);
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${formatCapabilityExtraction(result)}\n`);
+        break;
+      }
+      if (action === "accept") {
+        rejectUnknownOptions(options, ["bundle", "accepted-by", "output", "json"]);
+        const bundle = oneOption(options, "bundle");
+        const acceptedBy = oneOption(options, "accepted-by");
+        const output = oneOption(options, "output");
+        if (!bundle) throw new Error("Option --bundle is required");
+        if (!acceptedBy) throw new Error("Option --accepted-by is required");
+        if (!output) throw new Error("Option --output is required");
+        const result = await acceptCapabilityBundle(packagePath, bundle, {
+          acceptedBy,
+          outputPath: output
+        });
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${formatCapabilityAcceptance(result)}\n`);
+        break;
+      }
+      if (action === "check") {
+        rejectUnknownOptions(options, ["bundle", "stage", "evidence", "json"]);
+        const bundles = options.get("bundle") ?? [];
+        const result = await evaluateCapabilityStage(packagePath, bundles, {
+          stage: oneOption(options, "stage") ?? "authoring",
+          evidencePath: oneOption(options, "evidence")
+        });
+        process.stdout.write(options.has("json")
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${formatCapabilityStageReport(result)}\n`);
+        if (result.status !== "pass") process.exitCode = 1;
+        break;
+      }
+      throw new Error(`Unknown capabilities action: ${action}`);
     }
     case "init": {
       const kind = requirePositional(positional, 0, "package kind");

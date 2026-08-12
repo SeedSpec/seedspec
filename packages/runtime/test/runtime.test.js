@@ -40,6 +40,7 @@ import {
   AUTHORING_WORKSPACE_SNAPSHOT_FORMAT,
   applyIntegrationBridgePlan,
   applyDocumentChange,
+  acceptCapabilityBundle,
   auditPackage,
   beginPackage,
   capabilityConformanceBinding,
@@ -57,6 +58,7 @@ import {
   formatAuthoringWorkspaceSnapshot,
   discoverFeatures,
   discoverFormatIntegrations,
+  evaluateCapabilityStage,
   formatAuthoringAudit,
   formatAuthoringDocumentation,
   formatAuthoringStarterPrompt,
@@ -75,6 +77,7 @@ import {
   packPackage,
   planIntegrationBridges,
   prepareContext,
+  prepareCapabilityExtraction,
   prepareClarificationProbe,
   preparePackage,
   proposeDocumentChange,
@@ -89,6 +92,7 @@ import {
   runConformanceSuite,
   upgradePackage,
   validateContextModule,
+  validateCapabilityBundle,
   verifyProjectLock,
   validatePackage,
   verifyClarificationProbe,
@@ -1428,6 +1432,169 @@ test("capability revision histories and suites receive semantic validation", asy
     validatePackage(packagePath),
     (error) => error.code === "INVALID_CAPABILITY_CONFORMANCE"
   );
+});
+
+test("capability workbench binds extraction, acceptance, composition, implementation, and verification", async (t) => {
+  const output = await temporaryDirectory(t);
+  const extractionPath = path.join(output, "extraction");
+  const prepared = await prepareCapabilityExtraction(allowance, extractionPath);
+  assert.ok(prepared.sections > 0);
+  const kit = JSON.parse(await readFile(path.join(extractionPath, "extraction-kit.json"), "utf8"));
+  const proposalOutputSchema = JSON.parse(
+    await readFile(path.join(extractionPath, "capability-proposal.schema.json"), "utf8")
+  );
+  assert.doesNotMatch(JSON.stringify(proposalOutputSchema), /"oneOf"/u);
+  assert.equal(typeof compileConfigurationSchema(proposalOutputSchema), "function");
+  const [firstSource, secondSource = firstSource] = kit.sections;
+  const proposal = {
+    capability_bundle_version: "0.4-experimental",
+    package: kit.package,
+    authorship: { status: "proposed" },
+    capabilities: [
+      {
+        id: "org.seedspec.experimental.household-work",
+        version: "0.1.0",
+        name: "Household work is assignable",
+        description: "The application can expose work that another capability assigns.",
+        source_refs: [firstSource.id],
+        outcomes: [{
+          id: "work-remains-identifiable",
+          description: "Work retains an observable identity when its description changes.",
+          source_refs: [firstSource.id],
+          acceptance: [{
+            id: "identity-review",
+            description: "Inspect two revisions and confirm they retain one identity.",
+            verification: {
+              kind: "agent-review",
+              stability: "nondeterministic",
+              rubric: "Pass only when the same work identity is observable before and after revision."
+            }
+          }]
+        }],
+        integration: {
+          offers: [{ id: "assignable-work", description: "Work identities available for assignment." }]
+        }
+      },
+      {
+        id: "org.seedspec.experimental.work-assignment",
+        version: "0.1.0",
+        name: "Work can be assigned",
+        description: "An authorized actor can assign available work.",
+        source_refs: [secondSource.id],
+        outcomes: [{
+          id: "archived-work-is-rejected",
+          description: "Archived work cannot be selected for a new assignment.",
+          source_refs: [secondSource.id],
+          acceptance: [{
+            id: "archived-rejection",
+            description: "Attempt an assignment against archived work and observe rejection.",
+            verification: {
+              kind: "agent-review",
+              stability: "nondeterministic",
+              rubric: "Pass only when the implementation rejects the assignment without restoring the work."
+            }
+          }]
+        }],
+        integration: {
+          needs: [{
+            id: "work-source",
+            description: "A source of assignable work identities.",
+            required: true
+          }]
+        }
+      }
+    ]
+  };
+  const proposalPath = path.join(output, "proposal.yaml");
+  await writeFile(proposalPath, stringifyYaml(proposal), "utf8");
+  const authoring = await evaluateCapabilityStage(allowance, [proposalPath], {
+    stage: "authoring"
+  });
+  assert.equal(authoring.status, "pass");
+
+  const acceptedPath = path.join(output, "accepted.yaml");
+  const accepted = await acceptCapabilityBundle(allowance, proposalPath, {
+    acceptedBy: "package-author",
+    acceptedAt: "2026-08-11T12:00:00.000Z",
+    outputPath: acceptedPath
+  });
+  assert.match(accepted.bundle.bundle_digest, /^sha256:[a-f0-9]{64}$/u);
+  await validateCapabilityBundle(allowance, acceptedPath, { requireAccepted: true });
+
+  const compositionPath = path.join(output, "composition.yaml");
+  await writeFile(compositionPath, stringifyYaml({
+    capability_composition_version: "0.4-experimental",
+    bundles: [{
+      package: kit.package.id,
+      bundle_digest: accepted.bundle.bundle_digest
+    }],
+    connections: [{
+      need: {
+        capability: "org.seedspec.experimental.work-assignment",
+        edge: "work-source"
+      },
+      offer: {
+        capability: "org.seedspec.experimental.household-work",
+        edge: "assignable-work"
+      },
+      rationale: "The work source exposes the identities consumed by assignment."
+    }]
+  }), "utf8");
+  const composition = await evaluateCapabilityStage(allowance, [acceptedPath], {
+    stage: "composition",
+    evidencePath: compositionPath
+  });
+  assert.equal(composition.status, "pass");
+
+  const implementationPath = path.join(output, "implementation.yaml");
+  await writeFile(implementationPath, stringifyYaml({
+    capability_evidence_version: "0.4-experimental",
+    bundle_digest: accepted.bundle.bundle_digest,
+    stage: "implementation",
+    records: accepted.bundle.capabilities.flatMap((capability) => (
+      capability.outcomes.map((outcome) => ({
+        capability: capability.id,
+        outcome: outcome.id,
+        status: "addressed",
+        evidence: [{ source: "implementing-agent", reference: "src/work.mjs" }]
+      }))
+    ))
+  }), "utf8");
+  const implementation = await evaluateCapabilityStage(allowance, [acceptedPath], {
+    stage: "implementation",
+    evidencePath: implementationPath
+  });
+  assert.equal(implementation.status, "pass");
+
+  const verificationPath = path.join(output, "verification.yaml");
+  await writeFile(verificationPath, stringifyYaml({
+    capability_evidence_version: "0.4-experimental",
+    bundle_digest: accepted.bundle.bundle_digest,
+    stage: "verification",
+    records: accepted.bundle.capabilities.flatMap((capability) => (
+      capability.outcomes.flatMap((outcome) => outcome.acceptance.map((check) => ({
+        capability: capability.id,
+        outcome: outcome.id,
+        check: check.id,
+        status: "pass",
+        evidence: [{ source: "tool", reference: `evidence/${check.id}.json` }]
+      })))
+    ))
+  }), "utf8");
+  const verification = await evaluateCapabilityStage(allowance, [acceptedPath], {
+    stage: "verification",
+    evidencePath: verificationPath
+  });
+  assert.equal(verification.status, "pass");
+
+  const incompleteEvidence = parseYaml(await readFile(verificationPath, "utf8"));
+  incompleteEvidence.records.pop();
+  await writeFile(verificationPath, stringifyYaml(incompleteEvidence), "utf8");
+  const incomplete = await evaluateCapabilityStage(allowance, [acceptedPath], {
+    stage: "verification",
+    evidencePath: verificationPath
+  });
+  assert.equal(incomplete.status, "fail");
 });
 
 test("resolution preserves implementation notes and verification evidence", async (t) => {
