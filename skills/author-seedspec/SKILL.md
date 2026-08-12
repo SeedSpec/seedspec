@@ -66,6 +66,16 @@ npx @seedspec/cli author guidance --topic requirements
 Use the returned version-matched guidance. Do not copy a fixed requirements
 method into this routing skill.
 
+When the author selects a standalone task Skill, inspect its proposed import:
+
+```sh
+npx @seedspec/cli context add <package-path> --skill <path-or-github-url>
+```
+
+Show the author material differences in files, applicability, destination, or
+digest. Add `--write` only after the proposal matches their selection. The CLI
+uses publisher defaults from the Skill repository when they exist.
+
 ## Preserve the seed and author authority
 
 Absence is not a gap. Do not use kind or domain checklists to introduce missing
