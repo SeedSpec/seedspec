@@ -39,7 +39,7 @@ This result establishes plumbing and discrimination. It does not show that an
 implementation agent responds to the diagnostics or that the Pi harness
 improves eventual correctness.
 
-## Extraction run
+## Extraction runs
 
 One Terra extraction was attempted through the local Codex client.
 
@@ -56,6 +56,38 @@ produced. The cache was not deleted or rewritten.
 The first failure receipt is retained beside the example proposal. The runner
 now retains sanitized failure receipts automatically.
 
+After the CLI was aligned to 0.147.0, the provider rejected untyped literal
+schemas. The proposal schema now gives every `const` and `enum` an explicit
+type, with a regression test.
+
+A fresh Terra run then produced a structurally valid proposal without manual
+repair. It proposed three capabilities, seven outcomes, and seven acceptance
+checks from 36 source sections. The run used 123,254 input tokens, including
+91,136 cached tokens, and 2,889 output tokens.
+
+The proposal and sanitized run receipt are retained as
+[`model-proposed-terra.yaml`](examples/daily-pipeline/model-proposed-terra.yaml)
+and
+[`model-proposed-terra.run.json`](examples/daily-pipeline/model-proposed-terra.run.json).
+
+The proposal was semantically useful but coarser than the controller-accepted
+ten-check bundle. It combined several retry and resource checks and did not
+separate unsafe-link behavior into its own acceptance check. This supports
+author review as an authority boundary; extraction is suggestion, not
+acceptance.
+
+## Enforcement pilot
+
+Three paired runs used the same accepted bundle and initial instructions. Both
+conditions had the same first-pass distribution: 8/10, 8/10, and 10/10.
+
+Instructions alone finished at full conformance in 1/3 runs. Active enforcement
+finished at full conformance in 3/3 runs by repairing both incomplete attempts
+in one turn each. See [`PILOT-RESULTS.md`](PILOT-RESULTS.md).
+
+This screen supports active observation and repair. It does not establish that
+model-authored evidence is trustworthy or that Pi itself creates the effect.
+
 ## What the screen supports
 
 - Capability extraction can be made source-bound and schema-constrained.
@@ -68,20 +100,15 @@ now retains sanitized failure receipts automatically.
 
 ## What remains unknown
 
-- Whether a model produces useful capabilities without manual repair.
+- Whether authors can reliably detect coarse or missing extracted checks.
 - Whether authors can review proposed bundles efficiently.
 - Whether agents fabricate evidence when completion is gated.
-- Whether Pi repair turns reduce escaped defects.
-- The additional token, tool-call, and elapsed-time cost.
+- Whether Pi reproduces the controller repair result.
 - Whether the effect generalizes beyond omission-heavy implementation tasks.
 
 ## Next run
 
-After the local model client is healthy:
-
-1. Run three fresh instruction-only implementations.
-2. Run three fresh Pi-enforced implementations.
-3. Use the same accepted bundle and hidden evaluator.
-4. Compare first-pass and final conformance.
-5. Record repair turns, evidence defects, tokens, tool calls, and elapsed time.
-6. Repeat with a controlled-revision or fixed-context failure class.
+1. Repeat with a controlled-revision or authorization-boundary failure class.
+2. Add a model-authored evidence condition to measure fabrication.
+3. Run the same controller through Pi with a configured provider.
+4. Compare controller-owned verification with declared-evidence-only gating.

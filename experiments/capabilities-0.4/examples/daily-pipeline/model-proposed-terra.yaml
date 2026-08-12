@@ -1,0 +1,208 @@
+capability_bundle_version: 0.4-experimental
+package:
+  id: org.seedspec.fixtures.profiled-workflow
+  version: 0.1.0
+  digest: sha256:e5e7b36088f3906b898a9d5de912edd0a64f233ca386d78c5e56d43aabdf52ce
+authorship:
+  status: proposed
+capabilities:
+  - id: org.seedspec.fixtures.hubspot-metric-visibility
+    version: 0.1.0
+    name: HubSpot metric visibility
+    description: Provides one configured numeric metric on the selected HubSpot
+      object and makes its configured daily aggregation visible on a HubSpot
+      dashboard.
+    source_refs:
+      - "#4f5a938eb4ba"
+      - "#751d4bd52064"
+      - "#8078ec18beb9"
+      - "#613eb442244b"
+    outcomes:
+      - id: configured-numeric-property
+        description: The intended HubSpot account contains exactly one applicable
+          numeric property with the configured object, internal name, label, and
+          business meaning.
+        source_refs:
+          - "#751d4bd52064"
+          - "#8078ec18beb9"
+          - "#613eb442244b"
+        acceptance:
+          - id: property-review
+            description: Inspect the selected HubSpot object and confirm one applicable
+              numeric property matches the configured object, internal name,
+              label, and business meaning.
+            verification:
+              kind: agent-review
+              stability: nondeterministic
+              rubric: The property is present once and matches all configured identity and
+                meaning fields.
+      - id: daily-aggregation-dashboard
+        description: The configured HubSpot dashboard contains a report showing the
+          intended daily average over time.
+        source_refs:
+          - "#751d4bd52064"
+          - "#8078ec18beb9"
+        acceptance:
+          - id: dashboard-known-data-check
+            description: Inspect the configured dashboard report and evaluate a known-data
+              check for the intended daily average.
+            verification:
+              kind: agent-review
+              stability: nondeterministic
+              rubric: The report is on the configured dashboard, shows the intended
+                aggregation over time, and the known-data result matches the
+                expected value.
+    integration:
+      offers:
+        - id: hubspot-dashboard-metric
+          description: A configured HubSpot dashboard and report for the selected metric's
+            daily aggregation.
+          required: false
+      needs:
+        - id: authorized-hubspot-metric-scope
+          description: A HubSpot account, selected object, and administrator-authorized
+            scope for the configured metric and dashboard.
+          required: true
+  - id: org.seedspec.fixtures.daily-metric-briefing
+    version: 0.1.0
+    name: Daily metric briefing
+    description: Delivers one scheduled Slack briefing for the configured metric's
+      previous calendar day, with explicit no-data handling and observable
+      delivery or failure evidence.
+    source_refs:
+      - "#def9c43dd941"
+      - "#6d994f8d9071"
+      - "#8078ec18beb9"
+      - "#4d5365446123"
+      - "#f147bf872b5c"
+    outcomes:
+      - id: timezone-correct-period-calculation
+        description: The selected execution approach calculates the configured metric
+          for the previous calendar day using the configured IANA timezone,
+          including daylight-saving transitions.
+        source_refs:
+          - "#def9c43dd941"
+          - "#6d994f8d9071"
+          - "#8078ec18beb9"
+          - "#613eb442244b"
+        acceptance:
+          - id: timezone-boundary-review
+            description: Review a calculation across a daylight-saving boundary using the
+              configured IANA timezone.
+            verification:
+              kind: agent-review
+              stability: nondeterministic
+              rubric: The evaluated period is the previous local calendar day and changes
+                correctly at the configured timezone boundary.
+      - id: single-scheduled-slack-delivery
+        description: At the configured local time, one message is delivered to the
+          resolved Slack channel with the metric label, reporting period,
+          formatted value or explicit no-data state, and dashboard link when
+          available.
+        source_refs:
+          - "#def9c43dd941"
+          - "#6d994f8d9071"
+          - "#8078ec18beb9"
+          - "#4d5365446123"
+          - "#613eb442244b"
+        acceptance:
+          - id: slack-delivery-observation
+            description: Observe a test delivery to the resolved Slack workspace and
+              channel.
+            verification:
+              kind: human-observation
+              stability: nondeterministic
+              rubric: The message reaches the intended channel once and includes the metric
+                label, period, value or explicit no-data state, and dashboard
+                link when available.
+      - id: safe-retry-and-failure-evidence
+        description: Delivery failures are visible and retryable without duplicate
+          messages or exposure of CRM data or credentials.
+        source_refs:
+          - "#def9c43dd941"
+          - "#6d994f8d9071"
+          - "#8078ec18beb9"
+          - "#0a327041b301"
+        acceptance:
+          - id: failure-retry-review
+            description: Review a delivery-failure and retry scenario.
+            verification:
+              kind: agent-review
+              stability: nondeterministic
+              rubric: Failure evidence is available through normal logs or alerts, retry does
+                not duplicate the message, and reviewed evidence excludes CRM
+                data and credentials.
+    integration:
+      offers:
+        - id: scheduled-slack-briefing
+          description: A recurring Slack briefing for the configured metric's previous
+            local calendar day, including delivery or failure evidence.
+          required: false
+      needs:
+        - id: configured-metric-and-timezone
+          description: The configured metric label, aggregation, IANA timezone, delivery
+            time, and empty-day behavior.
+          required: true
+        - id: authorized-slack-destination
+          description: An end-user-authorized Slack workspace and resolved target channel.
+          required: true
+  - id: org.seedspec.fixtures.reconciled-workflow-changes
+    version: 0.1.0
+    name: Reconciled workflow changes
+    description: Applies the configured HubSpot and Slack workflow without
+      duplicating resources or mutating ambiguous existing resources, and
+      records safe implementation evidence.
+    source_refs:
+      - "#6ca5cfe535ff"
+      - "#6d994f8d9071"
+      - "#8078ec18beb9"
+      - "#0a327041b301"
+    outcomes:
+      - id: safe-existing-state-resolution
+        description: Existing properties and workflow resources are reused or updated
+          only when their identity, ownership, and purpose are clear; ambiguity
+          stops before destructive change and is surfaced to the end user.
+        source_refs:
+          - "#6ca5cfe535ff"
+          - "#6d994f8d9071"
+          - "#8078ec18beb9"
+          - "#0a327041b301"
+        acceptance:
+          - id: ambiguous-resource-review
+            description: Review a conflicting existing property or ambiguous target-account
+              scenario.
+            verification:
+              kind: agent-review
+              stability: nondeterministic
+              rubric: The workflow stops before destructive change and presents the ambiguity
+                for end-user resolution.
+      - id: idempotent-resources-and-record
+        description: Retries do not create duplicate HubSpot resources, schedules,
+          integrations, or Slack messages, and implementation notes identify
+          created, updated, or reused resources without secrets or sensitive
+          customer data.
+        source_refs:
+          - "#6ca5cfe535ff"
+          - "#8078ec18beb9"
+          - "#0a327041b301"
+        acceptance:
+          - id: retry-and-record-review
+            description: Review a retry and the resulting implementation notes.
+            verification:
+              kind: agent-review
+              stability: nondeterministic
+              rubric: No duplicate resources or messages result from the retry; notes contain
+                stable resource identifiers and exclude credentials and
+                sensitive customer data.
+    integration:
+      offers:
+        - id: safe-workflow-reconciliation
+          description: A resolved record of created, updated, or reused HubSpot, Slack,
+            and scheduling resources, with ambiguous resources escalated for
+            user direction.
+          required: false
+      needs:
+        - id: authorized-resource-scope
+          description: Explicit end-user scope and authorization for the HubSpot account,
+            Slack workspace, and resources that may be inspected or changed.
+          required: true

@@ -10,6 +10,7 @@ export default [
       "**/node_modules/",
       ".tmp/",
       "conformance/",
+      "experiments/capabilities-0.4/runs/",
       "packages/protocol/conformance-bundle.json"
     ]
   },

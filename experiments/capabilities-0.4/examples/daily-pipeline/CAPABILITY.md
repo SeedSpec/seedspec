@@ -34,5 +34,7 @@ digest. A declared check or script is not proof that it passed.
 ## Supporting material
 
 - [`proposed.yaml`](proposed.yaml) shows the agent-authored proposal.
+- [`model-proposed-terra.yaml`](model-proposed-terra.yaml) records the fresh
+  extraction used in the enforcement pilot.
 - [`accepted.yaml`](accepted.yaml) records author acceptance and the immutable
   bundle digest.

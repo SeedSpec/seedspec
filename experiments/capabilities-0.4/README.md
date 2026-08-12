@@ -3,8 +3,9 @@
 Status: experimental. This directory does not change Protocol 0.3 or publish a
 package.
 
-Read [`HYPOTHESIS.md`](HYPOTHESIS.md) for the decision frame and
-[`RESULTS.md`](RESULTS.md) for the initial mechanism screen.
+Read [`HYPOTHESIS.md`](HYPOTHESIS.md) for the decision frame,
+[`RESULTS.md`](RESULTS.md) for the artifact screen, and
+[`PILOT-RESULTS.md`](PILOT-RESULTS.md) for the first enforcement comparison.
 
 ## Hypothesis
 
@@ -149,13 +150,39 @@ an accepted capability bundle.
 This establishes that the evidence adapter and gate discriminate known good and
 bad realizations. It does not establish a model-treatment effect.
 
+## Enforcement pilot
+
+Three fresh runs per condition compared the same accepted bundle and initial
+instructions with and without an active repair controller.
+
+| Condition | First full conformance | Final full conformance |
+| --- | ---: | ---: |
+| Instructions only | 1/3 | 1/3 |
+| Actively enforced | 1/3 | 3/3 |
+
+Both conditions had the same first-pass distribution. Enforcement repaired the
+two incomplete implementations in one turn each. See
+[`PILOT-RESULTS.md`](PILOT-RESULTS.md) for cost and limits.
+
+Run the pilot with:
+
+```sh
+npm run capability-evals:pilot -- \
+  --repetitions 3 \
+  --model gpt-5.6-terra \
+  --reasoning medium \
+  --confirm-model-execution
+```
+
+Local run artifacts are written under `runs/` and ignored by Git.
+
 ## Next causal test
 
 Use one frozen package, model, scaffold, and hidden evaluator. Run at least
 three fresh repetitions per condition:
 
 1. Prompt and CLI instructions only.
-2. The same capability bundle with Pi enforcement.
+2. The same capability bundle with active enforcement.
 
 Measure:
 
@@ -178,4 +205,4 @@ Repeat on a second failure class before treating the mechanism as portable.
   provider in this repository.
 - Composition mappings remain agent judgments. The gate checks completeness
   and referential integrity, not semantic compatibility.
-- One reference-versus-weak screen is not an effect estimate.
+- One package and three runs per condition are not an effect estimate.

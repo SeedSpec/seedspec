@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["capability_bundle_version", "package", "authorship", "capabilities"],
   "properties": {
-    "capability_bundle_version": { "const": "0.4-experimental" },
+    "capability_bundle_version": { "type": "string", "const": "0.4-experimental" },
     "package": {
       "type": "object",
       "additionalProperties": false,
@@ -20,7 +20,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["status"],
-      "properties": { "status": { "const": "proposed" } }
+      "properties": { "status": { "type": "string", "const": "proposed" } }
     },
     "capabilities": {
       "type": "array",
@@ -44,8 +44,14 @@
       "additionalProperties": false,
       "required": ["kind", "stability", "path", "runner", "rubric"],
       "properties": {
-        "kind": { "enum": ["script", "agent-review", "human-observation"] },
-        "stability": { "enum": ["deterministic", "nondeterministic"] },
+        "kind": {
+          "type": "string",
+          "enum": ["script", "agent-review", "human-observation"]
+        },
+        "stability": {
+          "type": "string",
+          "enum": ["deterministic", "nondeterministic"]
+        },
         "path": { "type": ["string", "null"] },
         "runner": { "type": ["string", "null"] },
         "rubric": { "type": ["string", "null"] }

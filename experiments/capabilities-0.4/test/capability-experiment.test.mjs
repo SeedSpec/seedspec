@@ -23,6 +23,25 @@ const fixtureRoot = path.join(
 );
 const packagePath = path.join(repositoryRoot, "conformance/fixtures/profiled-workflow");
 const bundlePath = path.join(experimentRoot, "examples/daily-pipeline/accepted.yaml");
+const proposalSchemaPath = path.join(
+  repositoryRoot,
+  "packages/runtime/schemas/capabilities/v1/capability-proposal-output.schema.json"
+);
+
+function assertTypedLiterals(schema, location = "$") {
+  if (!schema || typeof schema !== "object" || Array.isArray(schema)) return;
+  if (Object.hasOwn(schema, "const") || Object.hasOwn(schema, "enum")) {
+    assert.ok(Object.hasOwn(schema, "type"), `${location} must type its literal values`);
+  }
+  for (const [key, value] of Object.entries(schema)) {
+    assertTypedLiterals(value, `${location}.${key}`);
+  }
+}
+
+test("provider proposal schema types literal values", async () => {
+  const schema = JSON.parse(await readFile(proposalSchemaPath, "utf8"));
+  assertTypedLiterals(schema);
+});
 
 async function behavioralResult(fixture) {
   const result = await execFileAsync(process.execPath, [evaluator, path.join(fixtureRoot, fixture)]);
