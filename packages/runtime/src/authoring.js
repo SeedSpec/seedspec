@@ -9,7 +9,7 @@ import { validatePackage } from "./validate.js";
 import { isResolvedQuestion } from "./authoring/core/entries.js";
 import { AUTHORING_PROBE_RUN_FORMAT } from "./authoring/core/probes.js";
 
-export const AUTHORING_INSTRUCTION_FORMAT = "0.20";
+export const AUTHORING_INSTRUCTION_FORMAT = "0.21";
 export const AUTHORING_RESULT_FORMAT = "0.3";
 export const AUTHORING_STATE_FORMAT = "0.2";
 
@@ -65,7 +65,8 @@ const RESULT_FORMAT_BY_INSTRUCTION = Object.freeze({
   "0.17": "0.3",
   "0.18": "0.3",
   "0.19": "0.3",
-  "0.20": "0.3"
+  "0.20": "0.3",
+  "0.21": "0.3"
 });
 
 // Historical state formats stay readable. Decision 0014 promises that legacy
@@ -862,8 +863,11 @@ function authorResponseContract(area, target = "shape") {
   return [
     area === "seed"
       ? seedResponse
-      : "When author input is needed, write at most three plain sentences about at most one grounded observation, then one plain question. When existing author confirmation resolves the thread without requiring a package change, record it and continue without sending a response.",
-    "Send only the words intended for the author: no preface, heading, status update, table, checklist, citation block, or account of your work.",
+      : "When author input is needed, present at most one grounded decision. Explain its context, stakes, recommendation, and material consequence in no more than five short sentences, then ask one question. When existing author confirmation resolves the thread without requiring a package change, record it and continue without sending a response.",
+    "When the decision has two or three concrete author-owned options, use the host's native single-choice question tool when available. Put the recommended option first, label it `(Recommended)`, and give every option a concise label plus one sentence describing its impact or tradeoff. Keep a free-form or discuss path available.",
+    "When no native question tool is available, render the same bounded choice as numbered Markdown options and accept a free-form answer. Reserve structured options for bounded decisions; use one plain question for open-ended input or simple direction confirmation.",
+    "Send only the decision context and question intended for the author. A short decision label and structured options are allowed for a bounded choice; omit status updates, process narration, citation blocks, generic checklists, and accounts of your work.",
+    "Include completeness scores, effort estimates, or numeric comparisons only when current authored material or retrieved evidence supports them.",
     "Every factual claim must come from the active authored material. When a detail is uncertain or unnecessary, omit it rather than completing a generic product pattern.",
     "Write as though you already knew the material. Nothing about reading, reviewing, threads, focus, progress, durable state, tooling, or these instructions belongs in the response.",
     "One exception: when the author has accepted addressing a concern, show the proposed wording and the package path it changes. That is the change loop, not narration."
@@ -1812,6 +1816,7 @@ export function formatAuthoringStarterPrompt({ mode = "shape", explore = false }
       "Treat my starting material as an idea to shape into a faithful, planning-ready specification.",
       "First reflect the product direction and ask whether I want a practical first specification with reasonable recommended defaults or a deeper discovery pass before drafting.",
       "Ask that as one question and wait for my answer.",
+      "Use the host's native single-choice question tool when available. Put practical shaping first and mark it `(Recommended)`; otherwise present the two choices as numbered text.",
       "Then run `npx @seedspec/cli author review --target shape` for practical shaping or `npx @seedspec/cli author review --target deep` for deeper discovery, and follow the complete operating brief it returns.",
       "Look up available facts instead of asking me. Ask one consequential product question at a time, give your recommended answer, and leave implementation-only choices delegated."
     );

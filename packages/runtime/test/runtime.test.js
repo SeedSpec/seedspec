@@ -993,6 +993,8 @@ test("the authoring starter prompt selects shape, deep, and minimal postures", (
   assert.match(prompt, /practical first specification/iu);
   assert.match(prompt, /deeper discovery pass/iu);
   assert.match(prompt, /one consequential product question at a time/iu);
+  assert.match(prompt, /native single-choice question tool/iu);
+  assert.match(prompt, /practical shaping first/iu);
   assert.match(prompt, /--target shape/u);
 
   const deep = formatAuthoringStarterPrompt({ mode: "deep" });
@@ -1024,6 +1026,11 @@ test("authoring briefs persist kind-aware shape, deep, and minimal guidance", as
   assert.match(shape.current.instructions, /materially different products/u);
   assert.match(shape.current.instructions, /roadmap or vision/u);
   assert.match(shape.current.instructions, /product behavior.*technical architecture/isu);
+  assert.match(shape.current.instructions, /native single-choice question tool/iu);
+  assert.match(shape.current.instructions, /numbered Markdown options/iu);
+  assert.match(shape.current.instructions, /label it `\(Recommended\)`/u);
+  assert.match(shape.current.instructions, /free-form or discuss path/iu);
+  assert.match(shape.current.instructions, /Include completeness scores.*only when/isu);
 
   const deep = await auditPackage(allowance, {
     stateDirectory: path.join(output, "deep"),
