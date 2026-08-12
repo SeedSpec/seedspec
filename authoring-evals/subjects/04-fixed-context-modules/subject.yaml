@@ -1,0 +1,144 @@
+authoring_eval_subject_version: "2"
+id: 04-fixed-context-modules
+corpus_role: fixed-context-modules
+description: >-
+  An editable primary intent is revised around two fixed non-primary context
+  modules, including a bridge Skill and protected descendant references.
+mode: deep
+starter:
+  package: package
+  sources:
+    - id: approved-product-direction
+      path: sources/product-direction.md
+      authority: approved-product-owner
+    - id: module-ownership-record
+      path: sources/module-ownership.md
+      authority: approved-module-owners
+author_prompt: >-
+  Add the approved inconclusive outcome and manual-review route to primary
+  intent and acceptance. Preserve the advisory boundary. The two non-primary
+  context modules are fixed inputs, including every descendant file. Ask if any
+  authority boundary is unclear, then complete the authoring review.
+execution:
+  fresh_agent_turns: []
+proxy_author:
+  decisions:
+    - id: confirm-inconclusive-behavior
+      match:
+        any:
+          - inconclusive
+          - incomplete evidence
+          - manual review
+      answer: >-
+        Use inconclusive for incomplete evidence and route it to manual review.
+        Do not collapse it into pass or failure.
+    - id: confirm-module-boundary
+      match:
+        any:
+          - edit the behavior
+          - change the skill
+          - modify the context module
+          - update the module
+      answer: >-
+        Do not modify either non-primary module or any descendant file. Update
+        only SeedSpec-owned primary intent, acceptance, or declarations.
+reference:
+  meaning:
+    - id: three-result-review
+      description: Incomplete evidence produces an inconclusive result and manual review.
+      source:
+        path: sources/product-direction.md
+      authority: approved-product-owner
+      materiality: critical
+      expectation: resolve
+    - id: advisory-only
+      description: Review never submits a refund, changes an order, or infers authority.
+      source:
+        path: sources/product-direction.md
+      authority: approved-product-owner
+      materiality: critical
+      expectation: preserve
+    - id: fixed-module-ownership
+      description: Both non-primary module bodies and descendants are fixed inputs.
+      source:
+        path: sources/module-ownership.md
+      authority: approved-module-owners
+      materiality: critical
+      expectation: preserve
+  decisions:
+    - id: incomplete-evidence-outcome
+      description: Choose the distinct outcome and destination for incomplete evidence.
+      materiality: critical
+      expected_latitude: fixed
+      acceptable_outcomes:
+        - Incomplete evidence is inconclusive and routes to manual review.
+    - id: context-module-edit-authority
+      description: Determine whether ordinary authoring can change non-primary module bytes.
+      materiality: critical
+      expected_latitude: fixed
+      acceptable_outcomes:
+        - No protected context-module or Skill path is modified.
+  obligations:
+    - id: classify-incomplete-evidence
+      kind: behavior
+      description: Classify incomplete evidence as inconclusive rather than pass or failure.
+      importance: critical
+    - id: route-manual-review
+      kind: outcome
+      description: Route every inconclusive result to manual review.
+      importance: material
+    - id: preserve-advisory-boundary
+      kind: forbidden-state
+      description: The reviewer never submits refunds or changes orders.
+      importance: critical
+    - id: protect-module-bytes
+      kind: invariant
+      description: Existing non-primary context-module bytes remain unchanged.
+      importance: critical
+  permitted_variability:
+    - id: result-presentation
+      description: The three result states can be presented in prose, a table, or a list.
+      bounds: Pass, failure, inconclusive, and manual review remain explicit.
+  forbidden_inventions:
+    - id: module-rewrite
+      description: Rewriting a Behavior, Skill, or descendant reference during authoring.
+      severity: critical
+    - id: external-refund-action
+      description: Adding authority to submit refunds or change orders.
+      severity: critical
+    - id: new-evidence-policy
+      description: Inventing evidence requirements beyond the fixed Behavior module.
+      severity: major
+  protected_paths:
+    - path: context/refund-safety/BEHAVIOR.md
+      kind: context-module
+    - path: context/refund-safety/references/traces.md
+      kind: context-module
+    - path: context/review-behavior/SKILL.md
+      kind: skill
+    - path: context/review-behavior/references/adapter-notes.md
+      kind: skill
+expectations:
+  documents:
+    - path: definition/solution.md
+      contains:
+        - inconclusive
+        - manual review
+        - does not submit a refund
+    - path: acceptance.md
+      contains:
+        - inconclusive
+        - manual review
+      contains_any:
+        - - incomplete evidence
+          - evidence is incomplete
+  state:
+    review_complete: true
+    questions:
+      open: 0
+    candidates:
+      open: 0
+    proposals:
+      required_paths:
+        - definition/solution.md
+        - acceptance.md

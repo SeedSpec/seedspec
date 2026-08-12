@@ -3,11 +3,15 @@ import { createHash } from "node:crypto";
 import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
+import {
+  isolatedMechanismNames,
+  mechanismSelectionSupported
+} from "./preedit-artifacts.mjs";
 
 const execFileAsync = promisify(execFile);
 
 export const SNAPSHOT_ALGORITHM = "seedspec-authoring-eval-tree-sha256-v1";
-export const RUN_CONTRACT_VERSION = "1";
+export const RUN_CONTRACT_VERSION = "2";
 export const RUN_STATE_VERSION = "1";
 
 function isRecord(value) {
@@ -169,19 +173,70 @@ export function validateRunContract(contract) {
   requireString(contract.created_at, "created_at");
   if (Number.isNaN(Date.parse(contract.created_at))) throw new Error("created_at must be an ISO timestamp");
   requireString(contract.subject?.id, "subject.id");
-  if (contract.subject?.format_version !== "1") throw new Error("subject.format_version must be 1");
+  if (!["1", "2"].includes(contract.subject?.format_version)) {
+    throw new Error("subject.format_version must be 1 or 2");
+  }
   requireString(contract.authoring?.mode, "authoring.mode");
   if (!["minimal", "shape", "deep"].includes(contract.authoring.mode)) {
     throw new Error("authoring.mode must be minimal, shape, or deep");
   }
   requireString(contract.authoring?.prompt, "authoring.prompt");
   validateFileReference(contract.authoring?.handoff, "authoring.handoff");
+  if (!["seedspec-authoring", "simple-authoring"].includes(
+    contract.execution?.workflow ?? "seedspec-authoring"
+  )) {
+    throw new Error("execution.workflow must be seedspec-authoring or simple-authoring");
+  }
+  const mechanisms = contract.execution?.mechanisms ?? {
+    decision_ledger: false,
+    final_review: false,
+    authoring_posture: false,
+    posture_confirmation: false,
+    posture_fused_confirmation: false,
+    fixed_claim_gate: false,
+    conflict_inventory: false,
+    decision_contract: false,
+    intent_registry: false,
+    semantic_change_plan: false,
+    acceptance_contract: false
+  };
+  if (Object.entries(mechanisms).some(([name, enabled]) => (
+    !isolatedMechanismNames.includes(name) || typeof enabled !== "boolean"
+  ))) {
+    throw new Error("execution.mechanisms must contain boolean mechanism values");
+  }
+  if ((contract.execution?.workflow ?? "seedspec-authoring") !== "simple-authoring"
+      && Object.values(mechanisms).some(Boolean)) {
+    throw new Error("execution.mechanisms require simple-authoring");
+  }
+  if (!mechanismSelectionSupported(mechanisms)) {
+    throw new Error("execution.mechanisms contains an unsupported combination");
+  }
   requireString(contract.execution?.runner?.id, "execution.runner.id");
   requireString(contract.execution?.runner?.version, "execution.runner.version");
   requireString(contract.execution?.model?.provider, "execution.model.provider");
   requireString(contract.execution?.model?.id, "execution.model.id");
   requireString(contract.execution?.model?.selector, "execution.model.selector");
   requireString(contract.execution?.settings?.reasoning_effort, "execution.settings.reasoning_effort");
+  if (contract.execution?.continuation?.mode !== "session-lineage") {
+    throw new Error("execution.continuation.mode must be session-lineage");
+  }
+  if (!Array.isArray(contract.execution.continuation.fresh_turns)) {
+    throw new Error("execution.continuation.fresh_turns must be an array");
+  }
+  const freshTurns = contract.execution.continuation.fresh_turns;
+  if (freshTurns.some((turn) => !Number.isInteger(turn) || turn < 2)) {
+    throw new Error("execution.continuation.fresh_turns must contain integers greater than one");
+  }
+  if (new Set(freshTurns).size !== freshTurns.length) {
+    throw new Error("execution.continuation.fresh_turns must be unique");
+  }
+  if (freshTurns.some((turn) => turn > contract.budget?.max_turns)) {
+    throw new Error("execution.continuation.fresh_turns cannot exceed budget.max_turns");
+  }
+  if (JSON.stringify(freshTurns) !== JSON.stringify([...freshTurns].sort((left, right) => left - right))) {
+    throw new Error("execution.continuation.fresh_turns must be sorted");
+  }
   if (!Array.isArray(contract.execution?.tools) || contract.execution.tools.length === 0) {
     throw new Error("execution.tools must not be empty");
   }

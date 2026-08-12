@@ -1,0 +1,6 @@
+hubspot_object: deal
+metric_property: qualified_pipeline_value
+dashboard_name: Daily Qualified Pipeline
+timezone: America/Chicago
+delivery_time: "08:00"
+slack_channel: "#sales-daily"

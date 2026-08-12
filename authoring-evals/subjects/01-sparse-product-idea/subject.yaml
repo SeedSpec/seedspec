@@ -1,0 +1,184 @@
+authoring_eval_subject_version: "2"
+id: 01-sparse-product-idea
+corpus_role: sparse-product-idea
+description: >-
+  A short product idea with one important unresolved workflow edge and firm
+  boundaries against plausible marketplace expansion.
+mode: shape
+authoring_posture:
+  ambition: small
+  audience: fresh-internal
+  handoff: planning
+  collaboration: brief
+starter:
+  package: package
+  sources:
+    - id: founder-note
+      path: sources/founder-note.md
+      authority: product-author
+author_prompt: >-
+  Co-author a practical first specification from the founder note. Clarify what
+  happens when a second resident asks for a tool that is already lent out.
+  Preserve the building boundary and owner authority. Do not grow the idea into
+  payments, delivery, or a public marketplace.
+execution:
+  fresh_agent_turns: []
+proxy_author:
+  decisions:
+    - id: unavailable-tool-request
+      match:
+        any:
+          - already lent out
+          - already borrowed
+          - unavailable tool
+          - second request
+          - someone else asks
+      answer: >-
+        Keep one waiting request per tool. The owner can accept or decline it.
+        Acceptance does not promise a date. When the tool is returned, the
+        waiting resident can make the next handoff arrangement with the owner.
+    - id: handoff-responsibility
+      match:
+        any:
+          - arrange the handoff
+          - handoff themselves
+          - delivery
+          - pickup
+      answer: >-
+        The two residents arrange pickup and return themselves. The product
+        does not schedule, dispatch, or perform delivery.
+    - id: marketplace-expansion
+      match:
+        any:
+          - deposits or fees
+          - payments
+          - charge for tools
+          - public marketplace
+      answer: >-
+        Keep payments, deposits, fees, and public listings outside this
+        package. Those are not future-work requirements.
+reference:
+  meaning:
+    - id: same-building-visibility
+      description: Listings are visible only to residents of the same building.
+      source:
+        path: sources/founder-note.md
+      authority: product-author
+      materiality: critical
+      expectation: preserve
+    - id: owner-controls-loan
+      description: The tool owner accepts or declines each borrowing request.
+      source:
+        path: sources/founder-note.md
+      authority: product-author
+      materiality: critical
+      expectation: preserve
+    - id: unavailable-request
+      description: The already-lent-out case needs an explicit author decision.
+      source:
+        path: sources/founder-note.md
+      authority: product-author
+      materiality: critical
+      expectation: resolve
+    - id: neighbor-managed-handoff
+      description: Borrower and owner arrange pickup and return themselves.
+      source:
+        path: sources/founder-note.md
+      authority: product-author
+      materiality: material
+      expectation: delegate
+    - id: no-marketplace-expansion
+      description: Payments, delivery, and public discovery are outside scope.
+      source:
+        path: sources/founder-note.md
+      authority: product-author
+      materiality: critical
+      expectation: exclude
+  decisions:
+    - id: unavailable-request-disposition
+      description: How to handle a request for a tool that is currently lent out.
+      materiality: critical
+      expected_latitude: fixed
+      acceptable_outcomes:
+        - Keep at most one owner-approved waiting request without promising a date.
+    - id: handoff-coordination
+      description: Who decides the pickup and return details.
+      materiality: material
+      expected_latitude: delegated
+      acceptable_outcomes:
+        - Leave handoff timing and place to the two residents.
+    - id: product-wording
+      description: Names used for residents, listings, and requests.
+      materiality: minor
+      expected_latitude: open
+      acceptable_outcomes:
+        - Use any clear terminology that preserves the roles and authority.
+  obligations:
+    - id: restrict-building-access
+      kind: invariant
+      description: A resident cannot see tool listings from another building.
+      importance: critical
+    - id: preserve-owner-choice
+      kind: behavior
+      description: The owner can accept or decline a borrowing request.
+      importance: critical
+    - id: waiting-request-limit
+      kind: constraint
+      description: A tool has no more than one accepted waiting request.
+      importance: material
+    - id: return-restores-availability
+      kind: success-criterion
+      description: A returned tool can become available for borrowing again.
+      importance: material
+    - id: no-commercial-transaction
+      kind: forbidden-state
+      description: A loan does not create a deposit, fee, or product-run delivery.
+      importance: critical
+  permitted_variability:
+    - id: interface-and-terminology
+      description: The interface, navigation, and display labels can vary.
+      bounds: Preserve building isolation, owner authority, and request states.
+    - id: resident-handoff-details
+      description: Residents can choose how and where to exchange a tool.
+      bounds: The product must not become responsible for physical delivery.
+  forbidden_inventions:
+    - id: payment-system
+      description: Do not add deposits, fees, billing, or payment processing.
+      severity: critical
+    - id: public-catalog
+      description: Do not make building listings discoverable to the public.
+      severity: critical
+    - id: delivery-operation
+      description: Do not add dispatch, courier, or product-managed delivery.
+      severity: major
+  protected_paths: []
+expectations:
+  documents:
+    - path: definition/application.md
+      contains:
+        - same building
+        - one waiting request
+        - owner can accept or decline
+        - arrange pickup and return themselves
+      excludes:
+        - subscription plans
+        - public ratings
+        - courier tracking
+    - path: acceptance.md
+      contains:
+        - another building
+        - one waiting request
+        - returned tool
+      excludes:
+        - payment account
+        - delivery tracking
+  state:
+    review_complete: true
+    questions:
+      open: 0
+    candidates:
+      open: 0
+    proposals:
+      required_paths:
+        - definition/application.md
+        - acceptance.md

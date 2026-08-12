@@ -1,0 +1,29 @@
+protocol_version: "0.3"
+id: org.seedspec.evals.daily-pipeline-briefing
+name: Daily Pipeline Briefing
+version: 0.1.0
+kind: workflow
+description: A HubSpot metric and dashboard with a daily Slack briefing.
+definition:
+  module: primary-intent
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities: []
+provides:
+  capabilities: []
+compatibility:
+  scope: domain
+  domain: org.seedspec.domain.sales-operations
+components:
+  acceptance: acceptance/criteria.md
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: solution.md
+      source:
+        kind: package
+        path: definition/solution.md
