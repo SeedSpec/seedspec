@@ -117,6 +117,11 @@ claim that the mapping is semantically correct. The implementation gate checks
 outcome coverage. The verification gate requires passing evidence for every
 acceptance check.
 
+Verification also enforces provenance. Implementing agents may report that an
+outcome is addressed, but they cannot certify verification. Script checks need
+tool evidence, agent reviews need a tool or independent verifying agent, and
+human observations need end-user or external-system evidence.
+
 ## Pi harness
 
 [`pi-harness`](pi-harness/) is a small Pi package. It uses Pi's extension
@@ -163,6 +168,10 @@ instructions with and without an active repair controller.
 Both conditions had the same first-pass distribution. Enforcement repaired the
 two incomplete implementations in one turn each. See
 [`PILOT-RESULTS.md`](PILOT-RESULTS.md) for cost and limits.
+
+A follow-up self-attestation audit found that implementing agents declared
+three of four hidden failures passing. The gate now rejects implementing-agent
+evidence as sole verification authority.
 
 Run the pilot with:
 

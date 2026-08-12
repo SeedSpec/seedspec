@@ -50,6 +50,38 @@ repair turn. The third passed immediately and incurred no repair turn.
 Token counts are Codex client usage totals across agent-tool interactions. They
 are useful for within-campaign comparison, not provider billing estimates.
 
+## Declared-evidence audit
+
+The three instruction-only agents were resumed after implementation. Each was
+asked to inspect its workspace and write verification evidence without changing
+the implementation. Source snapshots confirm that no implementation changed.
+
+All three free-form evidence artifacts were structurally invalid. They omitted
+required envelope fields and used an object where the schema requires an
+evidence array. A typed submission tool can prevent those format failures, so
+they are not evidence against the semantic approach.
+
+The semantic status judgments were also unreliable:
+
+- The two incomplete implementations had four hidden failures.
+- Implementing-agent review declared three of those four checks passing.
+- One agent correctly marked the remaining hidden failure as failed.
+- The fully conforming implementation conservatively marked every check not run.
+
+The sanitized machine-readable summary is retained in
+[`DECLARED-EVIDENCE-AUDIT.json`](DECLARED-EVIDENCE-AUDIT.json).
+
+This small audit shows neither soundness nor completeness for self-attestation.
+The experimental gate now separates implementation reporting from verification
+authority:
+
+- script checks require tool evidence;
+- agent-review checks require tool or independent verifying-agent evidence; and
+- human-observation checks require end-user or external-system evidence.
+
+Implementing-agent evidence can report implementation coverage. It cannot by
+itself satisfy verification.
+
 ## Interpretation
 
 The capability bundle did not change first-attempt correctness. Both conditions
@@ -70,6 +102,7 @@ produce this result.
 - Three runs per condition are a mechanism screen, not an effect estimate.
 - One package exercises one failure class.
 - Controller-derived evidence excludes evidence-fabrication risk.
+- The declared-evidence audit contains three self-reviews on the same package.
 - Resumed Codex sessions approximate a harness repair loop but do not test Pi's
   extension lifecycle or provider routing.
 - Nondeterministic review checks remain untested.

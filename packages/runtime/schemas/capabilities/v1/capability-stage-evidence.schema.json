@@ -6,9 +6,9 @@
   "additionalProperties": false,
   "required": ["capability_evidence_version", "bundle_digest", "stage", "records"],
   "properties": {
-    "capability_evidence_version": { "const": "0.4-experimental" },
+    "capability_evidence_version": { "type": "string", "const": "0.4-experimental" },
     "bundle_digest": { "$ref": "#/$defs/digest" },
-    "stage": { "enum": ["implementation", "verification"] },
+    "stage": { "type": "string", "enum": ["implementation", "verification"] },
     "records": {
       "type": "array",
       "items": { "$ref": "#/$defs/record" }
@@ -29,7 +29,16 @@
       "additionalProperties": false,
       "required": ["source", "reference"],
       "properties": {
-        "source": { "enum": ["tool", "external-system", "implementing-agent", "end-user"] },
+        "source": {
+          "type": "string",
+          "enum": [
+            "tool",
+            "external-system",
+            "implementing-agent",
+            "verifying-agent",
+            "end-user"
+          ]
+        },
         "reference": { "type": "string", "minLength": 1, "maxLength": 1000 },
         "description": { "type": "string", "minLength": 1, "maxLength": 1000 }
       }
@@ -42,7 +51,10 @@
         "capability": { "$ref": "#/$defs/namespacedId" },
         "outcome": { "$ref": "#/$defs/localId" },
         "check": { "$ref": "#/$defs/localId" },
-        "status": { "enum": ["addressed", "not-addressed", "pass", "fail", "not-run"] },
+        "status": {
+          "type": "string",
+          "enum": ["addressed", "not-addressed", "pass", "fail", "not-run"]
+        },
         "evidence": {
           "type": "array",
           "uniqueItems": true,

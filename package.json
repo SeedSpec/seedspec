@@ -21,6 +21,7 @@
     "authoring-evals:test": "node --test ./authoring-evals/test/*.test.mjs",
     "capability-evals:test": "node --test ./experiments/capabilities-0.4/test/*.test.mjs",
     "capability-evals:pilot": "node ./experiments/capabilities-0.4/scripts/run-enforcement-pilot.mjs",
+    "capability-evals:audit-evidence": "node ./experiments/capabilities-0.4/scripts/audit-declared-evidence.mjs",
     "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures && npm run authoring-evals:check && npm run authoring-evals:test && npm run capability-evals:test",
     "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/cases.yaml"
   },

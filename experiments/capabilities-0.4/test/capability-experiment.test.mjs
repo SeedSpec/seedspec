@@ -74,3 +74,27 @@ test("capability verification admits the reference and rejects the weak realizat
   assert.equal(weak.status, "fail");
   assert.ok(weak.checks.some((check) => check.status === "fail"));
 });
+
+test("an implementing agent cannot self-certify verification", async (t) => {
+  const output = await mkdtemp(path.join(tmpdir(), "seedspec-capability-self-evidence-"));
+  t.after(() => rm(output, { recursive: true, force: true }));
+  const bundle = parseYaml(await readFile(bundlePath, "utf8"));
+  const evidence = adaptImplementationEvidence(
+    bundle,
+    await behavioralResult("reference")
+  );
+  for (const record of evidence.records) {
+    for (const item of record.evidence) item.source = "implementing-agent";
+  }
+  const evidencePath = path.join(output, "self-evidence.yaml");
+  await writeFile(evidencePath, stringifyYaml(evidence), "utf8");
+  const result = await evaluateCapabilityStage(packagePath, [bundlePath], {
+    stage: "verification",
+    evidencePath
+  });
+  assert.equal(result.status, "fail");
+  assert.ok(result.checks.some((check) => (
+    check.id.startsWith("verification-invalid-")
+    && check.description.includes("verifying-agent or tool")
+  )));
+});

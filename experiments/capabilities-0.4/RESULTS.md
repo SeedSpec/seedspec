@@ -88,6 +88,17 @@ in one turn each. See [`PILOT-RESULTS.md`](PILOT-RESULTS.md).
 This screen supports active observation and repair. It does not establish that
 model-authored evidence is trustworthy or that Pi itself creates the effect.
 
+A follow-up audit resumed the three instruction-only agents and asked them to
+author verification evidence without changing code. The two incomplete
+implementations contained four hidden failures; self-review declared three of
+them passing. All three free-form artifacts were also structurally invalid.
+
+The experimental gate now prevents implementing-agent evidence from satisfying
+verification by itself. Verification requires a source compatible with the
+declared method: tool, independent verifying agent, external system, or end
+user. This preserves implementing-agent evidence for implementation progress
+without treating self-attestation as proof.
+
 ## What the screen supports
 
 - Capability extraction can be made source-bound and schema-constrained.
@@ -102,7 +113,7 @@ model-authored evidence is trustworthy or that Pi itself creates the effect.
 
 - Whether authors can reliably detect coarse or missing extracted checks.
 - Whether authors can review proposed bundles efficiently.
-- Whether agents fabricate evidence when completion is gated.
+- Whether independent agent review is materially more reliable than self-review.
 - Whether Pi reproduces the controller repair result.
 - Whether the effect generalizes beyond omission-heavy implementation tasks.
 

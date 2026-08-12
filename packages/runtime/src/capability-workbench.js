@@ -360,10 +360,15 @@ async function evidenceChecks(validated, stage, evidencePath) {
   for (const capability of bundle.capabilities) {
     for (const outcome of capability.outcomes) {
       if (stage === "implementation") {
-        expected.set(outcomeKey(capability, outcome), `${capability.id}/${outcome.id}`);
+        expected.set(outcomeKey(capability, outcome), {
+          id: `${capability.id}/${outcome.id}`
+        });
       } else {
         for (const check of outcome.acceptance) {
-          expected.set(checkKey(capability, outcome, check), `${capability.id}/${outcome.id}/${check.id}`);
+          expected.set(checkKey(capability, outcome, check), {
+            id: `${capability.id}/${outcome.id}/${check.id}`,
+            verification: check.verification
+          });
         }
       }
     }
@@ -374,7 +379,7 @@ async function evidenceChecks(validated, stage, evidencePath) {
     const key = stage === "implementation"
       ? `${record.capability}\0${record.outcome}`
       : `${record.capability}\0${record.outcome}\0${record.check ?? ""}`;
-    if (received.has(key)) issues.push(`duplicate evidence record: ${expected.get(key) ?? key}`);
+    if (received.has(key)) issues.push(`duplicate evidence record: ${expected.get(key)?.id ?? key}`);
     received.set(key, record);
     if (!expected.has(key)) issues.push(`unknown evidence record: ${key.split("\0").join("/")}`);
     const allowed = stage === "implementation"
@@ -385,14 +390,28 @@ async function evidenceChecks(validated, stage, evidencePath) {
       && record.evidence.length === 0) {
       issues.push(`evidence is required for ${key.split("\0").join("/")}`);
     }
+    if (stage === "verification" && record.status === "pass" && expected.has(key)) {
+      const kind = expected.get(key).verification.kind;
+      const trustedSources = kind === "human-observation"
+        ? ["end-user", "external-system"]
+        : kind === "agent-review"
+          ? ["verifying-agent", "tool"]
+          : ["tool"];
+      if (!record.evidence.some((item) => trustedSources.includes(item.source))) {
+        issues.push(
+          `${kind} verification requires ${trustedSources.join(" or ")} evidence: `
+          + key.split("\0").join("/")
+        );
+      }
+    }
   }
-  const checks = [...expected.entries()].map(([key, id]) => {
+  const checks = [...expected.entries()].map(([key, expectation]) => {
     const record = received.get(key);
     const passed = stage === "implementation"
       ? record?.status === "addressed"
       : record?.status === "pass";
     return {
-      id,
+      id: expectation.id,
       status: passed ? "pass" : "fail",
       description: record
         ? `${stage} status: ${record.status}; evidence records: ${record.evidence.length}.`
