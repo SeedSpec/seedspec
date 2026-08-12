@@ -13,6 +13,26 @@ Working estimates before paired testing:
 
 These are priors, not measurements.
 
+## After the first pilot
+
+Working estimates after three paired runs and three self-attestation audits:
+
+| Claim | Probability |
+| --- | ---: |
+| Capability formatting alone materially improves implementations | 15% |
+| Trusted observation plus active repair reduces critical omissions on similar tasks | 80% |
+| Active enforcement outperforms instructions on eventual conformance across a second failure class | 55% |
+| Pi reproduces the provider-independent controller behavior | 70% |
+| Implementing-agent self-attestation is sufficient verification | 10% |
+| The effect remains large across models and product domains | 30% |
+
+The pilot changed confidence in the enforcement mechanism, not in capability
+formatting. First-attempt correctness was identical across conditions. The
+effect appeared only after trusted checks blocked completion and supplied a
+repair target.
+
+These remain judgment estimates. One package does not establish portability.
+
 ## Why an effect is plausible
 
 The 0.3 evaluations found one bounded mechanism:
