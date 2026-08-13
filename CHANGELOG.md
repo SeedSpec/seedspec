@@ -5,6 +5,66 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.4.0 — 2026-08-13
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.4` |
+| Exact protocol release / `@seedspec/protocol` | `0.4.0` |
+| Conformance suite | `0.4.0` |
+| `@seedspec/runtime` | `0.4.0` |
+| `@seedspec/cli` | `0.4.0` |
+
+Experimental. Protocol 0.4 resets the package contract around `SPEC.md`. The
+0.4 runtime does not parse Protocol 0.3 packages. Reauthor older packages;
+there is no compatibility parser or automatic migration.
+
+### Package contract
+
+- Require `SPEC.md` with `id`, `name`, and `version`. `kind` is an optional
+  presentation hint and does not impose kind-specific schemas.
+- Accept optional root `seedspec.yaml` as a base manifest. Frontmatter has
+  final authority. Maps merge recursively; arrays and scalars replace.
+- Keep configuration, success criteria, tasks, capabilities, context modules,
+  bundled packages, and namespaced `extensions`.
+- Connect specification prose to criteria with `[success:<criterion-id>]`.
+  Unknown anchors are invalid. Unanchored criteria warn.
+- Treat implementation profiles as context modules with `PROFILE.md`.
+- Pin bundled children by `id`, `version`, digest, and path. Optional children
+  are selectable project state and do not change the parent digest.
+
+### Runtime tooling
+
+These commands use the 0.4 package structure. They are not protocol
+conformance operations.
+
+- Add `seedspec check` for claim coverage and independent evidence. Trusted
+  runners are `tool`, `independent-agent`, and `human`. Implementing-agent
+  evidence cannot certify verification. Package files are never executed.
+- Add `seedspec lock`, `verify-lock`, and `get` for digest-pinned copies.
+- Add `seedspec preview` for a local authoring view of the same report.
+- Add `seedspec init` for a minimum `SPEC.md`.
+- Add `seedspec skill` for the thin consumer implementation skill.
+- Add `seedspec project` for an implementation receipt at
+  `.seedspec/project.yaml` in the workspace: package path and digest,
+  configuration, profile, and optional bundled children. The file is refused
+  inside the package root.
+
+### Removed from the 0.4 core
+
+Protocol 0.4 does not define root fields for compatibility, decisions,
+conflicts, integration points, capability `provides`/`requires`, or
+verification state on the package. Guided authoring, context import, search,
+doctor, and the previous bundled authoring skills are not 0.4 operations.
+
+### Exact-release relationship
+
+- Status remains `experimental`. Alpha `0.4.x` patches can change accepted
+  structure. Revalidate packages after a runtime update.
+- Exact schemas are identified under
+  `https://seedspec.dev/releases/0.4.0/schemas/`. The family alias is
+  `https://seedspec.dev/schemas/v0.4/`.
+
 ## 0.3.1 — 2026-08-04
 
 | Surface | Version |

@@ -22,7 +22,7 @@ when a user interface presents a simpler compatibility summary.
 | Conformance suite | The exact indexed cases, fixtures, and expected results |
 | Runtime | One release of the reference JavaScript implementation |
 | CLI | One release of the public command-line interface |
-| SeedSpec package | One author-controlled version declared in `seedspec.yaml` |
+| SeedSpec package | One author-controlled version declared in `SPEC.md` |
 
 `protocol_version` states which protocol family a package uses. It does not
 identify the exact release bytes. Reproducible tooling should
