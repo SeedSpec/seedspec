@@ -24,45 +24,12 @@ export const protocolReleaseDigest = `sha256:${createHash("sha256")
 
 export const protocolSchemaNames = Object.freeze([
   "seedspec.schema.json",
-  "application.schema.json",
-  "feature.schema.json",
-  "component.schema.json",
-  "project.schema.json",
-  "component-index.schema.json",
-  "artifact-index.schema.json",
-  "context-index.schema.json",
-  "context-request.schema.json",
-  "context-bundle.schema.json",
-  "context-preparation-receipt.schema.json",
-  "context-use-receipt.schema.json",
-  "integration-descriptor.schema.json",
-  "artifact-selections.schema.json",
-  "configuration-selections.schema.json",
-  "applied-intent-input.schema.json",
-  "resolved-intent.schema.json",
-  "completion-scope-input.schema.json",
-  "completion-scope.schema.json",
-  "verification-state.schema.json",
-  "task-runbook.schema.json",
-  "task-index.schema.json",
-  "capability-conformance-suite.schema.json",
-  "capability-scenarios.schema.json",
-  "capability-conformance-result.schema.json",
-  "technical-preferences.schema.json",
-  "implementation-resource-manifest.schema.json",
-  "implementation-resource-index.schema.json",
-  "implementation-resource-state.schema.json",
-  "implementation-profile-state.schema.json",
-  "lock.schema.json",
-  "resolved-config.schema.json",
   "conformance.schema.json",
-  "protocol-release.schema.json",
-  "conformance-report.schema.json",
-  "resolution-receipt.schema.json"
+  "conformance-report.schema.json"
 ]);
 
 export const schemaDirectory = fileURLToPath(
-  new URL("../schemas/v0.3/", import.meta.url)
+  new URL("../schemas/v0.4/", import.meta.url)
 );
 export const protocolDocumentDirectory = fileURLToPath(
   new URL("../documents/", import.meta.url)

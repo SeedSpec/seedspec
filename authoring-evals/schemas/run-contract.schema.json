@@ -19,7 +19,7 @@
     "contract_id"
   ],
   "properties": {
-    "authoring_eval_run_contract_version": { "const": "1" },
+    "authoring_eval_run_contract_version": { "const": "2" },
     "run_id": { "type": "string", "pattern": "^run-[0-9a-f-]+$" },
     "created_at": { "type": "string", "format": "date-time" },
     "contract_id": { "type": "string", "pattern": "^run-contract-[a-f0-9]{64}$" },
@@ -29,7 +29,7 @@
       "required": ["id", "format_version"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "format_version": { "const": "1" }
+        "format_version": { "enum": ["1", "2"] }
       }
     },
     "authoring": {
@@ -45,8 +45,10 @@
     "execution": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["runner", "model", "settings", "tools", "network"],
+      "required": ["runner", "model", "settings", "continuation", "tools", "network"],
       "properties": {
+        "workflow": { "enum": ["seedspec-authoring", "simple-authoring"] },
+        "mechanisms": { "$ref": "#/$defs/mechanisms" },
         "runner": { "$ref": "#/$defs/identity" },
         "model": {
           "type": "object",
@@ -64,6 +66,19 @@
           "required": ["reasoning_effort"],
           "properties": {
             "reasoning_effort": { "type": "string", "minLength": 1 }
+          }
+        },
+        "continuation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "fresh_turns"],
+          "properties": {
+            "mode": { "const": "session-lineage" },
+            "fresh_turns": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "integer", "minimum": 2 }
+            }
           }
         },
         "tools": {
@@ -164,6 +179,24 @@
     }
   },
   "$defs": {
+    "mechanisms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_ledger", "final_review"],
+      "properties": {
+        "decision_ledger": { "type": "boolean" },
+        "final_review": { "type": "boolean" },
+        "authoring_posture": { "type": "boolean" },
+        "posture_confirmation": { "type": "boolean" },
+        "posture_fused_confirmation": { "type": "boolean" },
+        "fixed_claim_gate": { "type": "boolean" },
+        "conflict_inventory": { "type": "boolean" },
+        "decision_contract": { "type": "boolean" },
+        "intent_registry": { "type": "boolean" },
+        "semantic_change_plan": { "type": "boolean" },
+        "acceptance_contract": { "type": "boolean" }
+      }
+    },
     "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "relativePath": {
       "type": "string",

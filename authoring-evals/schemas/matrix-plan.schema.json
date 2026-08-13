@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/private/authoring-evals/matrix-plan.schema.json",
+  "title": "SeedSpec authoring evaluation matrix plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authoring_eval_matrix_plan_version",
+    "created_at",
+    "corpus",
+    "cli_baseline",
+    "regression_lane",
+    "judge",
+    "limits",
+    "cells",
+    "execution_ready",
+    "plan_id"
+  ],
+  "properties": {
+    "authoring_eval_matrix_plan_version": { "const": "1" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "workflow": { "enum": ["seedspec-authoring", "simple-authoring"] },
+    "mechanisms": { "$ref": "#/$defs/mechanisms" },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "subjects"],
+      "properties": {
+        "root": { "type": "string", "minLength": 1 },
+        "subjects": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "role", "path", "digest"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "role": { "type": "string", "minLength": 1 },
+              "path": { "type": "string", "minLength": 1 },
+              "digest": { "$ref": "#/$defs/digest" }
+            }
+          }
+        }
+      }
+    },
+    "cli_baseline": { "$ref": "#/$defs/cliIdentity" },
+    "regression_lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline_version", "candidate", "status"],
+      "properties": {
+        "baseline_version": { "const": "0.3.1" },
+        "candidate": { "type": "null" },
+        "status": { "const": "reserved" }
+      }
+    },
+    "judge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "selector", "reasoning_effort", "policy"],
+      "properties": {
+        "provider": { "const": "openai" },
+        "model": { "const": "gpt-5.6-sol" },
+        "selector": { "const": "gpt-5.6-sol" },
+        "reasoning_effort": { "enum": ["high", "xhigh", "max"] },
+        "policy": { "const": "blinded-reference-ledger" }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repetitions",
+        "max_duration_ms",
+        "max_turns",
+        "anthropic_total_spend_usd",
+        "anthropic_cell_count",
+        "anthropic_per_cell_spend_usd",
+        "anthropic_allocated_spend_usd",
+        "max_input_tokens",
+        "max_output_tokens"
+      ],
+      "properties": {
+        "repetitions": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "max_duration_ms": { "type": "integer", "minimum": 1 },
+        "max_turns": { "type": "integer", "minimum": 1 },
+        "anthropic_total_spend_usd": { "type": ["number", "null"], "minimum": 0 },
+        "anthropic_cell_count": { "type": "integer", "minimum": 0 },
+        "anthropic_per_cell_spend_usd": { "type": ["number", "null"], "minimum": 0 },
+        "anthropic_allocated_spend_usd": { "type": "number", "minimum": 0 },
+        "max_input_tokens": { "type": ["number", "null"], "minimum": 0 },
+        "max_output_tokens": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/cell" }
+    },
+    "execution_ready": { "type": "boolean" },
+    "plan_id": { "type": "string", "pattern": "^matrix-plan-[a-f0-9]{64}$" }
+  },
+  "$defs": {
+    "mechanisms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_ledger", "final_review"],
+      "properties": {
+        "decision_ledger": { "type": "boolean" },
+        "final_review": { "type": "boolean" },
+        "authoring_posture": { "type": "boolean" },
+        "posture_confirmation": { "type": "boolean" },
+        "posture_fused_confirmation": { "type": "boolean" },
+        "fixed_claim_gate": { "type": "boolean" },
+        "conflict_inventory": { "type": "boolean" },
+        "decision_contract": { "type": "boolean" },
+        "intent_registry": { "type": "boolean" },
+        "semantic_change_plan": { "type": "boolean" },
+        "acceptance_contract": { "type": "boolean" }
+      }
+    },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "cliIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "version", "protocol_release", "executable", "source_root", "source_commit", "source_dirty", "source_digest"],
+      "properties": {
+        "label": { "const": "released-0.3.1" },
+        "version": { "const": "0.3.1" },
+        "protocol_release": { "type": "string", "minLength": 1 },
+        "executable": { "type": "string", "minLength": 1 },
+        "source_root": { "type": "string", "minLength": 1 },
+        "source_commit": { "type": ["string", "null"] },
+        "source_dirty": { "type": ["boolean", "null"] },
+        "source_digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "executable"],
+      "properties": {
+        "id": { "enum": ["codex-cli", "claude-code-cli"] },
+        "version": { "type": "string", "minLength": 1 },
+        "executable": { "type": "string", "minLength": 1 }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "requested", "selector", "reasoning_effort", "tools"],
+      "properties": {
+        "id": { "enum": ["claude-sonnet", "claude-opus", "codex-terra", "codex-luna"] },
+        "provider": { "enum": ["anthropic", "openai"] },
+        "requested": { "type": "string", "minLength": 1 },
+        "selector": { "type": "string", "minLength": 1 },
+        "reasoning_effort": { "type": "string", "minLength": 1 },
+        "tools": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cell_id", "run_id", "subject_id", "subject_digest", "model", "runner", "repetition"],
+      "properties": {
+        "cell_id": { "type": "string", "pattern": "^matrix-cell-[a-f0-9]{64}$" },
+        "run_id": { "type": "string", "pattern": "^run-[a-f0-9]{64}$" },
+        "subject_id": { "type": "string", "minLength": 1 },
+        "subject_digest": { "$ref": "#/$defs/digest" },
+        "model": { "$ref": "#/$defs/model" },
+        "runner": { "$ref": "#/$defs/runner" },
+        "repetition": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

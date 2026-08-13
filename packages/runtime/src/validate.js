@@ -1,40 +1,200 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
-import {
-  pathExists,
-  readJsonFile,
-  readYamlFile,
-  resolvePackageLocation,
-  resolvePackagePath
-} from "./files.js";
 import { SeedSpecError } from "./errors.js";
-import { validateManifestSemantics } from "./capabilities.js";
-import { validateCapabilityConformanceDeclarations } from "./capability-conformance.js";
+import { resolvePackageLocation } from "./files.js";
 import { computePackageDigest } from "./integrity.js";
-import { validateImplementationResourceDeclarations } from "./resources.js";
 import {
-  localContextModule,
-  primaryContextModule,
-  validateContextDeclarations
-} from "./context.js";
-import { validateTaskRunbook } from "./tasks.js";
+  assertFile,
+  collectSuccessAnchors,
+  expandManifestSections,
+  loadAuthoredManifest
+} from "./manifest.js";
 import {
-  compileConfigurationSchema,
   compileProtocolSchema,
   formatSchemaErrors
 } from "./schema.js";
-import { protocolVersion } from "@seedspec/protocol";
 
-function isWithin(parent, candidate) {
-  const relation = path.relative(parent, candidate);
-  return relation === "" || (
-    relation !== ".."
-    && !relation.startsWith(`..${path.sep}`)
-    && !path.isAbsolute(relation)
-  );
+function assertUnique(items, label, id = (item) => item.id) {
+  const seen = new Set();
+  for (const item of items ?? []) {
+    const value = id(item);
+    if (seen.has(value)) {
+      throw new SeedSpecError(`${label} ID appears more than once: ${value}`, {
+        code: "DUPLICATE_ID"
+      });
+    }
+    seen.add(value);
+  }
+  return seen;
 }
 
-function assertPackageIdentity(record, packages) {
+function assertReferences(items, known, field, label) {
+  for (const item of items ?? []) {
+    for (const reference of item[field] ?? []) {
+      if (!known.has(reference)) {
+        throw new SeedSpecError(`${label} ${item.id} references unknown ${field}: ${reference}`, {
+          code: "INVALID_CROSS_REFERENCE"
+        });
+      }
+    }
+  }
+}
+
+function assertSectionIds(manifest) {
+  const sections = [
+    ["configuration", manifest.configuration?.sections],
+    ["success", manifest.success?.sections],
+    ["tasks", manifest.tasks?.sections],
+    ["capabilities", manifest.capabilities?.sections]
+  ];
+  for (const [label, items] of sections) assertUnique(items, `${label} section`);
+}
+
+function matchesConfigurationType(value, type, itemType) {
+  if (type === "integer") return Number.isInteger(value);
+  if (type === "number") return typeof value === "number" && Number.isFinite(value);
+  if (type === "array") {
+    return Array.isArray(value)
+      && value.every((item) => matchesConfigurationType(item, itemType));
+  }
+  return typeof value === type;
+}
+
+function sameValue(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function validateConfigurationVariables(variables) {
+  for (const variable of variables) {
+    const itemType = variable.items?.type;
+    for (const field of ["default", "example"]) {
+      if (!Object.hasOwn(variable, field)) continue;
+      if (!matchesConfigurationType(variable[field], variable.type, itemType)) {
+        throw new SeedSpecError(
+          `Configuration ${field} for ${variable.id} does not match type ${variable.type}`,
+          { code: "INVALID_CONFIGURATION_VALUE" }
+        );
+      }
+    }
+    for (const option of variable.options ?? []) {
+      if (!matchesConfigurationType(option, variable.type, itemType)) {
+        throw new SeedSpecError(
+          `Configuration option for ${variable.id} does not match type ${variable.type}`,
+          { code: "INVALID_CONFIGURATION_VALUE" }
+        );
+      }
+    }
+    if (
+      Object.hasOwn(variable, "default")
+      && variable.options
+      && !variable.options.some((option) => sameValue(option, variable.default))
+    ) {
+      throw new SeedSpecError(
+        `Configuration default for ${variable.id} is not one of its options`,
+        { code: "INVALID_CONFIGURATION_VALUE" }
+      );
+    }
+  }
+}
+
+function validateSemanticReferences(manifest, anchors) {
+  const variables = manifest.configuration?.variables ?? [];
+  const criteria = manifest.success?.criteria ?? [];
+  const tasks = manifest.tasks?.items ?? [];
+  const capabilities = manifest.capabilities?.items ?? [];
+  const modules = manifest.context_modules ?? [];
+
+  assertUnique(variables, "Configuration variable");
+  const criterionIds = assertUnique(criteria, "Success criterion");
+  assertUnique(tasks, "Task");
+  const capabilityIds = assertUnique(capabilities, "Capability");
+  assertUnique(modules, "Context module");
+  assertUnique(manifest.bundled_packages, "Bundled package", (item) => item.id);
+
+  validateConfigurationVariables(variables);
+
+  for (const capability of capabilities) {
+    assertUnique(capability.outcomes, `Outcome in capability ${capability.id}`);
+  }
+  assertReferences(tasks, capabilityIds, "capabilities", "Task");
+  assertReferences(tasks, criterionIds, "success_criteria", "Task");
+  assertReferences(capabilities, criterionIds, "success_criteria", "Capability");
+  for (const module of modules) {
+    for (const capability of module.applies_to?.capabilities ?? []) {
+      if (!capabilityIds.has(capability)) {
+        throw new SeedSpecError(
+          `Context module ${module.id} applies to unknown capability: ${capability}`,
+          { code: "INVALID_CROSS_REFERENCE" }
+        );
+      }
+    }
+    for (const criterion of module.applies_to?.success_criteria ?? []) {
+      if (!criterionIds.has(criterion)) {
+        throw new SeedSpecError(
+          `Context module ${module.id} applies to unknown success criterion: ${criterion}`,
+          { code: "INVALID_CROSS_REFERENCE" }
+        );
+      }
+    }
+  }
+  for (const anchor of anchors) {
+    if (!criterionIds.has(anchor.id)) {
+      throw new SeedSpecError(
+        `SPEC.md contains an anchor for unknown success criterion: ${anchor.id}`,
+        {
+          code: "INVALID_SUCCESS_ANCHOR",
+          details: [`Line ${anchor.line}, column ${anchor.column}`]
+        }
+      );
+    }
+  }
+}
+
+async function validateLocalReferences(root, manifest) {
+  for (const module of manifest.context_modules ?? []) {
+    await assertFile(root, module.path, {
+      directory: "context-modules",
+      label: `Context module ${module.id}`
+    });
+    if (path.extname(module.path).toLowerCase() !== ".md") {
+      throw new SeedSpecError(`Context module entrypoint must be Markdown: ${module.path}`, {
+        code: "INVALID_CONTEXT_MODULE_PATH"
+      });
+    }
+    if (module.type === "skill" && path.basename(module.path) !== "SKILL.md") {
+      throw new SeedSpecError(`Skill context module must use SKILL.md: ${module.path}`, {
+        code: "INVALID_CONTEXT_MODULE_PATH"
+      });
+    }
+    if (
+      module.type === "implementation-profile"
+      && path.basename(module.path) !== "PROFILE.md"
+    ) {
+      throw new SeedSpecError(
+        `Implementation profile context module must use PROFILE.md: ${module.path}`,
+        { code: "INVALID_CONTEXT_MODULE_PATH" }
+      );
+    }
+    if (module.format?.path) {
+      await assertFile(root, module.format.path, {
+        directory: "formats",
+        label: `Format documentation for ${module.id}`
+      });
+    }
+  }
+}
+
+function bundledRoot(root, declaration) {
+  const canonical = declaration.path.split(path.sep).join("/");
+  if (!canonical.startsWith("bundled-packages/") || !canonical.endsWith("/SPEC.md")) {
+    throw new SeedSpecError(
+      `Bundled package path must be bundled-packages/<package>/SPEC.md: ${declaration.path}`,
+      { code: "INVALID_BUNDLED_PACKAGE_PATH" }
+    );
+  }
+  return path.dirname(path.resolve(root, declaration.path));
+}
+
+function assertIdentity(record, packages) {
   const existing = packages.get(record.manifest.id);
   if (!existing) {
     packages.set(record.manifest.id, record);
@@ -45,7 +205,7 @@ function assertPackageIdentity(record, packages) {
     || existing.digest !== record.digest
   ) {
     throw new SeedSpecError(
-      `Bundled composition contains conflicting identities for ${record.manifest.id}`,
+      `Bundled packages contain conflicting identities for ${record.manifest.id}`,
       {
         code: "COMPOSITION_IDENTITY_COLLISION",
         details: [
@@ -57,241 +217,96 @@ function assertPackageIdentity(record, packages) {
   }
 }
 
-async function validateComposition(root, manifest, packages) {
-  const declarations = manifest.composition?.includes ?? [];
-  if (declarations.length === 0) return { includes: [] };
-
-  const integrationSource = manifest.components?.integration;
-  if (!integrationSource) {
-    throw new SeedSpecError(
-      `SeedSpec package declares composition without components.integration: ${manifest.id}`,
-      {
-        code: "INVALID_COMPOSITION",
-        details: [
-          "Declare the semantic integration material, then point every composition edge to a Markdown file within it."
-        ]
-      }
-    );
-  }
-
-  const integrationRoot = resolvePackagePath(root, integrationSource);
-  const integrationRootInfo = await pathExists(integrationRoot);
-  const edgeIds = new Set();
-  const includes = [];
-
-  for (const declaration of declarations) {
-    if (edgeIds.has(declaration.id)) {
-      throw new SeedSpecError(
-        `Composition edge appears more than once in ${manifest.id}: ${declaration.id}`,
-        { code: "INVALID_COMPOSITION" }
-      );
-    }
-    edgeIds.add(declaration.id);
-
-    const childRoot = resolvePackagePath(root, declaration.path);
-    const childInfo = await pathExists(childRoot);
-    if (!childInfo?.isDirectory()) {
-      throw new SeedSpecError(
-        `Composition child must reference a bundled package directory: ${declaration.path}`,
-        { code: "INVALID_COMPOSITION" }
-      );
-    }
-
-    const integrationPath = resolvePackagePath(root, declaration.integration);
-    const integrationInfo = await pathExists(integrationPath);
-    if (!integrationInfo?.isFile() || path.extname(integrationPath).toLowerCase() !== ".md") {
-      throw new SeedSpecError(
-        `Composition integration must reference a Markdown file: ${declaration.integration}`,
-        { code: "INVALID_COMPOSITION" }
-      );
-    }
-    const integrationIsDeclared = integrationRootInfo?.isDirectory()
-      ? isWithin(integrationRoot, integrationPath)
-      : integrationRoot === integrationPath;
-    if (!integrationIsDeclared) {
-      throw new SeedSpecError(
-        `Composition integration is outside components.integration: ${declaration.integration}`,
-        {
-          code: "INVALID_COMPOSITION",
-          details: [`components.integration: ${integrationSource}`]
-        }
-      );
-    }
-
-    const child = await validatePackageTree(childRoot, {}, packages);
-    const mismatches = [
-      child.manifest.id === declaration.package
-        ? null
-        : `package: declared ${declaration.package}; bundled ${child.manifest.id}`,
-      child.manifest.version === declaration.version
-        ? null
-        : `version: declared ${declaration.version}; bundled ${child.manifest.version}`,
-      child.digest === declaration.digest
-        ? null
-        : `digest: declared ${declaration.digest}; bundled ${child.digest}`
-    ].filter(Boolean);
-    if (mismatches.length > 0) {
-      throw new SeedSpecError(
-        `Bundled composition identity does not match ${manifest.id}/${declaration.id}`,
-        {
-          code: "COMPOSITION_IDENTITY_MISMATCH",
-          details: mismatches
-        }
-      );
-    }
-
-    includes.push({
-      ...declaration,
-      record: child
+async function validatePackageTree(inputPath, state) {
+  const { root, specPath, manifestPath } = await resolvePackageLocation(inputPath);
+  const canonicalRoot = path.resolve(root);
+  if (state.active.has(canonicalRoot)) {
+    throw new SeedSpecError(`Bundled package cycle reaches ${canonicalRoot}`, {
+      code: "BUNDLED_PACKAGE_CYCLE"
     });
   }
-
-  return { includes };
-}
-
-async function validatePackageTree(inputPath, { configurationPath } = {}, packages) {
-  const { root, manifestPath } = await resolvePackageLocation(inputPath);
-  const manifest = await readYamlFile(manifestPath, "SeedSpec manifest");
-  if (manifest?.protocol_version !== protocolVersion) {
-    throw new SeedSpecError(`Unsupported SeedSpec Protocol version: ${manifest?.protocol_version ?? "missing"}`, {
-      code: "UNSUPPORTED_PROTOCOL_VERSION",
-      details: [`This runtime supports protocol_version ${protocolVersion}`]
-    });
-  }
-  const validateManifest = await compileProtocolSchema("seedspec.schema.json");
-
-  if (!validateManifest(manifest)) {
-    throw new SeedSpecError(`Invalid SeedSpec manifest: ${manifestPath}`, {
-      code: "INVALID_MANIFEST",
-      details: formatSchemaErrors(validateManifest.errors)
-    });
-  }
-  validateManifestSemantics(manifest);
-
-  const referenceErrors = [];
-  const expectedFiles = [
-    ["configuration.schema", manifest.configuration.schema, "file"],
-    ["configuration.example", manifest.configuration.example, "file"]
-  ];
-
-  if (manifest.configuration.guide) {
-    expectedFiles.push(["configuration.guide", manifest.configuration.guide, "file"]);
-  }
-  if (manifest.tasks) {
-    expectedFiles.push(["tasks", manifest.tasks, "file"]);
-  }
-  for (const profile of manifest.implementation_profiles ?? []) {
-    if (profile.guidance) {
-      expectedFiles.push([
-        `implementation_profiles.${profile.id}.guidance`,
-        profile.guidance,
-        "file"
-      ]);
-    }
-  }
-  for (const capability of manifest.provides.capabilities) {
-    expectedFiles.push([
-      `provides.capabilities.${capability.id}.contract`,
-      capability.contract,
-      "file"
-    ]);
-  }
-
-  for (const [name, relativePath, expectedType] of expectedFiles) {
-    const fullPath = resolvePackagePath(root, relativePath);
-    const info = await pathExists(fullPath);
-    if (!info) {
-      referenceErrors.push(`${name} does not exist: ${relativePath}`);
-    } else if (expectedType === "file" && !info.isFile()) {
-      referenceErrors.push(`${name} must reference a file: ${relativePath}`);
-    }
-  }
-
-  for (const [name, relativePath] of Object.entries(manifest.components ?? {})) {
-    const info = await pathExists(resolvePackagePath(root, relativePath));
-    if (!info) referenceErrors.push(`components.${name} does not exist: ${relativePath}`);
-  }
-
-  for (const artifact of manifest.artifacts ?? []) {
-    if (!artifact.path) continue;
-    const info = await pathExists(resolvePackagePath(root, artifact.path));
-    if (!info) referenceErrors.push(`artifacts.${artifact.id}.path does not exist: ${artifact.path}`);
-  }
-
-  if (referenceErrors.length > 0) {
-    throw new SeedSpecError(`SeedSpec package has invalid references: ${manifest.id}`, {
-      code: "INVALID_REFERENCES",
-      details: referenceErrors
-    });
-  }
-
-  await validateCapabilityConformanceDeclarations(root, manifest);
-
-  await validateImplementationResourceDeclarations(root, manifest);
-
-  await validateContextDeclarations(root, manifest);
-
-  const taskRunbook = await validateTaskRunbook(root, manifest);
-  const composition = await validateComposition(root, manifest, packages);
-
-  const configurationSchemaPath = resolvePackagePath(root, manifest.configuration.schema);
-  const configurationSchema = await readJsonFile(configurationSchemaPath, "Configuration schema");
-  let validateConfiguration;
-
+  state.active.add(canonicalRoot);
   try {
-    validateConfiguration = compileConfigurationSchema(configurationSchema);
-  } catch (error) {
-    throw new SeedSpecError(`Configuration schema cannot be compiled: ${manifest.configuration.schema}`, {
-      code: "INVALID_CONFIGURATION_SCHEMA",
-      details: [error.message]
-    });
+    const authored = await loadAuthoredManifest(root, specPath, manifestPath);
+    const validateManifest = await compileProtocolSchema("seedspec.schema.json");
+    if (!validateManifest(authored.manifest)) {
+      throw new SeedSpecError(`Invalid SeedSpec manifest: ${root}`, {
+        code: "INVALID_MANIFEST",
+        details: formatSchemaErrors(validateManifest.errors)
+      });
+    }
+    if (!authored.body.trim()) {
+      throw new SeedSpecError(`SPEC.md must contain specification prose: ${specPath}`, {
+        code: "EMPTY_SPEC"
+      });
+    }
+    assertSectionIds(authored.manifest);
+    const expanded = await expandManifestSections(
+      root,
+      authored.manifest,
+      authored.provenance.sources,
+      specPath
+    );
+    if (!validateManifest(expanded.manifest)) {
+      throw new SeedSpecError(`Expanded SeedSpec manifest is invalid: ${root}`, {
+        code: "INVALID_EXPANDED_MANIFEST",
+        details: formatSchemaErrors(validateManifest.errors)
+      });
+    }
+    const successAnchors = collectSuccessAnchors(authored.body);
+    validateSemanticReferences(expanded.manifest, successAnchors);
+    await validateLocalReferences(root, expanded.manifest);
+
+    const bundledPackages = [];
+    for (const declaration of expanded.manifest.bundled_packages ?? []) {
+      const child = await validatePackageTree(bundledRoot(root, declaration), state);
+      const mismatches = [
+        child.manifest.id === declaration.id
+          ? null
+          : `id: declared ${declaration.id}; bundled ${child.manifest.id}`,
+        child.manifest.version === declaration.version
+          ? null
+          : `version: declared ${declaration.version}; bundled ${child.manifest.version}`,
+        child.digest === declaration.digest
+          ? null
+          : `digest: declared ${declaration.digest}; bundled ${child.digest}`
+      ].filter(Boolean);
+      if (mismatches.length > 0) {
+        throw new SeedSpecError(`Bundled package identity does not match ${declaration.id}`, {
+          code: "BUNDLED_PACKAGE_IDENTITY_MISMATCH",
+          details: mismatches
+        });
+      }
+      bundledPackages.push({ declaration, record: child });
+    }
+
+    const digest = await computePackageDigest(root);
+    const record = {
+      root,
+      specPath,
+      manifestPath,
+      manifest: expanded.manifest,
+      authoredManifest: authored.manifest,
+      definitionPath: specPath,
+      definition: authored.body,
+      digest,
+      provenance: {
+        ...authored.provenance,
+        sections: expanded.sections,
+        success_anchors: successAnchors
+      },
+      bundledPackages
+    };
+    assertIdentity(record, state.packages);
+    return record;
+  } finally {
+    state.active.delete(canonicalRoot);
   }
-
-  const selectedConfigurationPath = configurationPath
-    ? configurationPath
-    : resolvePackagePath(root, manifest.configuration.example);
-  const configuration = await readYamlFile(
-    selectedConfigurationPath,
-    configurationPath ? "Selected configuration" : "Example configuration"
-  );
-
-  if (configuration === null || typeof configuration !== "object" || Array.isArray(configuration)) {
-    throw new SeedSpecError(`Configuration must be a YAML mapping for ${manifest.id}`, {
-      code: "INVALID_CONFIGURATION"
-    });
-  }
-
-  if (!validateConfiguration(configuration)) {
-    throw new SeedSpecError(`Configuration is invalid for ${manifest.id}: ${selectedConfigurationPath}`, {
-      code: "INVALID_CONFIGURATION",
-      details: formatSchemaErrors(validateConfiguration.errors)
-    });
-  }
-
-  const primaryModule = primaryContextModule(manifest);
-  const primarySource = await localContextModule(root, manifest, primaryModule);
-  const definitionPath = primarySource.entrypoint;
-  const definition = await readFile(definitionPath, "utf8");
-  const digest = await computePackageDigest(root);
-
-  const record = {
-    root,
-    manifestPath,
-    manifest,
-    definitionPath,
-    definition,
-    digest,
-    composition,
-    taskRunbook,
-    configurationSchema,
-    exampleConfiguration: configurationPath
-      ? await readYamlFile(resolvePackagePath(root, manifest.configuration.example), "Example configuration")
-      : configuration
-  };
-  assertPackageIdentity(record, packages);
-  return record;
 }
 
-export async function validatePackage(inputPath, options = {}) {
-  return validatePackageTree(inputPath, options, new Map());
+export async function validatePackage(inputPath) {
+  return validatePackageTree(inputPath, {
+    active: new Set(),
+    packages: new Map()
+  });
 }

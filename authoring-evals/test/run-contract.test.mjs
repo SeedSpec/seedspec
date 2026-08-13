@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -54,6 +54,36 @@ async function prepareRun({ runnerId = "test-runner", runnerVersion = "1.0.0" } 
     "--retention-class", "test-local"
   ]);
   return { runDirectory, prepared: JSON.parse(result.stdout) };
+}
+
+async function prepareFreshTurnRun() {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "seedspec-authoring-fresh-turn-test-"));
+  const copiedSubject = path.join(temporaryRoot, "subject");
+  await cp(subjectRoot, copiedSubject, { recursive: true });
+  const subjectPath = path.join(copiedSubject, "subject.yaml");
+  const source = await readFile(subjectPath, "utf8");
+  await writeFile(subjectPath, `${source}\nexecution:\n  fresh_agent_turns: [3]\n`, "utf8");
+  const runDirectory = path.join(temporaryRoot, "run");
+  await runScript("prepare-run.mjs", [
+    "--subject", copiedSubject,
+    "--out", runDirectory,
+    "--runner-id", "codex-cli",
+    "--runner-version", "fake-codex 1.0.0",
+    "--model-provider", "test-provider",
+    "--model-id", "test/model",
+    "--model-selector", "test-model",
+    "--reasoning-effort", "test",
+    "--tool", "filesystem",
+    "--tool", "shell",
+    "--network", "disabled",
+    "--max-duration-ms", "60000",
+    "--max-turns", "10",
+    "--max-spend-usd", "none",
+    "--max-input-tokens", "1000000",
+    "--max-output-tokens", "100000",
+    "--retention-class", "test-local"
+  ]);
+  return { runDirectory };
 }
 
 test("a prepared run freezes controls without exposing proxy-author answers", async () => {
@@ -200,4 +230,53 @@ if (process.argv.includes("--version")) {
   assert.match(events, /user\.message/u);
   assert.match(events, /Start from HANDOFF/u);
   assert.equal(state.turns_completed, 1);
+});
+
+test("the turn adapter starts a new lineage segment at a frozen fresh-agent turn", async () => {
+  const { runDirectory } = await prepareFreshTurnRun();
+  await runScript("start-run.mjs", ["--run", runDirectory]);
+  const fakeRunner = path.join(runDirectory, "fake-codex.mjs");
+  await writeFile(fakeRunner, `#!/usr/bin/env node
+import { existsSync, writeFileSync } from "node:fs";
+if (process.argv.includes("--version")) {
+  process.stdout.write("fake-codex 1.0.0\\n");
+} else {
+  let input = "";
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => { input += chunk; });
+  process.stdin.on("end", () => {
+    const resumed = process.argv.includes("resume");
+    const marker = ".fake-session-started";
+    const id = resumed || !existsSync(marker) ? "thread-one" : "thread-two";
+    if (!resumed) writeFileSync(marker, id, "utf8");
+    process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: id }) + "\\n");
+    process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: input } }) + "\\n");
+    process.stdout.write(JSON.stringify({ type: "turn.completed", usage: { input_tokens: input.length, output_tokens: 1 } }) + "\\n");
+  });
+}
+`, "utf8");
+  await chmod(fakeRunner, 0o755);
+  const results = [];
+  for (const turn of [1, 2, 3]) {
+    const prompt = path.join(runDirectory, `prompt-${String(turn)}.txt`);
+    await writeFile(prompt, `Turn ${String(turn)}.\n`, "utf8");
+    const execution = await runScript("run-agent-turn.mjs", [
+      "--run", runDirectory,
+      "--turn", String(turn),
+      "--prompt", prompt,
+      "--executable", fakeRunner
+    ]);
+    results.push(JSON.parse(execution.stdout));
+  }
+  assert.equal(results[0].session_id, "thread-one");
+  assert.equal(results[0].continuation.fresh, true);
+  assert.equal(results[1].session_id, "thread-one");
+  assert.equal(results[1].continuation.fresh, false);
+  assert.equal(results[2].session_id, "thread-two");
+  assert.equal(results[2].continuation.fresh, true);
+  const ledger = JSON.parse(await readFile(path.join(runDirectory, "runner-session.json"), "utf8"));
+  assert.deepEqual(ledger.segments, [
+    { started_turn: 1, session_id: "thread-one" },
+    { started_turn: 3, session_id: "thread-two" }
+  ]);
 });

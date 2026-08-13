@@ -1,0 +1,268 @@
+authoring_eval_subject_version: "2"
+id: 02-mature-requirements
+corpus_role: mature-requirements
+description: >-
+  Detailed, approved cross-system requirements that should be consolidated
+  faithfully, with one explicit product choice and delegated implementation.
+mode: minimal
+authoring_posture:
+  ambition: bounded
+  audience: fresh-internal
+  handoff: implementation-start
+  collaboration: brief
+fixed_claim_contract:
+  - id: hubspot-object
+    source: sources/product-requirements.md
+    description: The briefing uses the HubSpot deal object.
+    targets:
+      - format: json
+        path: configuration/schema.json
+        pointer: /properties/hubspot_object/const
+        expected: deal
+      - format: yaml
+        path: configuration/example.yaml
+        pointer: /hubspot_object
+        expected: deal
+  - id: metric-property
+    source: sources/product-requirements.md
+    description: HubSpot property qualified_pipeline_value is the fixed metric.
+    targets:
+      - format: json
+        path: configuration/schema.json
+        pointer: /properties/metric_property/const
+        expected: qualified_pipeline_value
+      - format: yaml
+        path: configuration/example.yaml
+        pointer: /metric_property
+        expected: qualified_pipeline_value
+  - id: dashboard-name
+    source: sources/product-requirements.md
+    description: Daily Qualified Pipeline is the fixed dashboard name.
+    targets:
+      - format: json
+        path: configuration/schema.json
+        pointer: /properties/dashboard_name/const
+        expected: Daily Qualified Pipeline
+      - format: yaml
+        path: configuration/example.yaml
+        pointer: /dashboard_name
+        expected: Daily Qualified Pipeline
+  - id: reporting-timezone
+    source: sources/product-requirements.md
+    description: America/Chicago controls the reporting day and schedule.
+    targets:
+      - format: json
+        path: configuration/schema.json
+        pointer: /properties/timezone/const
+        expected: America/Chicago
+      - format: yaml
+        path: configuration/example.yaml
+        pointer: /timezone
+        expected: America/Chicago
+  - id: delivery-time
+    source: sources/product-requirements.md
+    description: The daily briefing is fixed at 08:00.
+    targets:
+      - format: json
+        path: configuration/schema.json
+        pointer: /properties/delivery_time/const
+        expected: "08:00"
+      - format: yaml
+        path: configuration/example.yaml
+        pointer: /delivery_time
+        expected: "08:00"
+  - id: slack-channel
+    source: sources/product-requirements.md
+    description: "The daily briefing goes to the fixed #sales-daily channel."
+    targets:
+      - format: json
+        path: configuration/schema.json
+        pointer: /properties/slack_channel/const
+        expected: "#sales-daily"
+      - format: yaml
+        path: configuration/example.yaml
+        pointer: /slack_channel
+        expected: "#sales-daily"
+starter:
+  package: package
+  sources:
+    - id: approved-product-requirements
+      path: sources/product-requirements.md
+      authority: approved-revenue-operations
+    - id: approved-security-operations
+      path: sources/security-operations.md
+      authority: approved-security-and-operations
+author_prompt: >-
+  Bring the approved requirements and operating constraints into the package.
+  Resolve the one open empty-day choice with me. Preserve fixed HubSpot, Slack,
+  time, retry, and security meaning. Leave the implementation approach to the
+  implementing user after environment inspection.
+execution:
+  fresh_agent_turns: []
+proxy_author:
+  decisions:
+    - id: empty-day-behavior
+      match:
+        any:
+          - empty reporting day
+          - no-data message
+          - no data message
+          - skip delivery
+          - missing data
+      answer: >-
+        Send one explicit no-data message for the previous calendar day. Do not
+        skip the briefing, and never represent missing data as zero.
+    - id: implementation-approach
+      match:
+        any:
+          - implementation approach
+          - hubspot-native
+          - automation platform
+          - scheduled service
+          - standalone app
+      answer: >-
+        Keep the approach delegated. The implementing user selects it after
+        inspecting available HubSpot features and approved automation systems.
+        Do not require a new hosted service.
+    - id: dashboard-link
+      match:
+        any:
+          - dashboard link
+          - stable authorized link
+          - link to the dashboard
+      answer: >-
+        Include the dashboard link when it is stable and authorized. The metric,
+        reporting day, timezone, and value or no-data state remain required.
+reference:
+  meaning:
+    - id: fixed-cross-system-outcome
+      description: HubSpot owns the metric and dashboard; Slack receives the briefing.
+      source:
+        path: sources/product-requirements.md
+      authority: approved-revenue-operations
+      materiality: critical
+      expectation: preserve
+    - id: prior-calendar-day
+      description: Reporting uses the previous calendar day in America/Chicago.
+      source:
+        path: sources/product-requirements.md
+      authority: approved-revenue-operations
+      materiality: critical
+      expectation: preserve
+    - id: empty-day-choice
+      description: Missing data requires an explicit choice and cannot become zero.
+      source:
+        path: sources/product-requirements.md
+      authority: approved-revenue-operations
+      materiality: critical
+      expectation: resolve
+    - id: realization-selection
+      description: Implementation approach follows inspection of the actual environment.
+      source:
+        path: sources/product-requirements.md
+      authority: approved-revenue-operations
+      materiality: material
+      expectation: delegate
+    - id: credential-exclusion
+      description: Secrets and customer records do not enter package artifacts or evidence.
+      source:
+        path: sources/security-operations.md
+      authority: approved-security-and-operations
+      materiality: critical
+      expectation: exclude
+  decisions:
+    - id: empty-day-disposition
+      description: Whether a reporting day with no data sends or skips a briefing.
+      materiality: critical
+      expected_latitude: fixed
+      acceptable_outcomes:
+        - Send one explicit no-data message and never substitute numeric zero.
+    - id: realization-path
+      description: Which supported system runs the scheduled workflow.
+      materiality: material
+      expected_latitude: delegated
+      acceptable_outcomes:
+        - Select after environment inspection with the implementing user.
+    - id: dashboard-link-presentation
+      description: How a stable authorized dashboard link appears in the briefing.
+      materiality: minor
+      expected_latitude: preferred
+      acceptable_outcomes:
+        - Include a stable authorized link using local message conventions.
+        - Omit the link when no stable authorized link is available.
+  obligations:
+    - id: deliver-daily-briefing
+      kind: outcome
+      description: Deliver one 08:00 briefing to the configured Slack channel.
+      importance: critical
+    - id: calculate-prior-day
+      kind: behavior
+      description: Calculate the previous America/Chicago calendar day.
+      importance: critical
+    - id: missing-is-not-zero
+      kind: invariant
+      description: Missing source data is never represented as numeric zero.
+      importance: critical
+    - id: idempotent-retry
+      kind: constraint
+      description: A retry creates no duplicate resources, schedules, or messages.
+      importance: critical
+    - id: protect-secrets
+      kind: forbidden-state
+      description: Package artifacts and evidence contain no credentials or customer records.
+      importance: critical
+    - id: observable-failure
+      kind: success-criterion
+      description: Delivery failure is visible and safely retryable.
+      importance: material
+  permitted_variability:
+    - id: implementation-profile
+      description: The workflow can use native, existing automation, or service capabilities.
+      bounds: Selection follows inspection, authorization, and faithful behavior.
+    - id: message-format
+      description: Slack wording and formatting can follow sales-team conventions.
+      bounds: Preserve metric, prior day, timezone, and value or no-data meaning.
+  forbidden_inventions:
+    - id: fabricated-zero
+      description: Do not convert missing data into a zero value.
+      severity: critical
+    - id: stored-secret
+      description: Do not add credentials or sensitive customer data to package content.
+      severity: critical
+    - id: mandated-new-service
+      description: Do not require a new hosted service or recurring cost.
+      severity: major
+  protected_paths: []
+expectations:
+  documents:
+    - path: definition/solution.md
+      contains:
+        - previous calendar day
+        - America/Chicago
+        - explicit no-data message
+        - safely retryable
+        - environment inspection
+      excludes:
+        - missing data is zero
+        - mandatory AWS service
+        - embedded access token
+    - path: acceptance/criteria.md
+      contains:
+        - qualified_pipeline_value
+        - "#sales-daily"
+        - previous calendar day
+        - explicit no-data
+        - duplicate
+      excludes:
+        - no-data state passes as zero
+        - secret value appears in the message
+  state:
+    review_complete: true
+    questions:
+      open: 0
+    candidates:
+      open: 0
+    proposals:
+      required_paths:
+        - definition/solution.md
+        - acceptance/criteria.md

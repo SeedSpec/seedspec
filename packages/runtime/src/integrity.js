@@ -82,33 +82,6 @@ async function collectedDirectoryFiles(root) {
   })));
 }
 
-export async function computeFileDigest(filePath) {
-  const content = await readFile(filePath);
-  return `sha256:${createHash("sha256").update(content).digest("hex")}`;
-}
-
-export async function computeDirectoryDigest(root, { excludePaths = [] } = {}) {
-  const excluded = new Set(excludePaths);
-  const files = (await collectedDirectoryFiles(root)).filter((file) => (
-    ![...excluded].some((excludedPath) => (
-      file.relativePath === excludedPath
-      || file.relativePath.startsWith(`${excludedPath}/`)
-    ))
-  ));
-  return digestCollectedFiles(files);
-}
-
-export async function computeSelectedDirectoryDigest(root, selectedPaths) {
-  const selected = new Set(selectedPaths);
-  const files = (await collectedDirectoryFiles(root)).filter((file) => (
-    [...selected].some((selectedPath) => (
-      file.relativePath === selectedPath
-      || file.relativePath.startsWith(`${selectedPath}/`)
-    ))
-  ));
-  return digestCollectedFiles(files);
-}
-
 export async function computePackageDigest(root) {
-  return computeDirectoryDigest(root);
+  return digestCollectedFiles(await collectedDirectoryFiles(root));
 }

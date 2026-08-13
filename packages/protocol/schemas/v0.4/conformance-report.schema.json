@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seedspec.dev/releases/0.4.0/schemas/conformance-report.schema.json",
+  "title": "SeedSpec Protocol 0.4 conformance report",
+  "type": "object",
+  "required": ["report_version", "status", "protocol_release", "protocol_family", "suite", "runtime", "environment", "totals", "results"],
+  "properties": {
+    "report_version": { "const": "1" },
+    "status": { "enum": ["conformant", "nonconformant", "incomplete"] },
+    "protocol_release": { "type": "object" },
+    "protocol_family": { "const": "0.4" },
+    "suite": { "type": "object" },
+    "runtime": { "type": "object" },
+    "environment": { "type": "object" },
+    "extensions": { "type": "array" },
+    "totals": { "type": "object" },
+    "package_digests": { "type": "array" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "operation", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "operation": { "type": "string" },
+          "status": { "enum": ["passed", "failed", "skipped"] },
+          "message": { "type": "string" },
+          "error_code": { "type": "string" },
+          "output": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

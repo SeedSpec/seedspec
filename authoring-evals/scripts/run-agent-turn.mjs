@@ -158,13 +158,22 @@ if (!["codex-cli", "claude-code-cli"].includes(runnerId)) {
 const executable = options.executable ?? (runnerId === "codex-cli" ? "codex" : "claude");
 const prompt = await readFile(path.resolve(options.prompt), "utf8");
 const sessionPath = path.join(runDirectory, "runner-session.json");
-let priorSession = null;
+let sessionLedger = null;
 if (options.turn > 1) {
-  priorSession = JSON.parse(await readFile(sessionPath, "utf8"));
-  if (priorSession.contract_id !== contract.contract_id || priorSession.runner !== runnerId) {
+  sessionLedger = JSON.parse(await readFile(sessionPath, "utf8"));
+  if (sessionLedger.contract_id !== contract.contract_id || sessionLedger.runner !== runnerId) {
     throw new Error("Runner session does not match the frozen contract");
   }
+  if (sessionLedger.authoring_eval_runner_session_version !== "2"
+      || !Array.isArray(sessionLedger.segments)
+      || sessionLedger.segments.length === 0) {
+    throw new Error("Runner session lineage is invalid");
+  }
 }
+const startsFresh = options.turn === 1
+  || contract.execution.continuation.fresh_turns.includes(options.turn);
+const priorSegment = startsFresh ? null : sessionLedger?.segments.at(-1) ?? null;
+if (!startsFresh && priorSegment === null) throw new Error("No prior session exists to resume");
 
 let args;
 let requestedSessionId = null;
@@ -178,9 +187,9 @@ if (runnerId === "codex-cli") {
     "--ignore-user-config",
     "--ignore-rules"
   ];
-  args = options.turn === 1
+  args = startsFresh
     ? ["exec", ...shared, "--sandbox", "workspace-write", "--cd", runPath(runDirectory, contract.workspace.root), "-"]
-    : ["exec", "resume", ...shared, priorSession.session_id, "-"];
+    : ["exec", "resume", ...shared, priorSegment.session_id, "-"];
 } else {
   const allowedTools = contract.execution.tools.join(",");
   const shared = [
@@ -203,10 +212,10 @@ if (runnerId === "codex-cli") {
     if (remainingSpend <= 0) throw new Error("The frozen spend budget has expired");
     shared.push("--max-budget-usd", String(remainingSpend));
   }
-  requestedSessionId = options.turn === 1 ? randomUUID() : null;
-  args = options.turn === 1
+  requestedSessionId = startsFresh ? randomUUID() : null;
+  args = startsFresh
     ? [...shared, "--session-id", requestedSessionId]
-    : [...shared, "--resume", priorSession.session_id];
+    : [...shared, "--resume", priorSegment.session_id];
 }
 
 const versionExecution = await execute(executable, ["--version"], {
@@ -227,8 +236,12 @@ const execution = await execute(executable, args, {
   timeoutMs: remainingDuration
 });
 const parsed = parseEvents(execution.stdout, prompt);
-const currentSessionId = priorSession?.session_id
-  ?? sessionId(parsed.events, runnerId)
+const observedSessionId = sessionId(parsed.events, runnerId);
+if (!startsFresh && observedSessionId !== null && observedSessionId !== priorSegment.session_id) {
+  throw new Error("Resumed runner returned a different session identity");
+}
+const currentSessionId = priorSegment?.session_id
+  ?? observedSessionId
   ?? requestedSessionId;
 if (!currentSessionId) throw new Error("Runner returned no session identity");
 const turnPrefix = `runner/turn-${String(options.turn).padStart(2, "0")}`;
@@ -249,13 +262,20 @@ await Promise.all([
     flag: "wx"
   })
 ]);
-if (options.turn === 1) {
-  await writeFile(sessionPath, `${JSON.stringify({
-    authoring_eval_runner_session_version: "1",
+if (startsFresh) {
+  const nextLedger = {
+    authoring_eval_runner_session_version: "2",
     contract_id: contract.contract_id,
     runner: runnerId,
-    session_id: currentSessionId
-  }, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    segments: [
+      ...(sessionLedger?.segments ?? []),
+      { started_turn: options.turn, session_id: currentSessionId }
+    ]
+  };
+  await writeFile(sessionPath, `${JSON.stringify(nextLedger, null, 2)}\n`, {
+    encoding: "utf8",
+    flag: options.turn === 1 ? "wx" : "w"
+  });
 }
 await writeFile(path.join(runDirectory, "run-state.json"), `${JSON.stringify({
   ...state,
@@ -267,6 +287,10 @@ process.stdout.write(`${JSON.stringify({
   run_id: contract.run_id,
   turn: options.turn,
   session_id: currentSessionId,
+  continuation: {
+    fresh: startsFresh,
+    segment_started_turn: startsFresh ? options.turn : sessionLedger.segments.at(-1).started_turn
+  },
   exit_code: execution.exitCode,
   timed_out: execution.timedOut,
   reasoning_redactions: parsed.redactions,

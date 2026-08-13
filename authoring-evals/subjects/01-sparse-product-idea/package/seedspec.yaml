@@ -1,0 +1,29 @@
+protocol_version: "0.3"
+id: org.seedspec.evals.building-tool-library
+name: Building Tool Library
+version: 0.1.0
+kind: application
+description: A small tool-lending service for residents of one building.
+definition:
+  module: primary-intent
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities: []
+provides:
+  capabilities: []
+compatibility:
+  scope: domain
+  domain: org.seedspec.domain.community-sharing
+components:
+  acceptance: acceptance.md
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: application.md
+      source:
+        kind: package
+        path: definition/application.md

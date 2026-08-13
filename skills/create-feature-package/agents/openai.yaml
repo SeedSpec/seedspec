@@ -1,4 +1,0 @@
-interface:
-  display_name: "Create SeedSpec feature package"
-  short_description: "Turn supplied feature intent into a useful seed"
-  default_prompt: "Use $create-feature-package to co-author a feature SeedSpec with me."

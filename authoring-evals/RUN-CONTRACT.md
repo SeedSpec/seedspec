@@ -21,7 +21,7 @@ external conversation.
 ├── workspace/
 │   ├── HANDOFF.md               runner-visible prompt
 │   ├── seedspec/                mutable package
-│   ├── authoring/               mutable authoring state
+│   ├── authoring/               mutable or empty authoring state
 │   └── sources/                 visible declared sources
 └── evidence/                    retained sanitized evidence
 ```
@@ -36,8 +36,11 @@ They do not enter `HANDOFF.md`.
 `run-contract.json` records:
 
 - the subject snapshot and format version;
+- the SeedSpec or simple-authoring workflow;
+- any isolated authoring mechanism and its frozen artifact requirements;
 - the exact author prompt and coaching mode;
 - the runner and requested model identity;
+- fresh-agent turns and session lineage;
 - the declared tool and network surface;
 - the CLI version, protocol release, commit, dirty state, and source digest;
 - the starter package and authoring-state digests;
@@ -87,6 +90,10 @@ Use the same command for each later turn. Increment `--turn` each time.
 
 The adapter enforces the frozen runner version, turn count, duration, and
 available spend. It stores sanitized provider events and the session identity.
+
+Subject version 2 can require fresh-agent turns. The adapter starts a new
+session at each frozen turn. The controller does not finalize before the last
+required fresh turn.
 
 ### 4. Finalize the run
 
@@ -148,7 +155,30 @@ evidence, final package bytes, authoring state, reasons, and content identities.
 A completed run can receive a failed assessment. Completion describes evidence
 integrity. Assessment describes how the result matched frozen expectations.
 
+The simple-authoring workflow has no review or publish state. Completion instead
+requires a changed, valid, lint-clean package and no `seedspec author` command.
+Both workflows retain the same semantic grading path.
+
+An isolated simple-authoring run can enable one mechanism. The deterministic
+evaluator verifies ledger integrity, one requested review, or a frozen pre-edit
+artifact. A decision contract must also converge on all frozen proxy decisions.
+Semantic correctness remains the judge's responsibility.
+
 One contract permits one attempt. A retry requires a new contract and run ID.
+
+## Matrix lifecycle
+
+`plan-matrix.mjs` freezes the corpus, workflow, CLI 0.3.1, runner versions,
+model selectors, limits, Sol judge, and cell identities.
+
+`run-matrix.mjs --prepare-only` creates run contracts without model calls.
+
+`run-matrix.mjs --confirm-model-execution` runs each author cell, grades each
+completed result, and compares packages within each subject.
+
+Anthropic execution requires a non-null aggregate spend limit in the matrix
+plan. The planner allocates that limit across Claude cells. The regression
+candidate remains null until a candidate CLI is selected.
 
 ## Web-tool boundary
 

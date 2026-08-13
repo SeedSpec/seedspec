@@ -1,0 +1,10 @@
+{
+  "name": "@seedspec/think-harness",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Think agent that refuses completion unless SeedSpec check passes",
+  "scripts": {
+    "preview:local": "node ../../packages/cli/bin/seedspec.js preview ../../examples/daily-pipeline/package --evaluate ../../examples/daily-pipeline/evaluator/evaluate.mjs --workspace ../../examples/daily-pipeline/fixtures/reference --port 8787"
+  }
+}

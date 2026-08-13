@@ -1,0 +1,8 @@
+{
+  "cli": ["node", "../../../packages/cli/bin/seedspec.js"],
+  "package": "spec",
+  "evaluate": "../../../examples/daily-pipeline/evaluator/evaluate.mjs",
+  "workspace": ".",
+  "telemetry": ".seedspec/check-trace.jsonl",
+  "maxRepairTurns": 3
+}

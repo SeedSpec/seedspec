@@ -1,4 +1,4 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { SeedSpecError } from "./errors.js";
@@ -15,16 +15,35 @@ export async function resolvePackageLocation(inputPath) {
     });
   }
 
-  const manifestPath = info.isDirectory() ? path.join(absolute, "seedspec.yaml") : absolute;
   const root = info.isDirectory() ? absolute : path.dirname(absolute);
-
-  if (path.basename(manifestPath) !== "seedspec.yaml") {
-    throw new SeedSpecError(`Expected a package directory or seedspec.yaml: ${inputPath}`, {
+  if (
+    !info.isDirectory()
+    && !["SPEC.md", "seedspec.yaml"].includes(path.basename(absolute))
+  ) {
+    throw new SeedSpecError(`Expected a package directory, SPEC.md, or seedspec.yaml: ${inputPath}`, {
       code: "INVALID_PACKAGE_PATH"
     });
   }
+  const specPath = path.join(root, "SPEC.md");
+  const specInfo = await pathExists(specPath);
+  if (!specInfo?.isFile()) {
+    throw new SeedSpecError(`SeedSpec package requires SPEC.md: ${root}`, {
+      code: "MISSING_SPEC"
+    });
+  }
+  const candidateManifestPath = path.join(root, "seedspec.yaml");
+  const manifestInfo = await pathExists(candidateManifestPath);
+  if (manifestInfo && !manifestInfo.isFile()) {
+    throw new SeedSpecError(`Root seedspec.yaml must be a file: ${candidateManifestPath}`, {
+      code: "INVALID_MANIFEST_SOURCE"
+    });
+  }
 
-  return { root, manifestPath };
+  return {
+    root,
+    specPath,
+    manifestPath: manifestInfo ? candidateManifestPath : null
+  };
 }
 
 export async function readYamlFile(filePath, label = "YAML file") {
@@ -42,26 +61,6 @@ export async function readYamlFile(filePath, label = "YAML file") {
   } catch (error) {
     throw new SeedSpecError(`${label} is invalid YAML: ${filePath}`, {
       code: "INVALID_YAML",
-      details: [error.message]
-    });
-  }
-}
-
-export async function readJsonFile(filePath, label = "JSON file") {
-  let source;
-  try {
-    source = await readFile(filePath, "utf8");
-  } catch {
-    throw new SeedSpecError(`${label} is not readable: ${filePath}`, {
-      code: "FILE_NOT_READABLE"
-    });
-  }
-
-  try {
-    return JSON.parse(source);
-  } catch (error) {
-    throw new SeedSpecError(`${label} is invalid JSON: ${filePath}`, {
-      code: "INVALID_JSON",
       details: [error.message]
     });
   }
@@ -86,40 +85,4 @@ export async function pathExists(filePath) {
   } catch {
     return null;
   }
-}
-
-export async function readMarkdownComponent(packageRecord, componentName) {
-  const relativePath = packageRecord.manifest.components?.[componentName];
-  if (!relativePath) return "";
-
-  const componentPath = resolvePackagePath(packageRecord.root, relativePath);
-  const info = await pathExists(componentPath);
-  if (!info) return "";
-
-  if (info.isFile()) {
-    return componentPath.endsWith(".md") ? readFile(componentPath, "utf8") : "";
-  }
-
-  return readMarkdownDirectory(componentPath);
-}
-
-async function readMarkdownDirectory(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const chunks = [];
-
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await readMarkdownDirectory(entryPath);
-      if (nested) chunks.push(nested);
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
-      chunks.push(await readFile(entryPath, "utf8"));
-    }
-  }
-
-  return chunks.join("\n\n").trim();
-}
-
-export function portablePath(...parts) {
-  return parts.join("/");
 }

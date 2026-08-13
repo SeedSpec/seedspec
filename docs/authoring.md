@@ -136,6 +136,13 @@ continues. When it notices a concern grounded in the authored material, it
 describes one issue in product language and first asks whether the author wants
 to address it. Exact replacement wording comes only after the author says yes.
 
+When a consequential decision has two or three concrete options, the agent uses
+the host's native single-choice control when one is available. It puts the
+recommended option first, marks it recommended, states one material tradeoff
+for each option, and preserves a free-form discussion path. A host without a
+question control receives the same choice as numbered Markdown. The agent does
+not invent completeness scores, time estimates, or numeric comparisons.
+
 The author may finish an area as:
 
 - `improved` — they accepted one or more changes;
@@ -518,7 +525,7 @@ Authoring state remains outside the distributable package:
         └── result.yaml
 ```
 
-New passes use instruction format `0.20` and result format `0.3`. An active
+New passes use instruction format `0.21` and result format `0.3`. An active
 source-bound pass that uses the current result format is refreshed to the
 current conversation and record brief when review resumes, without discarding
 its result state. Existing `0.2` passes and their seven legacy area IDs remain

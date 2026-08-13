@@ -1,0 +1,221 @@
+authoring_eval_subject_version: "2"
+id: 03-controlled-revision
+corpus_role: controlled-revision
+description: >-
+  A bounded revision to an established clinic workflow, with explicit timing,
+  terminology, privacy changes, preserved safety meaning, and unapproved ideas.
+mode: minimal
+starter:
+  package: package
+  sources:
+    - id: approved-baseline-operations
+      path: sources/baseline-operations.md
+      authority: approved-clinic-operations
+    - id: approved-revision
+      path: sources/approved-revision.md
+      authority: approved-clinic-operations
+    - id: approved-privacy-update
+      path: sources/privacy-update.md
+      authority: approved-privacy-owner
+    - id: unapproved-workshop-notes
+      path: sources/workshop-notes.md
+      authority: unapproved-informational
+author_prompt: >-
+  Apply only the approved revision and privacy update to the existing package.
+  Resolve any deadline edge needed to express the approved meaning. Preserve
+  phone access, text-field collection, human follow-up, and the no-cancellation
+  boundary. Do not add workshop reminder or automatic-cancellation ideas.
+execution:
+  fresh_agent_turns: []
+proxy_author:
+  decisions:
+    - id: previous-business-day
+      match:
+        any:
+          - previous business day
+          - monday appointment
+          - weekend
+          - friday at 5
+          - friday deadline
+      answer: >-
+        For a Monday appointment, use Friday at 5:00 p.m. This package does not
+        define clinic holidays; the implementation can use the clinic's
+        established business calendar.
+    - id: after-deadline-submission
+      match:
+        any:
+          - after the deadline
+          - submitted late
+          - late submission
+          - missed deadline
+          - work queue
+      answer: >-
+        Put a late submission in the staff work queue immediately. Keep the
+        appointment scheduled. Do not automatically cancel or reschedule it.
+    - id: unapproved-automation
+      match:
+        any:
+          - text reminders
+          - automatic reminders
+          - automatic cancellation
+          - workshop notes
+      answer: >-
+        Exclude both workshop ideas. They create no package content,
+        configuration, future task, or implementation obligation.
+reference:
+  meaning:
+    - id: phone-access
+      description: A patient can complete intake on a phone.
+      source:
+        path: sources/baseline-operations.md
+      authority: approved-clinic-operations
+      materiality: material
+      expectation: preserve
+    - id: revised-review-deadline
+      description: Review is due by 5:00 p.m. on the previous business day.
+      source:
+        path: sources/approved-revision.md
+      authority: approved-clinic-operations
+      materiality: critical
+      expectation: resolve
+    - id: appointment-safety
+      description: Follow-up and late submission never cancel or reschedule the appointment.
+      source:
+        path: sources/approved-revision.md
+      authority: approved-clinic-operations
+      materiality: critical
+      expectation: preserve
+    - id: card-image-removal
+      description: Insurance card images are removed while approved text fields remain.
+      source:
+        path: sources/privacy-update.md
+      authority: approved-privacy-owner
+      materiality: critical
+      expectation: exclude
+    - id: field-presentation
+      description: Insurance text field names and layout follow clinic context.
+      source:
+        path: sources/approved-revision.md
+      authority: approved-clinic-operations
+      materiality: minor
+      expectation: delegate
+    - id: workshop-automation
+      description: Reminders and automatic cancellation are unapproved ideas.
+      source:
+        path: sources/workshop-notes.md
+      authority: unapproved-informational
+      materiality: critical
+      expectation: exclude
+  decisions:
+    - id: monday-deadline
+      description: Interpret previous business day for Monday appointments.
+      materiality: critical
+      expected_latitude: fixed
+      acceptable_outcomes:
+        - Use Friday at 5:00 p.m. and defer holidays to the clinic calendar.
+    - id: late-submission-state
+      description: Handle intake submitted after the review deadline.
+      materiality: critical
+      expected_latitude: fixed
+      acceptable_outcomes:
+        - Queue it immediately for staff while leaving the appointment scheduled.
+    - id: insurance-field-presentation
+      description: Choose labels and layout for approved insurance text fields.
+      materiality: minor
+      expected_latitude: delegated
+      acceptable_outcomes:
+        - Follow clinic terminology without adding card images or eligibility checks.
+    - id: ready-label-presentation
+      description: Present ready and needs-follow-up outcomes clearly.
+      materiality: minor
+      expected_latitude: preferred
+      acceptable_outcomes:
+        - Use the approved labels verbatim.
+        - Apply local capitalization and punctuation without changing meaning.
+  obligations:
+    - id: enforce-review-deadline
+      kind: behavior
+      description: Route intake for review by 5:00 p.m. on the previous business day.
+      importance: critical
+    - id: preserve-appointment
+      kind: invariant
+      description: A needs-follow-up or late intake leaves the appointment scheduled.
+      importance: critical
+    - id: remove-card-image
+      kind: forbidden-state
+      description: The workflow cannot request, store, or display an insurance card image.
+      importance: critical
+    - id: keep-text-fields
+      kind: outcome
+      description: Staff receive approved insurance text fields for review.
+      importance: material
+    - id: verify-monday-case
+      kind: success-criterion
+      description: A Monday appointment has a Friday 5:00 p.m. review deadline.
+      importance: critical
+    - id: no-eligibility-integration
+      kind: boundary
+      description: Payer eligibility verification remains outside the workflow.
+      importance: material
+  permitted_variability:
+    - id: clinic-business-calendar
+      description: The implementation can use the clinic's established holiday calendar.
+      bounds: Weekday behavior must preserve Friday as the Monday deadline.
+    - id: form-presentation
+      description: Text-field labels, ordering, and screen layout can vary.
+      bounds: Preserve the approved information need and prohibit card images.
+  forbidden_inventions:
+    - id: automatic-cancellation
+      description: Do not cancel or reschedule appointments automatically.
+      severity: critical
+    - id: insurance-card-image
+      description: Do not request, upload, retain, or display insurance card images.
+      severity: critical
+    - id: automatic-text-reminders
+      description: Do not add unapproved text reminders or reminder infrastructure.
+      severity: major
+    - id: payer-eligibility
+      description: Do not add payer verification or an external insurance integration.
+      severity: major
+  protected_paths: []
+expectations:
+  documents:
+    - path: definition/intake.md
+      contains:
+        - 5:00 p.m.
+        - previous business day
+        - Monday appointment
+        - Friday
+        - needs follow-up
+        - remains scheduled
+        - insurance text fields
+      contains_any:
+        - - must not request, upload, retain, or display an insurance card image
+          - does not collect an insurance card image
+          - insurance card images are prohibited
+      excludes:
+        - review each submission on the morning of the appointment
+        - mark it clear or flagged
+        - automatic text reminder
+    - path: acceptance.md
+      contains:
+        - Friday at 5:00 p.m.
+        - work queue
+        - remains scheduled
+        - insurance text fields
+      excludes:
+        - staff can review insurance text and a card image
+        - staff can mark the intake clear or flagged
+        - appointment morning
+        - text reminder
+        - payer eligibility verification succeeds
+  state:
+    review_complete: true
+    questions:
+      open: 0
+    candidates:
+      open: 0
+    proposals:
+      required_paths:
+        - definition/intake.md
+        - acceptance.md

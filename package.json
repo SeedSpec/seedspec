@@ -1,26 +1,25 @@
 {
   "name": "seedspec",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
-  "description": "Authoring tools, package protocol, runtime, and CLI for portable agent-ready seeds",
+  "description": "Protocol, structural runtime, and CLI for portable agent-ready specifications",
   "type": "module",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "test": "npm run test --workspace @seedspec/runtime",
-    "conformance:goldens": "node ./scripts/generate-conformance-goldens.mjs",
-    "release:protocol": "node ./scripts/generate-protocol-release.mjs && node ./scripts/generate-conformance-goldens.mjs && node ./scripts/generate-protocol-release.mjs && node ./scripts/generate-conformance-goldens.mjs",
+    "release:protocol": "node ./scripts/generate-protocol-release.mjs",
     "release:verify": "node ./scripts/verify-release.mjs",
     "release:pack": "npm pack --workspace @seedspec/protocol --dry-run && npm pack --workspace @seedspec/runtime --dry-run && npm pack --workspace @seedspec/cli --dry-run",
     "check:names": "node ./scripts/check-clean-names.mjs",
-    "lint": "eslint packages/protocol/src packages/runtime/src packages/runtime/test packages/cli/src packages/cli/bin packages/cli/test authoring-evals/scripts authoring-evals/test scripts eslint.config.js",
+    "lint": "eslint packages/protocol/src packages/runtime/src packages/runtime/test packages/cli/bin packages/cli/test scripts eslint.config.js",
     "typecheck": "tsc -p tsconfig.json",
-    "validate:fixtures": "node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/comprehensive-application && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/portable-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/revision-feature && node ./packages/cli/bin/seedspec.js validate ./conformance/fixtures/profiled-workflow",
-    "authoring-evals:check": "node ./authoring-evals/scripts/check-subjects.mjs",
-    "authoring-evals:test": "node --test ./authoring-evals/test/*.test.mjs",
-    "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures && npm run authoring-evals:check && npm run authoring-evals:test",
-    "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/cases.yaml"
+    "validate:fixtures": "node ./packages/cli/bin/seedspec.js validate ./conformance/v0.4/fixtures/minimum && node ./packages/cli/bin/seedspec.js validate ./conformance/v0.4/fixtures/merged-sections && node ./packages/cli/bin/seedspec.js validate ./examples/daily-pipeline/package",
+    "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures && npm run conformance && npm run bakeoff && npm run test:harness",
+    "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/v0.4/cases.yaml",
+    "bakeoff": "node ./scripts/bakeoff-daily-pipeline.mjs",
+    "test:harness": "node ./scripts/test-pi-harness.mjs"
   },
   "engines": {
     "node": ">=20"

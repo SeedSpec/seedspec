@@ -1,0 +1,29 @@
+protocol_version: "0.3"
+id: org.seedspec.evals.patient-intake-revision
+name: Patient Intake Revision
+version: 0.2.0
+kind: workflow
+description: Pre-visit intake and staff review for a clinic.
+definition:
+  module: primary-intent
+configuration:
+  schema: configuration/schema.json
+  example: configuration/example.yaml
+requires:
+  capabilities: []
+provides:
+  capabilities: []
+compatibility:
+  scope: domain
+  domain: org.seedspec.domain.clinic-operations
+components:
+  acceptance: acceptance.md
+context:
+  modules:
+    - id: primary-intent
+      format: org.seedspec.intent.markdown
+      description: The package author's primary intent.
+      entrypoint: intake.md
+      source:
+        kind: package
+        path: definition/intake.md

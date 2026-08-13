@@ -1,13 +1,12 @@
 {
   "name": "@seedspec/cli",
-  "version": "0.3.1",
-  "description": "Author and use portable, agent-ready SeedSpec packages",
+  "version": "0.4.0",
+  "description": "Validate, inspect, and check SeedSpec Protocol 0.4 packages",
   "keywords": [
     "seedspec",
     "cli",
     "agents",
     "intent",
-    "authoring",
     "specifications",
     "portable"
   ],
@@ -17,9 +16,7 @@
   },
   "files": [
     "bin",
-    "docs",
     "skills",
-    "src",
     "README.md"
   ],
   "scripts": {
@@ -29,7 +26,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@seedspec/runtime": "0.3.1"
+    "@seedspec/runtime": "0.4.0"
   },
   "repository": {
     "type": "git",

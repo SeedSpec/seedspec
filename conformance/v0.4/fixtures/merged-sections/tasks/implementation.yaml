@@ -1,0 +1,4 @@
+items:
+  - id: implement
+    instruction: Implement the specification.
+    success_criteria: [complete]
