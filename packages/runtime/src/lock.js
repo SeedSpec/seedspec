@@ -1,131 +1,111 @@
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { analyzeCapabilityDeclarations } from "./capabilities.js";
 import { SeedSpecError } from "./errors.js";
-import { pathExists, readYamlFile } from "./files.js";
-import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
+import { pathExists } from "./files.js";
 import { validatePackage } from "./validate.js";
 
-function stableJson(value) {
-  return JSON.stringify(value);
+export async function createLock(inputPaths) {
+  const packages = [];
+  for (const inputPath of inputPaths) {
+    const record = await validatePackage(inputPath);
+    packages.push({
+      id: record.manifest.id,
+      name: record.manifest.name,
+      version: record.manifest.version,
+      digest: record.digest,
+      source: path.resolve(inputPath)
+    });
+  }
+  return {
+    lock_version: "0.4",
+    generated_at: new Date().toISOString(),
+    packages
+  };
 }
 
-function compareLockedPackage(expected, actual) {
-  return expected.id === actual.manifest.id
-    && expected.version === actual.manifest.version
-    && expected.kind === actual.manifest.kind
-    && expected.digest === actual.digest;
+export async function verifyLock(lock) {
+  const results = [];
+  for (const entry of lock.packages ?? []) {
+    const record = await validatePackage(entry.source);
+    const mismatches = [
+      record.manifest.id === entry.id
+        ? null
+        : `id: locked ${entry.id}; package ${record.manifest.id}`,
+      record.manifest.version === entry.version
+        ? null
+        : `version: locked ${entry.version}; package ${record.manifest.version}`,
+      record.digest === entry.digest
+        ? null
+        : `digest: locked ${entry.digest}; package ${record.digest}`
+    ].filter(Boolean);
+    results.push({
+      id: entry.id,
+      source: entry.source,
+      digest: record.digest,
+      status: mismatches.length === 0 ? "pass" : "fail",
+      mismatches
+    });
+  }
+  return {
+    status: results.every(({ status }) => status === "pass") ? "pass" : "fail",
+    results
+  };
 }
 
-function addBundledPackages(record, supplied) {
-  const existing = supplied.get(record.manifest.id);
-  if (existing) {
-    if (!compareLockedPackage({
-      id: existing.manifest.id,
-      version: existing.manifest.version,
-      kind: existing.manifest.kind,
-      digest: existing.digest
-    }, record)) {
+export async function getPackage(source, { digest, output } = {}) {
+  if (!digest || !output) {
+    throw new SeedSpecError("seedspec get requires --digest and --output", {
+      code: "MISSING_OPTION_VALUE"
+    });
+  }
+  const destination = path.resolve(output);
+  if (await pathExists(destination)) {
+    throw new SeedSpecError(`Get destination already exists: ${destination}`, {
+      code: "GET_DESTINATION_EXISTS"
+    });
+  }
+  await mkdir(path.dirname(destination), { recursive: true });
+  try {
+    await cp(path.resolve(source), destination, { recursive: true });
+    const record = await validatePackage(destination);
+    if (record.digest !== digest) {
       throw new SeedSpecError(
-        `Bundled package conflicts with another supplied package: ${record.manifest.id}`,
-        { code: "LOCK_PACKAGE_MISMATCH" }
+        `Fetched package digest ${record.digest} does not match ${digest}`,
+        { code: "DIGEST_MISMATCH" }
       );
     }
-    return;
-  }
-
-  supplied.set(record.manifest.id, record);
-  for (const edge of record.composition.includes) {
-    addBundledPackages(edge.record, supplied);
+    return {
+      id: record.manifest.id,
+      version: record.manifest.version,
+      digest: record.digest,
+      output: destination
+    };
+  } catch (error) {
+    await rm(destination, { recursive: true, force: true });
+    throw error;
   }
 }
 
-export async function verifyProjectLock(projectPath, packagePaths) {
-  const absolute = path.resolve(projectPath);
-  const workspace = path.basename(absolute) === ".seedspec"
-    ? absolute
-    : path.join(absolute, ".seedspec");
-  const lockPath = path.join(workspace, "dependencies.lock.yaml");
-  if (!await pathExists(lockPath)) {
-    throw new SeedSpecError(`SeedSpec lock file does not exist: ${lockPath}`, {
-      code: "LOCK_NOT_FOUND"
-    });
+export function formatLock(lock) {
+  const lines = [`SeedSpec lock ${lock.lock_version}`, `Generated: ${lock.generated_at}`];
+  for (const entry of lock.packages) {
+    lines.push(`${entry.id}@${entry.version} ${entry.digest}`, `  source: ${entry.source}`);
   }
+  return lines.join("\n");
+}
 
-  const lock = await readYamlFile(lockPath, "SeedSpec dependency lock");
-  const validateLock = await compileProtocolSchema("lock.schema.json");
-  if (!validateLock(lock)) {
-    throw new SeedSpecError("SeedSpec dependency lock is invalid", {
-      code: "INVALID_LOCK",
-      details: formatSchemaErrors(validateLock.errors)
-    });
-  }
+export function formatLockVerification(report) {
+  const lines = report.results.map((result) => (
+    `${result.status === "pass" ? "PASS" : "FAIL"} ${result.id}`
+    + (result.mismatches.length ? ` — ${result.mismatches.join("; ")}` : "")
+  ));
+  lines.push("", `${report.status.toUpperCase()} ${report.results.length} locked package(s)`);
+  return lines.join("\n");
+}
 
-  const records = await Promise.all(packagePaths.map(validatePackage));
-  const suppliedRoots = new Map();
-  for (const record of records) {
-    if (suppliedRoots.has(record.manifest.id)) {
-      throw new SeedSpecError(`Package supplied more than once: ${record.manifest.id}`, {
-        code: "DUPLICATE_LOCK_PACKAGE"
-      });
-    }
-    suppliedRoots.set(record.manifest.id, record);
-  }
-  const supplied = new Map();
-  for (const record of suppliedRoots.values()) addBundledPackages(record, supplied);
-
-  const expectedPackages = [lock.root, ...lock.additions];
-  const missing = expectedPackages
-    .filter((expected) => !supplied.has(expected.id))
-    .map((expected) => expected.id);
-  if (missing.length > 0) {
-    throw new SeedSpecError("Packages required by the lock were not supplied", {
-      code: "LOCK_PACKAGE_MISSING",
-      details: missing
-    });
-  }
-
-  const mismatches = expectedPackages
-    .filter((expected) => !compareLockedPackage(expected, supplied.get(expected.id)))
-    .map((expected) => {
-      const actual = supplied.get(expected.id);
-      return `${expected.id}: expected ${expected.version} ${expected.digest}, received ${actual.manifest.version} ${actual.digest}`;
-    });
-  if (mismatches.length > 0) {
-    throw new SeedSpecError("Supplied package bytes do not match the lock", {
-      code: "LOCK_PACKAGE_MISMATCH",
-      details: mismatches
-    });
-  }
-
-  const unexpected = [...supplied.keys()].filter(
-    (id) => !expectedPackages.some((expected) => expected.id === id)
-  );
-  if (unexpected.length > 0) {
-    throw new SeedSpecError("Packages not present in the lock were supplied", {
-      code: "LOCK_PACKAGE_UNEXPECTED",
-      details: unexpected
-    });
-  }
-
-  const root = supplied.get(lock.root.id);
-  const additions = lock.additions.map((addition) => supplied.get(addition.id));
-  const graph = analyzeCapabilityDeclarations(root, additions);
-  const graphOrder = graph.orderedAdditions.map((addition) => addition.manifest.id);
-  const lockOrder = lock.additions.map((addition) => addition.id);
-
-  if (stableJson(graphOrder) !== stableJson(lockOrder)
-    || stableJson(graph.capabilities) !== stableJson(lock.capabilities)
-    || stableJson(graph.requirements) !== stableJson(lock.requirements)
-    || stableJson(graph.reviews) !== stableJson(lock.reviews)) {
-    throw new SeedSpecError("Locked addition order or declaration analysis does not match package declarations", {
-      code: "LOCK_GRAPH_MISMATCH"
-    });
-  }
-
-  return {
-    workspace,
-    lock,
-    verifiedPackages: expectedPackages.map((item) => item.id),
-    verifiedCapabilityDeclarations: lock.capabilities.map((item) => item.id)
-  };
+export async function writeLock(lock, outputPath) {
+  const destination = path.resolve(outputPath);
+  await mkdir(path.dirname(destination), { recursive: true });
+  await writeFile(destination, `${JSON.stringify(lock, null, 2)}\n`, "utf8");
+  return destination;
 }

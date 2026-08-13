@@ -14,19 +14,6 @@ async function digest(relativePath) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
-async function collectFiles(relativeDirectory, current = relativeDirectory, files = []) {
-  const entries = await readdir(path.join(root, current), { withFileTypes: true });
-  for (const entry of entries) {
-    const relativePath = path.join(current, entry.name);
-    if (entry.isDirectory()) {
-      await collectFiles(relativeDirectory, relativePath, files);
-    } else if (entry.isFile()) {
-      files.push(path.relative(relativeDirectory, relativePath).split(path.sep).join("/"));
-    }
-  }
-  return files;
-}
-
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -123,20 +110,8 @@ for (const entry of manifest.documents) {
     `Normative source document has drifted from the protocol package: ${sourcePath}`);
 }
 
-const sourceSkills = (await collectFiles("skills")).sort();
-const bundledSkills = (await collectFiles("packages/cli/skills")).sort();
-assert(JSON.stringify(sourceSkills) === JSON.stringify(bundledSkills),
-  "Bundled CLI skill inventory has drifted from the source skills");
-for (const skillPath of sourceSkills) {
-  assert(
-    await digest(`skills/${skillPath}`)
-      === await digest(`packages/cli/skills/${skillPath}`),
-    `Bundled CLI skill has drifted from its source: ${skillPath}`
-  );
-}
-
 console.log(
   `SeedSpec ${release.release_version} is internally aligned: `
   + `${schemaNames.length} schemas, ${manifest.documents.length} documents, `
-  + `${sourceSkills.length} skill files, conformance ${release.conformance_suite_version}.`
+  + `conformance ${release.conformance_suite_version}.`
 );

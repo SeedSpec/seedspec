@@ -1,0 +1,14 @@
+{
+  "name": "seedspec-think-harness",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.js",
+  "durable_objects": {
+    "bindings": [
+      { "name": "SeedSpecAgent", "class_name": "SeedSpecAgent" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["SeedSpecAgent"] }
+  ]
+}

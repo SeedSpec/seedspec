@@ -1,0 +1,17 @@
+id: merged-sections
+name: Base name
+kind: workflow
+version: "1.2.0"
+target_protocol: "0.4"
+success:
+  criteria:
+    - id: complete
+      description: The implementation is complete.
+tasks:
+  sections:
+    - id: preparation
+      items:
+        - id: inspect
+          instruction: Inspect the specification.
+    - id: implementation
+      path: tasks/implementation.yaml

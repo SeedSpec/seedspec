@@ -1,7 +1,12 @@
 # SeedSpec 0.4 capability experiment
 
-Status: experimental. This directory does not change Protocol 0.3 or publish a
-package.
+Status: historical experiment record plus a rebuilt 0.4 Pi harness.
+
+The original workbench commands were removed with the 0.3 package model. The
+results remain evidence. The Pi extension in `pi-harness/` now calls
+`seedspec check --evaluate <script> --workspace <dir>` against Protocol 0.4
+packages. See [`examples/daily-pipeline`](../../examples/daily-pipeline/) for
+the rebuilt package.
 
 Read [`HYPOTHESIS.md`](HYPOTHESIS.md) for the decision frame,
 [`RESULTS.md`](RESULTS.md) for the artifact screen, and

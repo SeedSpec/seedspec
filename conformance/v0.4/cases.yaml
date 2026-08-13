@@ -1,0 +1,78 @@
+suite_version: "0.4.0"
+protocol_version: "0.4"
+
+cases:
+  - id: validate-minimum
+    description: A single SPEC.md is a complete package.
+    operation: validate
+    package: fixtures/minimum
+    expect:
+      result: pass
+
+  - id: validate-merged-sections
+    description: Frontmatter overrides the base manifest and external sections expand.
+    operation: validate
+    package: fixtures/merged-sections
+    expect:
+      result: pass
+
+  - id: validate-anchored-capability
+    description: Capabilities, criteria, anchors, tasks, and evaluation context resolve together.
+    operation: validate
+    package: fixtures/anchored-capability
+    expect:
+      result: pass
+
+  - id: validate-implementation-profile
+    description: An implementation profile is a context module with a PROFILE.md entrypoint.
+    operation: validate
+    package: fixtures/implementation-profile
+    expect:
+      result: pass
+
+  - id: reject-legacy-package
+    description: A package without SPEC.md is not a Protocol 0.4 package.
+    operation: validate
+    package: fixtures/legacy-package
+    expect:
+      result: fail
+      code: MISSING_SPEC
+
+  - id: reject-unknown-field
+    description: Unknown protocol-owned fields are invalid.
+    operation: validate
+    package: fixtures/unknown-field
+    expect:
+      result: fail
+      code: INVALID_MANIFEST
+
+  - id: reject-duplicate-key
+    description: Duplicate YAML keys are invalid in every manifest source.
+    operation: validate
+    package: fixtures/duplicate-key
+    expect:
+      result: fail
+      code: INVALID_YAML
+
+  - id: reject-unresolved-reference
+    description: Structured ID references must resolve.
+    operation: validate
+    package: fixtures/unresolved-reference
+    expect:
+      result: fail
+      code: INVALID_CROSS_REFERENCE
+
+  - id: reject-unknown-success-anchor
+    description: A success anchor must resolve to a declared criterion.
+    operation: validate
+    package: fixtures/unknown-anchor
+    expect:
+      result: fail
+      code: INVALID_SUCCESS_ANCHOR
+
+  - id: minimum-digest-is-stable
+    description: Repeated validation produces the same package digest.
+    operation: digest-stability
+    package: fixtures/minimum
+    expect:
+      result: pass

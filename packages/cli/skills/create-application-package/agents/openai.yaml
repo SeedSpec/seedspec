@@ -1,4 +1,0 @@
-interface:
-  display_name: "Create SeedSpec application package"
-  short_description: "Turn supplied intent into an application seed"
-  default_prompt: "Use $create-application-package to co-author an application SeedSpec with me."

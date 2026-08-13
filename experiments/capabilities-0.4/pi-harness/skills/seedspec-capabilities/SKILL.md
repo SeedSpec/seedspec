@@ -1,25 +1,17 @@
 ---
-name: seedspec-capabilities
-description: Implement an accepted SeedSpec capability bundle while preserving source binding and recording stage evidence.
+name: seedspec-check
+description: Implement a SeedSpec package and complete only after the independent check passes.
 ---
+# SeedSpec check
 
-# SeedSpec capability implementation
+Read `.seedspec/check-harness.json`. Read the package `SPEC.md` it names.
 
-Read `.seedspec/capability-harness.json`. Read the accepted bundle it names.
+Treat success criteria as the implementation rubric. Do not expand the intended
+capability surface. Do not certify verification yourself.
 
-Treat accepted capabilities as an implementation and verification rubric. Do
-not replace package intent with the rubric. Resolve conflicts in favor of the
-authoritative package and report stale bundle diagnostics.
+1. Implement against the declared criteria.
+2. Run `seedspec_check` after material changes.
+3. Repair failed criteria.
+4. Call `seedspec_complete` as the final action.
 
-For each outcome:
-
-1. Find the implementation locations that realize it.
-2. Record one implementation evidence entry.
-3. Run or perform each declared acceptance check.
-4. Record exact verification evidence.
-5. Run `seedspec_capability_check`.
-6. Repair failed or missing evidence.
-7. Call `seedspec_capability_complete` as the final action.
-
-Do not claim that an agent review is deterministic. Do not treat the presence
-of a script as proof that it passed.
+A normal final response does not complete this task.

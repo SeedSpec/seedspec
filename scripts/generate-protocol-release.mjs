@@ -1,12 +1,10 @@
 import { createHash } from "node:crypto";
 import {
-  cp,
   copyFile,
   lstat,
   mkdir,
   readFile,
   readdir,
-  rm,
   writeFile
 } from "node:fs/promises";
 import path from "node:path";
@@ -14,7 +12,6 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const protocolDirectory = path.join(root, "packages/protocol");
-const cliDirectory = path.join(root, "packages/cli");
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
@@ -57,11 +54,9 @@ async function collectDirectoryFiles(directory, current = directory, files = [])
   return files;
 }
 
-async function directoryDigest(relativePath, { exclude = () => false } = {}) {
+async function directoryDigest(relativePath) {
   const directory = path.join(root, relativePath);
-  const files = (await collectDirectoryFiles(directory)).filter((file) => (
-    !exclude(file.relativePath)
-  ));
+  const files = await collectDirectoryFiles(directory);
   files.sort((left, right) => lexicalCompare(left.relativePath, right.relativePath));
   const aggregate = createHash("sha256");
   for (const file of files) {
@@ -77,7 +72,7 @@ async function directoryDigest(relativePath, { exclude = () => false } = {}) {
 }
 
 async function createConformanceBundle(bundleDigest, release) {
-  const directory = path.join(root, "conformance");
+  const directory = path.join(root, "conformance/v0.4");
   const files = await collectDirectoryFiles(directory);
   files.sort((left, right) => lexicalCompare(left.relativePath, right.relativePath));
   return {
@@ -118,9 +113,6 @@ const documentPaths = await Promise.all(sourceDocumentPaths.map(async (sourcePat
   await copyFile(path.join(root, sourcePath), path.join(protocolDirectory, releasePath));
   return releasePath;
 }));
-const cliSkillsDirectory = path.join(cliDirectory, "skills");
-await rm(cliSkillsDirectory, { recursive: true, force: true });
-await cp(path.join(root, "skills"), cliSkillsDirectory, { recursive: true });
 const source = {
   repository: "https://github.com/SeedSpec/seedspec"
 };
@@ -128,12 +120,7 @@ if (/^[a-f0-9]{40}$/u.test(process.env.SEEDSPEC_SOURCE_REVISION ?? "")) {
   source.revision = process.env.SEEDSPEC_SOURCE_REVISION;
 }
 
-const conformanceBundleDigest = await directoryDigest("conformance", {
-  exclude: (relativePath) => (
-    relativePath.startsWith("golden/")
-    && relativePath.endsWith("/resolution-receipt.json")
-  )
-});
+const conformanceBundleDigest = await directoryDigest("conformance/v0.4");
 const release = {
   manifest_version: "1",
   protocol_family: releaseContract.protocol_family,
@@ -155,19 +142,14 @@ const release = {
   operations: [
     "validate",
     "digest",
-    "resolve",
-    "discover-integrations",
-    "validate-context-module",
-    "prepare-context",
-    "record-context-use",
-    "resolve-resources",
-    "capability-conformance"
+    "inspect",
+    "flatten"
   ],
   conformance: {
     suite_version: releaseContract.conformance_suite_version,
-    index: "conformance/cases.yaml",
+    index: "conformance/v0.4/cases.yaml",
     bundle: "conformance-bundle.json",
-    index_digest: await digest("conformance/cases.yaml"),
+    index_digest: await digest("conformance/v0.4/cases.yaml"),
     bundle_digest: conformanceBundleDigest
   },
   implementations: {
@@ -183,19 +165,9 @@ const release = {
   source,
   compatibility: [
     {
-      from_release: "0.3.0",
-      status: "revalidate",
-      notes: "Protocol 0.3 package source requires no rewrite. Revalidate packages and regenerate resolved handoffs under exact release 0.3.1."
-    },
-    {
-      from_release: "0.2.3",
+      from_release: "0.3.1",
       status: "unsupported",
-      notes: "Protocol 0.3 is a clean authoring cut. Reauthor the package with a required primary context module and regenerate all resolved handoffs."
-    },
-    {
-      from_release: "0.1.0-alpha.6",
-      status: "unsupported",
-      notes: "Protocol 0.3 does not provide an automatic migration from design-preview packages. Reauthor against the 0.3 schemas."
+      notes: "Protocol 0.4 resets the package contract around SPEC.md. Reauthor 0.3 packages; no compatibility parser or automatic migration is provided."
     }
   ]
 };

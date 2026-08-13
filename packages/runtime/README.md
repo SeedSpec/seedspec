@@ -1,129 +1,33 @@
 # `@seedspec/runtime`
 
-Reference JavaScript runtime for authoring, validating, inspecting, resolving,
-and verifying SeedSpec packages.
-
-The runtime supports two deliberately separate results: protocol-aware tools
-can determine whether a package is valid, while guided authoring can help a
-person or agent understand and improve the authored surface without searching
-for semantic completeness or presenting judgment as protocol conformance.
-
-## Install
+Reference runtime for SeedSpec Protocol 0.4 package validation, inspection,
+flattening, content digests, and check reports.
 
 ```bash
 npm install @seedspec/runtime
 ```
 
-## Example
-
 ```js
 import {
-  auditPackage,
-  createAuthoringWorkspace,
-  createAuthorEvaluation,
-  formatAuthoringStarterPrompt,
-  buildSearchCorpus,
-  inspectAuthoringWorkspace,
-  inspectCapabilityConformance,
+  checkPackage,
+  flattenManifest,
   inspectPackage,
-  packPackage,
-  preparePackage,
-  publishCheckPackage,
-  searchIndex,
   validatePackage
 } from "@seedspec/runtime";
 
-const record = await validatePackage("./my-seedspec-package");
+const record = await validatePackage("./package");
 const inspection = await inspectPackage(record.root);
-const authoring = await inspectAuthoringWorkspace(record.root);
-const corpus = await buildSearchCorpus(record);
-const matches = searchIndex(corpus.index, "offline conflict", { scope: "package" });
+const flattenedSpec = flattenManifest(record);
+const check = await checkPackage(record.root);
 
-console.log(inspection.id, inspection.version, inspection.digest);
-console.log(authoring.workspace.revision, authoring.package.status);
-console.log(matches.matches);
-
-const emptyDraft = await createAuthoringWorkspace("./new-draft");
-console.log(emptyDraft.snapshot.workspace.id);
-
-const audit = await auditPackage("./my-seedspec-package", {
-  toolVersion: "my-authoring-tool@1.0.0"
-});
-console.log(audit.current?.instructions);
-console.log(formatAuthoringStarterPrompt());
-console.log(formatAuthoringStarterPrompt({ mode: "deep" }));
-console.log(formatAuthoringStarterPrompt({ mode: "minimal" }));
-
-const capability = await inspectCapabilityConformance(
-  "./my-seedspec-package",
-  "org.example.product.transactions",
-  "./transaction-conformance.yaml"
-);
-console.log(capability.status);
+console.log(inspection.id, inspection.version, inspection.digest, check.status);
 ```
 
-The authoring instructions are a self-contained operating brief for natural,
-kind-aware co-authoring. Default `shape` exploration recommends reasonable
-defaults and asks about materially different products. `deep` walks dependent
-decisions before drafting. `minimal` preserves supplied meaning with the least
-shaping. Review threads remain private agent scaffolding
-instead of becoming a user-facing wizard or report. The preparation,
-publish-check, evaluation, and pack functions are headless operations used by
-the CLI and suitable for a future web authoring interface. Their JSON results
-are versioned, while semantic agent work remains explicit and outside the
-runtime.
+Validation resolves `SPEC.md` frontmatter over optional `seedspec.yaml`, expands
+one-level sections, checks local references, validates bundled children, and
+records provenance. Inspection also reports success anchors and unanchored
+criteria. `checkPackage` reports which claims are enforceable and, when given
+external evidence or an evaluator, whether a trusted runner satisfied them.
 
-`inspectAuthoringWorkspace` returns a path-independent, versioned snapshot with
-an opaque workspace identity, a content-derived revision, draft document
-inventory, deterministic package status, questions, clarification candidates,
-clarification probes, document proposals, and review passes. It
-continues to work while ordinary draft content is invalid so a frontend can
-recover and edit the workspace.
-
-`recordClarificationCandidate` and `decideClarificationCandidate` preserve
-model interpretation separately from package intent. Accepted candidate meaning
-must enter an exact document proposal before publication. Candidate IDs are
-opaque and stable. Ordinary candidate input defaults actor, materiality,
-recommendation, and optional affected-concern metadata.
-
-`prepareClarificationProbe` creates a frozen external brief without invoking a
-model. `verifyClarificationProbe` rechecks subject and artifact identity before
-execution. `recordClarificationProbeRun` retains one exact run as a candidate
-occurrence, no-action result, or quarantined failure. Run evidence stays outside
-the portable package and separate from any future comparison group.
-
-`proposeDocumentChange`, `decideDocumentChange`, and `applyDocumentChange`
-separate model suggestion, author authority, and package mutation. Proposals
-bind exact package and document bytes. Accepted but unapplied changes fail the
-publication gate. Mutation results are compact receipts; complete history stays
-in authoring state and remains available through `inspectAuthoringWorkspace`.
-The CLI wraps mutations in `withAuthoringWorkspaceMutationLock` and requires the
-latest workspace revision.
-
-Validation establishes package structure and content identity. It does not
-establish authorship, publisher identity, compatibility with an unseen
-environment, semantic completeness, safety to execute, or permission for
-external effects.
-
-`buildSearchCorpus` indexes declared Markdown, structured declaration
-summaries, and the exact protocol-document release. `searchIndex` provides
-deterministic BM25 retrieval with exact phrases, role filters, scope filters,
-stable section IDs, and line metadata. It does not scan undeclared package
-files or load restricted resource bodies.
-
-Resolution preserves package task runbooks in authored order, copies their
-package-local references into the handoff, and surfaces them to the implementing
-agent. It does not infer a task graph or treat task completion as conformance.
-
-Resolution also preserves declared context modules and bridge bindings in one
-qualified inventory. It materializes available bytes without invoking a native
-adapter, consulting a bridge Skill, or claiming that request-specific context
-was prepared.
-
-The protocol is experimental. Pin exact versions when building interoperable
-tools.
-
-- Documentation: [seedspec.dev](https://seedspec.dev)
-- Authoring: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/authoring.md)
-- Context modules: [guide](https://github.com/SeedSpec/seedspec/blob/main/docs/context-modules.md)
-- Source: [SeedSpec/seedspec](https://github.com/SeedSpec/seedspec)
+None of these APIs execute package content or fetch format URLs. An evaluator
+passed to `checkPackage` is caller-supplied and runs against a workspace.

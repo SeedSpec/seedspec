@@ -4,7 +4,7 @@ import path from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
-const CONFIG_PATH = ".seedspec/capability-harness.json";
+const CONFIG_PATH = ".seedspec/check-harness.json";
 
 function inside(root, candidate) {
   const relative = path.relative(root, candidate);
@@ -29,7 +29,7 @@ async function readConfig(cwd) {
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new Error(`${CONFIG_PATH} must contain a JSON object`);
   }
-  for (const field of ["package", "bundle", "stage"]) {
+  for (const field of ["package", "evaluate", "workspace"]) {
     if (typeof config[field] !== "string" || !config[field]) {
       throw new Error(`${CONFIG_PATH} requires ${field}`);
     }
@@ -37,18 +37,12 @@ async function readConfig(cwd) {
   if (!Array.isArray(config.cli) || config.cli.some((item) => typeof item !== "string" || !item)) {
     throw new Error(`${CONFIG_PATH} requires a non-empty cli string array`);
   }
-  if (!["authoring", "composition", "implementation", "verification"].includes(config.stage)) {
-    throw new Error(`${CONFIG_PATH} has an unsupported stage`);
-  }
-  if (config.stage !== "authoring" && (typeof config.evidence !== "string" || !config.evidence)) {
-    throw new Error(`${CONFIG_PATH} requires evidence outside the authoring stage`);
-  }
   return {
     ...config,
     maxRepairTurns: Number.isInteger(config.maxRepairTurns) && config.maxRepairTurns >= 0
       ? config.maxRepairTurns
       : 3,
-    telemetry: config.telemetry ?? ".seedspec/capability-trace.jsonl"
+    telemetry: config.telemetry ?? ".seedspec/check-trace.jsonl"
   };
 }
 
@@ -57,29 +51,24 @@ function hash(value) {
 }
 
 function checkArguments(config) {
-  const arguments_ = [
+  return [
     ...config.cli.slice(1),
-    "capabilities",
     "check",
     config.package,
-    "--bundle",
-    config.bundle,
-    "--stage",
-    config.stage,
+    "--evaluate",
+    config.evaluate,
+    "--workspace",
+    config.workspace,
     "--json"
   ];
-  if (config.evidence) arguments_.push("--evidence", config.evidence);
-  return arguments_;
 }
 
 async function appendTelemetry(cwd, config, event) {
   const destination = resolveInside(cwd, config.telemetry, "telemetry path");
   await mkdir(path.dirname(destination), { recursive: true });
   await appendFile(destination, `${JSON.stringify({
-    trace_version: "0.4-experimental",
+    trace_version: "0.4",
     recorded_at: new Date().toISOString(),
-    stage: config.stage,
-    bundle: config.bundle,
     ...event
   })}\n`, "utf8");
 }
@@ -113,12 +102,12 @@ async function runGate(pi, cwd, config, signal) {
 }
 
 const checkTool = (state) => defineTool({
-  name: "seedspec_capability_check",
-  label: "Check SeedSpec capabilities",
-  description: "Run the configured SeedSpec capability gate and return exact missing evidence.",
-  promptSnippet: "Check the configured SeedSpec capability stage",
+  name: "seedspec_check",
+  label: "Check SeedSpec claims",
+  description: "Run the configured SeedSpec check against independent evaluator evidence.",
+  promptSnippet: "Check the configured SeedSpec package",
   promptGuidelines: [
-    "Use seedspec_capability_check after material implementation changes and repair every failed capability check."
+    "Use seedspec_check after material implementation changes and repair every failed criterion."
   ],
   parameters: Type.Object({}),
   async execute(_toolCallId, _params, signal, _onUpdate, ctx) {
@@ -126,7 +115,7 @@ const checkTool = (state) => defineTool({
     return {
       content: [{
         type: "text",
-        text: result.passed ? "Capability gate passed." : `Capability gate failed.\n${result.diagnostic}`
+        text: result.passed ? "SeedSpec check passed." : `SeedSpec check failed.\n${result.diagnostic}`
       }],
       details: result
     };
@@ -134,12 +123,12 @@ const checkTool = (state) => defineTool({
 });
 
 const completionTool = (state) => defineTool({
-  name: "seedspec_capability_complete",
-  label: "Complete with capability evidence",
-  description: "Finish the task only when the configured SeedSpec capability gate passes.",
-  promptSnippet: "Terminate only after all configured capability evidence passes",
+  name: "seedspec_complete",
+  label: "Complete after SeedSpec check",
+  description: "Finish the task only when the configured SeedSpec check passes.",
+  promptSnippet: "Terminate only after every enforceable criterion passes",
   promptGuidelines: [
-    "Use seedspec_capability_complete as the final action. It terminates only when every configured capability check passes."
+    "Use seedspec_complete as the final action. It terminates only when the SeedSpec check passes."
   ],
   parameters: Type.Object({
     summary: Type.String({ description: "Concise implementation summary." })
@@ -160,14 +149,14 @@ const completionTool = (state) => defineTool({
       completion_attempts: state.completionAttempts
     });
     return {
-      content: [{ type: "text", text: `Capability gate passed. ${params.summary}` }],
+      content: [{ type: "text", text: `SeedSpec check passed. ${params.summary}` }],
       details: { ...result, summary: params.summary },
       terminate: true
     };
   }
 });
 
-export default function seedspecCapabilityHarness(pi) {
+export default function seedspecCheckHarness(pi) {
   const state = {
     pi,
     config: null,
@@ -191,7 +180,7 @@ export default function seedspecCapabilityHarness(pi) {
       prompt_digest: hash(event.prompt)
     });
     return {
-      systemPrompt: `${event.systemPrompt}\n\nSeedSpec capability enforcement is active for the ${state.config.stage} stage. Read the accepted capability bundle before implementation. Maintain the configured evidence artifact as work proceeds. Call seedspec_capability_check after material changes. Call seedspec_capability_complete as the final action. A normal final response does not complete this task.`
+      systemPrompt: `${event.systemPrompt}\n\nSeedSpec check enforcement is active. Read SPEC.md and the declared evaluation module. Implement the success criteria. Call seedspec_check after material changes. Call seedspec_complete as the final action. A normal final response does not complete this task. Implementing-agent judgment is not verification.`
     };
   });
 
@@ -210,16 +199,16 @@ export default function seedspecCapabilityHarness(pi) {
     const result = await runGate(pi, ctx.cwd, state.config);
     if (result.passed) {
       pi.sendMessage({
-        customType: "seedspec-capability-enforcement",
-        content: "The capability gate passes. Call seedspec_capability_complete with the final summary.",
+        customType: "seedspec-check-enforcement",
+        content: "The SeedSpec check passes. Call seedspec_complete with the final summary.",
         display: true
       }, { deliverAs: "followUp", triggerTurn: true });
       return;
     }
     state.repairTurns += 1;
     pi.sendMessage({
-      customType: "seedspec-capability-enforcement",
-      content: `The task is not complete. Repair the capability evidence below, then recheck.\n${result.diagnostic}`,
+      customType: "seedspec-check-enforcement",
+      content: `The task is not complete. Repair the failed criteria below, then recheck.\n${result.diagnostic}`,
       display: true
     }, { deliverAs: "followUp", triggerTurn: true });
   });

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Shape Solution Intent"
-  short_description: "Shape a seed through natural conversation"
-  default_prompt: "Use $shape-solution-intent to co-author this seed with me."

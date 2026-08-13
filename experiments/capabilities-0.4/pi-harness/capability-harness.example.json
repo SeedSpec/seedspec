@@ -1,12 +1,8 @@
 {
-  "cli": [
-    "npx",
-    "@seedspec/cli"
-  ],
+  "cli": ["node", "../../../packages/cli/bin/seedspec.js"],
   "package": "spec",
-  "bundle": ".seedspec/capabilities.accepted.yaml",
-  "stage": "implementation",
-  "evidence": ".seedspec/capability-implementation.yaml",
-  "telemetry": ".seedspec/capability-trace.jsonl",
+  "evaluate": "../../../examples/daily-pipeline/evaluator/evaluate.mjs",
+  "workspace": ".",
+  "telemetry": ".seedspec/check-trace.jsonl",
   "maxRepairTurns": 3
 }

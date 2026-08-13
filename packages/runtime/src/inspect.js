@@ -1,103 +1,75 @@
 import { validatePackage } from "./validate.js";
 
-function inspectComposition(record, edges = [], visited = new Set()) {
-  const key = `${record.manifest.id}\0${record.digest}`;
-  if (visited.has(key)) return edges;
-  visited.add(key);
-  for (const edge of record.composition.includes) {
-    edges.push({
-      parent: record.manifest.id,
-      id: edge.id,
-      path: edge.path,
-      package: edge.package,
-      version: edge.version,
-      digest: edge.digest,
-      integration: edge.integration
-    });
-    inspectComposition(edge.record, edges, visited);
-  }
-  return edges;
+function inspectChild(edge) {
+  return {
+    id: edge.record.manifest.id,
+    name: edge.record.manifest.name,
+    version: edge.record.manifest.version,
+    digest: edge.record.digest,
+    path: edge.declaration.path,
+    optional: edge.declaration.optional ?? false,
+    capabilities: edge.record.manifest.capabilities ?? {},
+    children: edge.record.bundledPackages.map(inspectChild)
+  };
 }
 
 export async function inspectPackage(inputPath) {
   const record = await validatePackage(inputPath);
   const { manifest } = record;
-
+  const anchoredCriteria = new Set(
+    record.provenance.success_anchors.map(({ id }) => id)
+  );
   return {
-    inspection_version: "1",
+    inspection_version: "0.4",
     id: manifest.id,
     name: manifest.name,
-    version: manifest.version,
-    digest: record.digest,
-    protocolVersion: manifest.protocol_version,
-    kind: manifest.kind,
+    kind: manifest.kind ?? null,
     description: manifest.description ?? null,
-    metadata: manifest.metadata ?? {},
-    definition: {
-      module: manifest.definition.module,
-      context: manifest.context.modules.find((module) => module.id === manifest.definition.module)
+    metadata: manifest.metadata ?? null,
+    version: manifest.version,
+    target_protocol: manifest.target_protocol ?? null,
+    protocol: manifest.target_protocol ?? "0.4",
+    digest: record.digest,
+    sources: {
+      spec: record.specPath,
+      base_manifest: record.manifestPath,
+      values: record.provenance.sources
     },
-    configuration: {
-      schema: manifest.configuration.schema,
-      example: manifest.configuration.example,
-      guide: manifest.configuration.guide ?? null
-    },
-    requires: manifest.requires?.capabilities ?? [],
-    provides: manifest.provides.capabilities,
-    conflicts: manifest.conflicts ?? { packages: [], capabilities: [] },
-    decisions: manifest.decisions ?? [],
-    implementationProfiles: manifest.implementation_profiles ?? [],
-    components: manifest.components ?? {},
-    composition: inspectComposition(record),
-    artifacts: manifest.artifacts ?? [],
-    relationships: manifest.relationships ?? [],
-    tasks: record.taskRunbook
-      ? { path: manifest.tasks, items: record.taskRunbook.tasks }
-      : null,
-    implementationResources: manifest.implementation_resources ?? null,
-    contextModules: manifest.context.modules,
-    compatibility: manifest.compatibility ?? null,
+    resolved_manifest: manifest,
+    overrides: record.provenance.overrides,
+    sections: record.provenance.sections,
+    success_anchors: record.provenance.success_anchors,
+    unanchored_success_criteria: (manifest.success?.criteria ?? [])
+      .filter(({ id }) => !anchoredCriteria.has(id))
+      .map(({ id }) => id),
+    configuration: manifest.configuration ?? null,
+    success: manifest.success ?? null,
+    tasks: manifest.tasks ?? null,
+    capabilities: manifest.capabilities ?? null,
+    context_modules: manifest.context_modules ?? [],
+    bundled_packages: record.bundledPackages.map(inspectChild),
     extensions: manifest.extensions ?? {}
   };
 }
 
 export function formatInspection(inspection) {
-  const lines = [
+  const capabilities = inspection.capabilities?.items ?? [];
+  return [
     `${inspection.name} (${inspection.id}@${inspection.version})`,
-    `Kind hint: ${inspection.kind}`,
-    `Protocol: ${inspection.protocolVersion}`,
+    `Kind: ${inspection.kind ?? "none"}`,
+    `Protocol: ${inspection.protocol}`,
     `Digest: ${inspection.digest}`,
-    `Description: ${inspection.description ?? "not declared"}`,
-    `Metadata: ${Object.keys(inspection.metadata).length ? Object.keys(inspection.metadata).sort().join(", ") : "none"}`,
-    `Definition: ${inspection.definition.module} (${inspection.definition.context.format}; ${inspection.definition.context.entrypoint})`,
-    `Configuration: ${inspection.configuration.schema} (example: ${inspection.configuration.example})`,
-    `Requires: ${inspection.requires.length ? inspection.requires.map((requirement) => (
-      `${requirement.id} (tested against ${requirement.tested_against})`
-    )).join(", ") : "none"}`,
-    `Provides: ${inspection.provides.length ? inspection.provides.map((capability) => `${capability.id}@${capability.version}${capability.change_history?.length ? ` (${capability.change_history.length} revision transition(s))` : ""}${capability.conformance ? ` (conformance: ${capability.conformance.suite})` : ""}`).join(", ") : "none"}`,
-    `Components: ${Object.keys(inspection.components).length ? Object.keys(inspection.components).sort().join(", ") : "none"}`,
-    `Bundled composition: ${inspection.composition.length
-      ? inspection.composition.map((edge) => `${edge.parent}/${edge.id} -> ${edge.package}@${edge.version}`).join(", ")
-      : "none"}`,
-    `Artifacts: ${inspection.artifacts.length ? inspection.artifacts.map((artifact) => `${artifact.id} (${artifact.type})`).join(", ") : "none"}`,
-    `Tasks: ${inspection.tasks ? `${inspection.tasks.items.length} ordered task(s) at ${inspection.tasks.path}` : "none"}`,
-    `Implementation profiles: ${inspection.implementationProfiles.length
-      ? inspection.implementationProfiles.map((profile) => `${profile.id} (${profile.name})`).join(", ")
-      : "none"}`,
-    `Implementation resources: ${inspection.implementationResources?.resources.length
-      ? inspection.implementationResources.resources.map((resource) => `${resource.id} (${resource.kind}; ${resource.usage})`).join(", ")
-      : "none"}`,
-    `Context modules: ${inspection.contextModules.length
-      ? inspection.contextModules.map((module) => `${module.id} (${module.format})`).join(", ")
-      : "none"}`,
-    `Context bridges: ${inspection.contextModules.reduce((count, module) => count + (module.bridges?.length ?? 0), 0)}`,
-    `Additional guidance: ${inspection.implementationResources?.additional_guidance ?? "unspecified"}`,
-    `Extensions: ${Object.keys(inspection.extensions).length ? Object.keys(inspection.extensions).sort().join(", ") : "none"}`
-  ];
-
-  if (inspection.compatibility) {
-    lines.push(`Compatibility: ${inspection.compatibility.scope}`);
-  }
-
-  return lines.join("\n");
+    `SPEC.md: ${inspection.sources.spec}`,
+    `Base manifest: ${inspection.sources.base_manifest ?? "none"}`,
+    `Overrides: ${inspection.overrides.length}`,
+    `Expanded sections: ${inspection.sections.length}`,
+    `Configuration variables: ${inspection.configuration?.variables?.length ?? 0}`,
+    `Success criteria: ${inspection.success?.criteria?.length ?? 0}`,
+    `Success anchors: ${inspection.success_anchors.length}`,
+    `Unanchored criteria: ${inspection.unanchored_success_criteria.length}`,
+    `Tasks: ${inspection.tasks?.items?.length ?? 0}`,
+    `Capabilities: ${capabilities.length ? capabilities.map(({ id }) => id).join(", ") : "none"}`,
+    `Context modules: ${inspection.context_modules.length}`,
+    `Bundled packages: ${inspection.bundled_packages.length}`
+  ].join("\n");
 }
