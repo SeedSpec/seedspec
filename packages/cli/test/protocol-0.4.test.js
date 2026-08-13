@@ -106,6 +106,40 @@ test("lock and get pin a package digest", async () => {
   assert.match(fetched.stdout, /Fetched cli-example@1\.0\.0/u);
 });
 
+test("init, skill, and project are runtime tooling", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "seedspec-cli-init-"));
+  const initialized = await execute(process.execPath, [
+    cli.pathname,
+    "init",
+    root,
+    "--id",
+    "started",
+    "--name",
+    "Started"
+  ]);
+  assert.match(initialized.stdout, /Initialized started/u);
+  const spec = await readFile(path.join(root, "SPEC.md"), "utf8");
+  assert.doesNotMatch(spec, /^kind:/mu);
+
+  const skill = await execute(process.execPath, [cli.pathname, "skill"]);
+  assert.match(skill.stdout, /Do not certify verification/u);
+
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "seedspec-cli-project-"));
+  const projectFile = path.join(workspaceRoot, ".seedspec", "project.yaml");
+  const project = await execute(process.execPath, [
+    cli.pathname,
+    "project",
+    root,
+    "--file",
+    projectFile,
+    "--json"
+  ]);
+  const report = JSON.parse(project.stdout);
+  assert.equal(report.status, "pass");
+  assert.equal(report.file, projectFile);
+  assert.match(await readFile(projectFile, "utf8"), /project_version: "0\.4"/u);
+});
+
 test("commands outside the structural surface are unknown", async () => {
   await assert.rejects(
     execute(process.execPath, [cli.pathname, "resolve", "."]),

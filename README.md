@@ -24,11 +24,14 @@ Produce a report for the previous reporting day.
 
 ```bash
 npm install
+npx seedspec init ./package
 npx seedspec validate ./package
 npx seedspec inspect ./package --json
 npx seedspec flatten ./package --output ./flattened/SPEC.md
 npx seedspec check ./package
 npx seedspec preview ./package
+npx seedspec project ./package
+npx seedspec skill
 npm test
 npm run conformance
 npm run bakeoff
@@ -49,9 +52,13 @@ The 0.4.0 release implements the structural core:
 
 Runtime tooling on that core:
 
+- `seedspec init` for a minimum `SPEC.md`;
 - `seedspec check` for claim coverage and independent evidence;
 - `seedspec lock`, `verify-lock`, and `get` for digest-pinned copies;
-- `seedspec preview` for an authoring view of the same report.
+- `seedspec preview` for an authoring view of the same report;
+- `seedspec project` for configuration, profile, and optional-package
+  selections in the implementation workspace; and
+- `seedspec skill` for the consumer implementation skill.
 
 Compatibility, decisions, conflicts, and integration points remain prose. They
 do not have 0.4 root fields.

@@ -29,5 +29,8 @@ records provenance. Inspection also reports success anchors and unanchored
 criteria. `checkPackage` reports which claims are enforceable and, when given
 external evidence or an evaluator, whether a trusted runner satisfied them.
 
+`initPackage` writes a minimum `SPEC.md`. Project helpers read and write
+adopter selections outside the package so they cannot change the digest.
+
 None of these APIs execute package content or fetch format URLs. An evaluator
 passed to `checkPackage` is caller-supplied and runs against a workspace.

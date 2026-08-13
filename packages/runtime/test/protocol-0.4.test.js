@@ -4,10 +4,17 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  applyProjectUpdates,
   computePackageDigest,
   flattenManifest,
+  initPackage,
   inspectPackage,
-  validatePackage
+  loadOrCreateProject,
+  loadProject,
+  resolveProjectFile,
+  saveProject,
+  validatePackage,
+  validateProject
 } from "../src/index.js";
 
 async function workspace() {
@@ -444,4 +451,88 @@ tasks:
   await mkdir(path.join(root, "tasks"), { recursive: true });
   await symlink(path.join(outside, "tasks.yaml"), path.join(root, "tasks", "escaped.yaml"));
   await assert.rejects(validatePackage(root), { code: "UNSAFE_PACKAGE_CONTENT" });
+});
+
+test("init writes a minimum SPEC.md without kind", async () => {
+  const root = await workspace();
+  const created = await initPackage(root, { id: "started", name: "Started" });
+  const spec = await readFile(created.specPath, "utf8");
+  assert.equal(created.id, "started");
+  assert.match(spec, /^---\nid: started\nname: Started\nversion: "0\.1\.0"\n---/u);
+  assert.doesNotMatch(spec, /^kind:/mu);
+  const record = await validatePackage(root);
+  assert.equal(record.manifest.kind, undefined);
+  await assert.rejects(initPackage(root), { code: "INIT_EXISTS" });
+});
+
+test("project state stays outside the package and validates selections", async () => {
+  const root = await workspace();
+  const child = path.join(root, "bundled-packages", "child");
+  await put(child, "SPEC.md", `---
+id: child
+name: Child
+version: "1.0.0"
+---
+# Child
+`);
+  const childDigest = await computePackageDigest(child);
+  await put(root, "SPEC.md", `---
+id: parent
+name: Parent
+version: "1.0.0"
+configuration:
+  variables:
+    - id: timezone
+      type: string
+      description: IANA timezone.
+      default: America/Chicago
+    - id: mode
+      type: string
+      description: Enforcement mode.
+      options: [strict, lenient]
+context_modules:
+  - id: cloudflare-worker
+    type: implementation-profile
+    description: Realize the package on Cloudflare Workers.
+    path: context-modules/cloudflare-worker/PROFILE.md
+bundled_packages:
+  - id: child
+    version: "1.0.0"
+    digest: ${childDigest}
+    path: bundled-packages/child/SPEC.md
+    optional: true
+---
+# Parent
+`);
+  await put(root, "context-modules/cloudflare-worker/PROFILE.md", "Use Cloudflare Workers.\n");
+
+  await assert.rejects(
+    resolveProjectFile(root, path.join(root, ".seedspec", "project.yaml")),
+    { code: "PROJECT_INSIDE_PACKAGE" }
+  );
+
+  const workspaceRoot = await workspace();
+  const file = path.join(workspaceRoot, ".seedspec", "project.yaml");
+  const { project } = await loadOrCreateProject(root, file);
+  const updated = applyProjectUpdates(project, {
+    profile: "cloudflare-worker",
+    sets: ["timezone=America/Chicago", "mode=strict"],
+    enable: ["child"]
+  });
+  updated.package.digest = null;
+  const report = await validateProject(updated, root);
+  assert.equal(report.status, "pass");
+  updated.package.digest = report.package.digest;
+  await saveProject(file, updated);
+  const saved = await validateProject(await loadProject(file), root);
+  assert.equal(saved.status, "pass");
+  assert.equal(saved.project.profile, "cloudflare-worker");
+  assert.equal(saved.project.configuration.timezone, "America/Chicago");
+  assert.deepEqual(saved.project.optional_packages, ["child"]);
+
+  const invalid = applyProjectUpdates(updated, { sets: ["mode=unknown"] });
+  invalid.package.digest = null;
+  const failed = await validateProject(invalid, root);
+  assert.equal(failed.status, "fail");
+  assert.equal(failed.issues[0].code, "INVALID_CONFIGURATION_VALUE");
 });

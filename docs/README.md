@@ -16,6 +16,7 @@ The 0.4 schema and conformance suite are the executable contract:
 Runtime tooling on that contract:
 
 - [`seedspec check`](operations.md)
+- [`seedspec init`](operations.md), [`project`](operations.md), and [`skill`](operations.md)
 - [Daily pipeline example](../examples/daily-pipeline/README.md)
 
 Other documents in this directory describe earlier authoring, runtime, and

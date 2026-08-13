@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { readFileSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  applyProjectUpdates,
   checkPackage,
   conformanceSuiteVersion,
   createLock,
@@ -14,8 +15,11 @@ import {
   formatInspection,
   formatLock,
   formatLockVerification,
+  formatProject,
   getPackage,
+  initPackage,
   inspectPackage,
+  loadOrCreateProject,
   protocolPackageVersion,
   protocolRelease,
   protocolReleaseDigest,
@@ -23,9 +27,11 @@ import {
   runtimeVersion,
   runBundledConformanceSuite,
   runConformanceSuite,
+  saveProject,
   SeedSpecError,
   startPreviewServer,
   validatePackage,
+  validateProject,
   verifyLock,
   writeLock
 } from "@seedspec/runtime";
@@ -37,6 +43,7 @@ const CLI_VERSION = JSON.parse(
 const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experimental)
 
 Usage:
+  seedspec init [directory] [--id <id>] [--name <name>] [--force]
   seedspec validate <package-path>
   seedspec digest <package-path>
   seedspec inspect <package-path> [--json]
@@ -49,22 +56,31 @@ Usage:
   seedspec get <package-path> --digest sha256:... --output <dir>
   seedspec preview <package-path> [--port <number>]
       [--evaluate <script> --workspace <dir>]
+  seedspec project <package-path> [--file <project.yaml>] [--json]
+      [--profile <id>] [--set <id=value>] [--enable <id>]
+  seedspec skill [--output <path>]
   seedspec conformance [cases.yaml] [--json] [--output <report.json>]
   seedspec version [--json]
 
 validate/inspect never execute package content. check may run a caller-supplied
 evaluator against a workspace; it does not execute files from the package.
+Project state lives outside the package so it cannot change the package digest.
 `;
 
-const BOOLEAN_OPTIONS = new Set(["help", "json", "strict"]);
+const BOOLEAN_OPTIONS = new Set(["help", "json", "strict", "force"]);
 const VALUE_OPTIONS = new Set([
   "output",
   "evidence",
   "evaluate",
   "workspace",
   "digest",
-  "port"
+  "port",
+  "id",
+  "name",
+  "file",
+  "profile"
 ]);
+const REPEATABLE_OPTIONS = new Set(["set", "enable"]);
 
 function parseArguments(args) {
   const positional = [];
@@ -80,20 +96,29 @@ function parseArguments(args) {
       options.set(name, true);
       continue;
     }
-    if (!VALUE_OPTIONS.has(name)) throw new SeedSpecError(`Unknown option: ${value}`, {
+    if (REPEATABLE_OPTIONS.has(name) || VALUE_OPTIONS.has(name)) {
+      const optionValue = args[index + 1];
+      if (!optionValue || optionValue.startsWith("--")) {
+        throw new SeedSpecError(`Option ${value} requires a value`, {
+          code: "MISSING_OPTION_VALUE"
+        });
+      }
+      if (REPEATABLE_OPTIONS.has(name)) {
+        const collected = options.get(name) ?? [];
+        collected.push(optionValue);
+        options.set(name, collected);
+      } else {
+        if (options.has(name)) throw new SeedSpecError(`Option ${value} may be supplied only once`, {
+          code: "DUPLICATE_OPTION"
+        });
+        options.set(name, optionValue);
+      }
+      index += 1;
+      continue;
+    }
+    throw new SeedSpecError(`Unknown option: ${value}`, {
       code: "UNKNOWN_OPTION"
     });
-    const optionValue = args[index + 1];
-    if (!optionValue || optionValue.startsWith("--")) {
-      throw new SeedSpecError(`Option ${value} requires a value`, {
-        code: "MISSING_OPTION_VALUE"
-      });
-    }
-    if (options.has(name)) throw new SeedSpecError(`Option ${value} may be supplied only once`, {
-      code: "DUPLICATE_OPTION"
-    });
-    options.set(name, optionValue);
-    index += 1;
   }
   return { positional, options };
 }
@@ -134,6 +159,19 @@ async function run() {
   }
 
   switch (command) {
+    case "init": {
+      assertOptions(options, ["id", "name", "force", "json"]);
+      requirePositionals(positional, 0, 1, "seedspec init [directory] [--id <id>] [--name <name>] [--force]");
+      const created = await initPackage(positional[0] ?? ".", {
+        id: options.get("id"),
+        name: options.get("name"),
+        force: options.has("force")
+      });
+      process.stdout.write(options.has("json")
+        ? writeJson(created)
+        : `Initialized ${created.id}\nSPEC.md: ${created.specPath}\n`);
+      return;
+    }
     case "validate": {
       assertOptions(options, []);
       requirePositionals(positional, 1, 1, "seedspec validate <package-path>");
@@ -282,6 +320,58 @@ async function run() {
       });
       process.stdout.write(`SeedSpec preview: ${server.url}\n`);
       await new Promise(() => {});
+      return;
+    }
+    case "project": {
+      assertOptions(options, ["file", "profile", "set", "enable", "json"]);
+      requirePositionals(
+        positional,
+        1,
+        1,
+        "seedspec project <package-path> [--file <project.yaml>] [--profile <id>] [--set <id=value>] [--enable <id>]"
+      );
+      const { file, project } = await loadOrCreateProject(positional[0], options.get("file"));
+      const updated = applyProjectUpdates(project, {
+        profile: options.get("profile"),
+        sets: options.get("set") ?? [],
+        enable: options.get("enable") ?? []
+      });
+      updated.package = {
+        path: path.resolve(positional[0]),
+        digest: null
+      };
+      const report = await validateProject(updated, positional[0]);
+      if (report.status === "fail") {
+        process.stdout.write(options.has("json")
+          ? writeJson({ ...report, file })
+          : `${formatProject(report, file)}\n`);
+        process.exitCode = 1;
+        return;
+      }
+      updated.package.digest = report.package.digest;
+      await saveProject(file, updated);
+      const saved = await validateProject(updated, positional[0]);
+      process.stdout.write(options.has("json")
+        ? writeJson({ ...saved, file })
+        : `${formatProject(saved, file)}\n`);
+      return;
+    }
+    case "skill": {
+      assertOptions(options, ["output"]);
+      requirePositionals(positional, 0, 0, "seedspec skill [--output <path>]");
+      const skillPath = new URL("../skills/implement-seedspec/SKILL.md", import.meta.url);
+      const output = options.get("output");
+      if (!output) {
+        process.stdout.write(await readFile(skillPath, "utf8"));
+        return;
+      }
+      const destination = path.resolve(output);
+      const target = destination.endsWith(".md")
+        ? destination
+        : path.join(destination, "SKILL.md");
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(skillPath, target);
+      process.stdout.write(`Skill: ${target}\n`);
       return;
     }
     case "conformance": {

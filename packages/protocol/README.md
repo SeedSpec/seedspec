@@ -20,7 +20,7 @@ import {
 
 Protocol 0.4 requires `SPEC.md`. It accepts optional root `seedspec.yaml` as a
 base manifest. Required package fields are `id`, `name`, and `version`. `kind`
-It does not parse Protocol 0.3 packages.
+is optional. It does not parse Protocol 0.3 packages.
 
 Schemas are exported under `@seedspec/protocol/schemas/v0.4/`. Normative
 documents are exported under `@seedspec/protocol/documents/`.

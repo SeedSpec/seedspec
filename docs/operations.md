@@ -73,6 +73,27 @@ Copy a local package to an output directory only when its digest matches.
 Serve the check report as a local page. Optional `--evaluate` and
 `--workspace` show trusted evidence for a realization.
 
+### `init`
+
+Write a minimum `SPEC.md` with `id`, `name`, and `version`. Kind is omitted.
+Do not write project state inside the package.
+
+### `skill`
+
+Print or copy the consumer implementation skill. It tells an agent to read
+`SPEC.md`, call `seedspec check`, and not certify verification from its own
+judgment.
+
+### `project`
+
+Write adopter selections to a workspace file, default `.seedspec/project.yaml`.
+The file records package path and digest, configuration values, an
+implementation-profile module id, and enabled optional bundled packages.
+
+Project state must live outside the package. Paths that start with `.` are not
+portable package paths, and writing selections into the package would change
+its digest.
+
 ## Deferred protocol operations
 
 Authoring, resolution, preparation, and verification are not Protocol 0.4.0

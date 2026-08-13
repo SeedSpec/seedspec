@@ -41,3 +41,17 @@ export {
   writeLock
 } from "./lock.js";
 export { startPreviewServer } from "./preview.js";
+export { initPackage, renderInitSpec, slugIdentifier } from "./init.js";
+export {
+  DEFAULT_PROJECT_FILE,
+  PROJECT_FILE_VERSION,
+  applyProjectUpdates,
+  emptyProject,
+  formatProject,
+  loadOrCreateProject,
+  loadProject,
+  parseProjectDocument,
+  resolveProjectFile,
+  saveProject,
+  validateProject
+} from "./project.js";
