@@ -19,7 +19,7 @@
     "check": "npm run release:verify && npm run check:names && npm run lint && npm run typecheck && npm test && npm run test --workspace @seedspec/cli && npm run validate:fixtures && npm run conformance && npm run bakeoff && npm run test:harness",
     "conformance": "node ./packages/cli/bin/seedspec.js conformance ./conformance/v0.4/cases.yaml",
     "bakeoff": "node ./scripts/bakeoff-daily-pipeline.mjs",
-    "test:harness": "npm ci --prefix experiments/capabilities-0.4/pi-harness && npm test --prefix experiments/capabilities-0.4/pi-harness"
+    "test:harness": "node ./scripts/test-pi-harness.mjs"
   },
   "engines": {
     "node": ">=20"
