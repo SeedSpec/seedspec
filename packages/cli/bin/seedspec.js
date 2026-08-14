@@ -43,14 +43,14 @@ const CLI_VERSION = JSON.parse(
 const HELP = `SeedSpec CLI ${CLI_VERSION} (Protocol ${protocolVersion}, experimental)
 
 Usage:
-  seedspec init [directory] [--id <id>] [--name <name>] [--force]
+  seedspec init [directory] [--id <id>] [--name <name>] [--force] [--json]
   seedspec validate <package-path>
   seedspec digest <package-path>
   seedspec inspect <package-path> [--json]
   seedspec flatten <package-path> [--output <SPEC.md>]
   seedspec check <package-path> [--json] [--strict]
       [--evidence <file>] [--evaluate <script> --workspace <dir>]
-      [--output <evidence.json>]
+      [--output <file.json>]
   seedspec lock <package-path> [--output <seedspec.lock.json>] [--json]
   seedspec verify-lock <lock-file> [--json]
   seedspec get <package-path> --digest sha256:... --output <dir>
@@ -62,9 +62,12 @@ Usage:
   seedspec conformance [cases.yaml] [--json] [--output <report.json>]
   seedspec version [--json]
 
-validate/inspect never execute package content. check may run a caller-supplied
-evaluator against a workspace; it does not execute files from the package.
-Project state lives outside the package so it cannot change the package digest.
+validate, digest, and inspect never execute package content. flatten writes
+only the explicit output path. check may run a caller-supplied evaluator
+against a workspace; it does not execute files from the package. check
+--output writes JSON: a shaped evidence record when verification ran, or the
+full check report otherwise. Project state lives outside the package so it
+cannot change the package digest.
 `;
 
 const BOOLEAN_OPTIONS = new Set(["help", "json", "strict", "force"]);
@@ -161,7 +164,7 @@ async function run() {
   switch (command) {
     case "init": {
       assertOptions(options, ["id", "name", "force", "json"]);
-      requirePositionals(positional, 0, 1, "seedspec init [directory] [--id <id>] [--name <name>] [--force]");
+      requirePositionals(positional, 0, 1, "seedspec init [directory] [--id <id>] [--name <name>] [--force] [--json]");
       const created = await initPackage(positional[0] ?? ".", {
         id: options.get("id"),
         name: options.get("name"),

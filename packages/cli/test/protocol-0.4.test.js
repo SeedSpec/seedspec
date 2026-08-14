@@ -68,6 +68,22 @@ test("validate and inspect use Protocol 0.4 identity", async () => {
   assert.equal(parsed.name, "CLI example");
 });
 
+test("digest prints the package content digest", async () => {
+  const root = await minimumPackage();
+  const validation = await execute(process.execPath, [cli.pathname, "validate", root]);
+  const digest = await execute(process.execPath, [cli.pathname, "digest", root]);
+  const printed = digest.stdout.trim();
+  assert.match(printed, /^sha256:[0-9a-f]{64}$/u);
+  assert.match(validation.stdout, new RegExp(`Digest: ${printed}`, "u"));
+});
+
+test("conformance runs the bundled suite", async () => {
+  const result = await execute(process.execPath, [cli.pathname, "conformance", "--json"]);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.status, "conformant");
+  assert.ok(report.totals.total > 0);
+});
+
 test("flatten writes a portable SPEC.md", async () => {
   const root = await minimumPackage();
   const outputRoot = await mkdtemp(path.join(os.tmpdir(), "seedspec-cli-flat-"));
