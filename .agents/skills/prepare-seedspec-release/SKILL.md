@@ -1,6 +1,6 @@
 ---
 name: prepare-seedspec-release
-description: Prepare and audit a coordinated SeedSpec release across the protocol, runtime, CLI, conformance suite, reference packages, evaluation tools, and website. Use when bumping SeedSpec versions, publishing packages or schemas, staging release URLs, checking release integrity, or diagnosing drift among SeedSpec repositories.
+description: Prepare and audit a coordinated SeedSpec release across the protocol, runtime, CLI, conformance suite, reference packages, and website. Use when bumping SeedSpec versions, publishing packages or schemas, staging release URLs, checking release integrity, or diagnosing drift among SeedSpec repositories.
 ---
 
 # Prepare a SeedSpec Release
@@ -15,6 +15,12 @@ Read `references/repository-checklist.md` before changing another repository.
 
 ## Workflow
 
+### 0. Sweep the public surface
+
+Run `$audit-seedspec-surface` before changing versions. Fix leftover trees,
+retired commands, and drifted README / CONTRIBUTING / RELEASING / docs first.
+Do not bump a release on top of residue from the last cut.
+
 ### 1. Inspect before editing
 
 - Read `release.json`, `RELEASING.md`, package manifests, and current Git
@@ -22,7 +28,7 @@ Read `references/repository-checklist.md` before changing another repository.
 - Preserve unrelated or unfinished changes. Do not normalize historical
   evidence merely because it mentions an older release.
 - Distinguish first-party release versions from versions chosen by independent
-  seed authors.
+  package authors.
 
 ### 2. Align the release contract
 

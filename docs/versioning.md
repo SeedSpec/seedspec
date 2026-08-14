@@ -1,52 +1,22 @@
-# SeedSpec versioning
+# Versioning
 
-> **Informative release guidance.** Normative compatibility requirements are
-> defined by the protocol specification and schemas.
+> Informative. Family-to-family compatibility is project strategy, not a
+> protocol guarantee. See the repository [README](../README.md).
 
-SeedSpec keeps distinct identity domains because a protocol contract, a package
-authored by somebody else, and implementation evidence mean different things.
-For coordinated first-party releases before `1.0.0`, the protocol bundle,
-conformance suite, runtime, and CLI share one release version.
+Keep these identities separate even when a UI shows one number:
 
-Not every audience needs every identifier. A package adopter normally needs the
-package version and a compatible CLI; an author also needs the declared protocol
-family; an independent tool implementer or evaluator records the exact schema,
-conformance-suite, runtime, and CLI versions. The domains remain separate even
-when a user interface presents a simpler compatibility summary.
-
-| Identity | Identifies |
+| Identity | What it names |
 | --- | --- |
-| Protocol family | The package and handoff vocabulary declared in protocol documents |
-| Exact protocol release | The release manifest binding language, schemas, operations, conformance, and compatibility |
-| Schema package | The exact schemas and protocol metadata in `@seedspec/protocol` |
-| Conformance suite | The exact indexed cases, fixtures, and expected results |
-| Runtime | One release of the reference JavaScript implementation |
-| CLI | One release of the public command-line interface |
-| SeedSpec package | One author-controlled version declared in `SPEC.md` |
+| Protocol family | `target_protocol` when present |
+| Exact runtime / schema | The installed contract that accepted the package |
+| Package version | The author's `version` in `SPEC.md` |
+| Package digest | The exact authored bytes |
 
-`protocol_version` states which protocol family a package uses. It does not
-identify the exact release bytes. Reproducible tooling should
-pin the exact `@seedspec/protocol` release and record the digest of its
-`protocol-release.json`. That manifest binds the schemas, normative documents,
-operation set, complete conformance corpus, compatible first-party tooling, and
-predecessor compatibility in one identity.
+A shared family does not mean two exact runtimes are interchangeable.
+While the protocol is experimental, patch releases can change accepted
+structure. Revalidate after a runtime change.
 
-Run the first-party CLI to obtain the complete implementation version record:
+A family does not parse a previous family. Reauthor.
 
-```bash
-npx @seedspec/cli version --json
-```
-
-Numeric releases use npm's default `latest` distribution tag. Integrations
-should still use exact package versions and record the full version output with
-conformance results.
-
-Exact-release compatibility and migration requirements are defined in
-`docs/migrations.md`. A shared protocol family does not imply that exact
-releases can be substituted without revalidation.
-
-Pre-1.0 releases may contain incompatible corrections. A release that
-changes schema acceptance, semantic validation, stable error classification,
-deterministic output, or conformance expectations must increment the affected
-coordinated release version. Editorial corrections that do not alter the
-contract may be published with the next patch release.
+Do not put project state, receipts, or verification results in the
+package version. Those are different objects.

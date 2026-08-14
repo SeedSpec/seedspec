@@ -19,7 +19,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test ./test/*.test.js"
+    "test": "node --test ./test/*.test.js ./test/daily-pipeline/daily-pipeline.test.js"
   },
   "engines": {
     "node": ">=20"

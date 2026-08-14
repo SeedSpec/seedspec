@@ -1,5 +1,13 @@
 # SeedSpec coordinated release checklist
 
+## One-time npm publishing
+
+Configure `publish.yml` as the trusted publisher for all three npm packages,
+bind it to the `npm` GitHub environment, and allow `npm stage publish`. The
+workflow uses a GitHub-hosted runner, OIDC, and current Node and npm releases
+because staged publishing requires them. Approval remains a separate
+maintainer action with 2FA.
+
 ## Core (`seedspec`)
 
 - `release.json` is the source of truth.
@@ -7,27 +15,15 @@
 - Runtime and CLI dependencies are exact pins.
 - Protocol schemas use immutable exact-release `$id` values.
 - The protocol package contains schemas, normative documents, the conformance
-  bundle, and the exact release manifest.
-- `npm run release:protocol`, `npm run release:verify`, `npm run check`, and
-  `npm run release:pack` pass.
+  suite source, the conformance bundle, and the exact release manifest.
+- `npm run audit:surface`, `npm run release:protocol`, `npm run release:verify`,
+  `npm run check`, and `npm run release:pack` pass.
 
 ## Reference solutions
 
 - Every current distributable package uses the current protocol family.
-- First-party reference packages released with the suite use the coordinated
-  release version.
 - Current packages validate with the packed CLI.
-- Historical authoring state remains clearly identified and is not silently
-  rewritten when its digests would become false.
-
-## Evaluation tools
-
-- Vendored schemas and protocol metadata exactly match the release package.
-- The harness records exact protocol, runtime, CLI, model, configuration, and
-  artifact digests.
-- Existing tests and a current-family smoke run pass.
-- Published evidence states narrow findings and limitations; do not turn
-  benchmark saturation into a broad quality claim.
+- Historical packages remain clearly identified and are not silently rewritten.
 
 ## Website
 
@@ -43,8 +39,6 @@
 ## Final smoke
 
 - Install packed package archives into a new temporary directory.
-- Run `seedspec doctor --full`.
-- Initialize a seed, guide it through preparation, review it, run
-  `publish-check`, pack it, inspect the archive, and validate the unpacked
-  package.
+- Run `npx @seedspec/cli version` and `npx @seedspec/cli conformance`.
+- Initialize a package with `seedspec init`, validate it, and inspect it.
 - Verify exact public schema URLs after deployment.

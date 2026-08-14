@@ -81,9 +81,9 @@ configuration
 integration
 ```
 
-Custom kinds use the same identifier syntax. A kind affects authoring prompts,
-grouping, and presentation only. It does not impose kind-specific validity
-rules or determine composition position. Omitting it is valid.
+Custom kinds use the same identifier syntax. A kind is a grouping and
+presentation hint only. It does not impose kind-specific validity rules or
+determine composition position. Omitting it is valid.
 
 Metadata is descriptive. It does not prove license validity, publisher
 identity, repository ownership, or document trust.
@@ -422,11 +422,3 @@ bundled provenance.
 `seedspec flatten <package>` writes resolved frontmatter followed by the
 original Markdown body. The output includes the source package digest in a YAML
 comment. Review it before replacing authored sources.
-
-## Release behavior
-
-`target_protocol: "0.4"` identifies the intended family when declared. The
-installed runtime supplies the exact schema. During the alpha, 0.4.x releases
-can change accepted fields. Revalidate packages after every runtime update.
-
-Protocol 0.4 does not parse Protocol 0.3 packages.

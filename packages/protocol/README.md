@@ -20,10 +20,12 @@ import {
 
 Protocol 0.4 requires `SPEC.md`. It accepts optional root `seedspec.yaml` as a
 base manifest. Required package fields are `id`, `name`, and `version`. `kind`
-is optional. It does not parse Protocol 0.3 packages.
+is optional. It does not parse previous protocol families.
 
 Schemas are exported under `@seedspec/protocol/schemas/v0.4/`. Normative
-documents are exported under `@seedspec/protocol/documents/`.
+documents are exported under `@seedspec/protocol/documents/`. The conformance
+suite source is `conformance/` in this package; the digest-pinned bundle is
+`conformance-bundle.json`.
 
 The package is experimental. Pin exact versions and revalidate packages after
 every update.

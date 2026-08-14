@@ -1,190 +1,57 @@
-# SeedSpec glossary
+# Glossary
 
-> **Informative terminology.** This glossary gives public documents and tooling
-> one vocabulary for concepts whose normative structures are defined by the
-> protocol specification and schemas.
+> Informative. Normative shapes are in the protocol specification.
 
-## Protocol and package
+## Package
 
-- **SeedSpec**: the broader project and system comprising guided authoring, the
-  SeedSpec Protocol, reference runtime and CLI tooling, package distribution,
-  and user-directed implementation. Only the SeedSpec Protocol defines package
-  conformance.
-- **SeedSpec Protocol**: the interoperability rules for packages, composition,
-  integrity, resolution, handoff state, and verification state.
-- **SeedSpec package**: a portable directory rooted at `seedspec.yaml`. The
-  package is the container for core intent, optional implementation profiles,
-  optional bundled child packages, optional ordered task runbooks, optional
-  implementation resources, optional context modules, and related artifacts.
-- **core intent**: the intended outcome expressed collectively by a package's
-  definition, configuration surface, decisions, capability contracts,
-  constraints, and acceptance material. Core intent is a logical part of the
-  package, not a required file named `core-spec`.
-- **primary intent module**: the package author's principal intent context
-  module, referenced by `definition.module`. It can use native SeedSpec
-  Markdown or another declared format. Its format-specific workflow is not
-  activated automatically.
-- **kind hint**: author-supplied metadata describing the likely realization
-  shape. It guides tooling but does not determine composition role or required
-  fields.
-- **root package**: the first package selected for one resolution.
-- **addition**: any other package selected explicitly or through recursive
-  bundling into that resolution. Root and addition are resolution roles, not
-  package kinds.
-- **composition edge**: one parent-to-child relationship declared through
-  `composition.includes`, with an exact bundled child identity and one
-  integration seam.
-- **integration seam**: parent-authored Markdown explaining how one bundled
-  child is intended to participate in that parent. The role is semantic; the
-  prose has no required headings or structured compatibility language.
-- **semantic role**: the recognized responsibility of package or project
-  material, such as product intent, adopter configuration, implementation
-  guidance, or evidence. A semantic role identifies how material participates
-  in the handoff; it is not a quality score.
+- **SeedSpec package**: a folder whose entrypoint is `SPEC.md`. Optional
+  `seedspec.yaml` is a base manifest. Frontmatter wins.
+- **digest**: lowercase `sha256:` of authored portable bytes. Identifies
+  content. Does not prove publisher, safety, or quality.
+- **kind**: optional shape hint. Does not change validity or composition.
+- **target_protocol**: optional family label. The
+  installed runtime supplies the exact schema.
 
-Use the unqualified word **specification** carefully. Public documentation
-should identify whether it means a SeedSpec package, the package's core intent,
-the normative protocol specification, or a resolved project specification.
+## Meaning
 
-## Capability contracts
+- **destination / intent**: outcomes, invariants, authority, and latitude
+  in the `SPEC.md` prose.
+- **configuration**: selectable inputs with behavioral effect. An example
+  is not a selection.
+- **success criterion**: an acceptance claim. An anchor traces prose to a
+  criterion. Neither is verification evidence.
+- **capability**: package-local observable behavior. Not a dependency
+  graph. Not proof that current code has the behavior.
+- **task**: ordered implementation guidance. Advisory. Not a workflow the
+  protocol runs. Completing tasks does not prove success.
+- **context module**: supporting readable material with a direct
+  entrypoint. Visibility is not mutation or execution.
+- **implementation profile**: a context module describing one legitimate
+  way to realize the intent. Selecting it does not prove compatibility.
+- **bundled child**: another package included by exact id, version,
+  digest, and path. Optional children are project selection.
 
-- **capability contract**: a namespaced, versioned Markdown statement of
-  observable solution behavior that a provider offers or a consumer expects.
-  Optional structured material supplements but does not replace it.
-- **structured change history**: steward-declared breaking, additive, and
-  clarifying changes forming a semver-consistent chain between capability
-  revisions.
-- **capability conformance suite**: optional version-bound JSON Schema,
-  acceptance-scenario, or eval checks with declared partial or full coverage.
-- **capability conformance result**: a separate evaluation record bound to one
-  capability revision, exact contract and suite bytes, one realization,
-  evaluator, complete check set, and evidence. It is not project completion
-  state.
+## Claims
 
-## Realization guidance
-
-- **task runbook**: an optional package-authored list of implementation
-  reminders consumed in array order. Tasks have stable IDs, instructions, and
-  optional package-file references; they do not form a workflow graph or prove
-  completion.
-- **implementation profile**: one package-authored way to implement the core
-  intent. A package may contain zero or more profiles with prerequisites,
-  blockers, tradeoffs, guidance, and implementation-resource references.
-- **implementation profile state**: project-local state containing every
-  selected package's candidate profiles and at most one preferred profile per
-  package.
-- **implementation resource**: independently versioned agent guidance or
-  tooling declared by a package author. Core kinds include skills,
-  instructions, verification material, tools, and target profiles.
-- **package-scoped skill**: an implementation resource whose verified
-  `SKILL.md` may be explicitly consulted from the resolved handoff, with use
-  recorded as `consulted` or `skipped`. SeedSpec resolution does not install it
-  into a native skill registry or invoke it automatically.
-- **context module**: one package-declared semantic input with a stable local
-  identity, native format, entrypoint, source, description, and optional
-  applicability. Resolution qualifies the identity with its package.
-- **module root**: the source directory containing one module entrypoint and
-  its supporting references, scripts, assets, or other files. Loading the
-  entrypoint does not load every source file.
-- **context bundle**: the request-specific files and module metadata prepared
-  for one consumer. It is distinct from every package module root.
-- **task Skill**: a Skill used to perform domain work. This is a usage role, not
-  a separate Skill format.
-- **bridge Skill**: a separately declared Skill module that explains how to
-  consume another context module in a Skill-aware environment. It cannot alter
-  the target format or grant authority.
-- **native adapter**: format-specific tooling that validates or prepares a
-  context module directly. A native adapter is preferred when available; core
-  protocol validity does not depend on it.
-- **context preparation**: the planned request-specific process that selects
-  relevant modules and supporting content for a consumer. Module
-  materialization alone is not context preparation.
-- **context index**: the resolved `context-index.yaml` inventory of qualified
-  modules, sources, availability, applicability, bridge bindings, exact
-  digests, and digest scope.
-- **context request**: consumer input describing the request, intended use,
-  requested module identities, and explicit exclusions used for context
-  preparation.
-- **context preparation receipt**: the digest-bound record of module selection,
-  preparation mechanism, copied files, and output bundle.
-- **context use receipt**: a record bound to one preparation receipt in which a
-  consumer reports each prepared module as consulted, partially consulted, or
-  skipped. It is not proof of compliance or outcome.
-- **format integration**: an external package containing an inert descriptor,
-  optional native adapter code, and zero or more default bridge Skills for
-  declared context formats.
-- **adapter registry**: runtime-local registrations loaded from explicitly
-  trusted integration sources. Discovery does not populate the registry.
-- **artifact**: related material preserved in its native format. Discovery,
-  materialization, and disposition do not activate the artifact's workflow.
-
-An implementation profile is specific to implementing one package's core
-intent. A skill is reusable knowledge for performing a class of work. A profile
-may reference one or more skills without turning them into core intent.
-
-## Authoring
-
-- **authoring review**: an informative, source-bound co-authoring conversation.
-  Private review threads cover the supplied seed, coherence, observable
-  success, and declared configuration or supporting material without becoming
-  user-facing steps. A finding must be triggered by authored material; absence
-  alone is not a gap. A reviewed thread does not certify completeness or
-  realization quality.
-- **authoring state**: sources, candidates, questions, instructions, results,
-  and provenance kept outside the distributable package while it is being
-  shaped. Authoring state does not become package authority implicitly.
-
-## Handoff and outcome
-
-- **applied intent**: project-local input recording how the end user intends to
-  use each selected package and any local objectives, outcomes, invariants,
-  constraints, forbidden states, non-goals, preferences, decision rights, or
-  baseline observations. Agent proposals remain labeled and non-authoritative
-  until affirmed.
-- **resolved intent**: the provenance-preserving combination of package-author
-  primary intent modules and applied intent used for one resolved handoff.
-
-- **resolved project specification** or **resolved handoff**: the project-local
-  output created from selected packages and explicit end-user inputs. It
-  includes resolved intent, configuration, profile state, resource state,
-  context index, ordered tasks, artifacts, locks, guidance, and verification
-  scaffolding.
-- **realization**: the software, configured external state, workflow,
-  automation, operational artifact, or composite outcome produced from the
-  resolved core intent.
-- **completion scope**: the explicit subset of package acceptance material and
-  project-local criteria used for one completion claim.
-- **verification state**: structured results and evidence references bound to
-  the exact completion scope.
-
-## Evidence
-
-- **package evidence**: material offered in support of a claim about the
-  package, its design, testing, or known compatibility. It does not prove a
-  later realization.
-- **verification plan**: a pre-implementation declaration of what a completion
-  item is intended to prove, how and when it should be observed, and what
-  evidence is required. It is not a result.
-- **baseline evidence**: referenced observations about the end user's
-  environment before consequential implementation, recorded with applied
-  intent. It informs fit and planning but does not prove completion.
-- **realization evidence**: evidence that the produced software, configured
-  state, workflow, automation, or other realization satisfies a scoped claim.
-- **outcome evidence**: evidence of effects after realization, such as changed
-  behavior or an operational metric. A functioning realization may exist before
-  enough time has passed to collect outcome evidence.
-
-Evidence is not transferable merely because two claims are related. Package
-evidence does not prove a realization; realization or outcome evidence does not
-retroactively prove that the package is generally trustworthy.
+- **validity**: the bytes are a well-formed package for one runtime
+  release.
+- **quality**: the spec captures intended meaning without inventing or
+  overconstraining.
+- **verification**: independent evidence that this digest held up in some
+  environment.
 
 ## Actors
 
-- **package author**: creates and publishes a SeedSpec package.
-- **end user**: supplies implementation direction and authorizes consequential
-  choices and external effects.
-- **implementing agent**: interprets the resolved handoff and realizes the
-  selected outcome under the end user's direction.
-- **runtime**: validates packages and produces or checks protocol state.
-- **registry**: indexes or distributes packages without becoming the authority
-  for their packaged intent.
+- **author**: owns package meaning.
+- **adopter**: chooses configuration, optional children, and profile for
+  one project. Those choices live outside the package.
+- **implementing agent**: realizes the destination under the adopter's
+  direction, inspecting actual code and environment.
+
+## Project state
+
+- **project**: adopter selections bound to a package path and digest.
+  Must not be written into the package.
+
+Do not use **applied intent**, **resolved handoff**, **capability
+contract**, or **profile state** as protocol terms.

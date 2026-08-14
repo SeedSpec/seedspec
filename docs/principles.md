@@ -1,305 +1,69 @@
-# SeedSpec Protocol decision principles
+# Principles
 
-> **Informative design guidance.** These principles guide protocol evolution;
-> they are not independently conformance requirements.
+> Informative. These guide what may enter the package and what package
+> bytes may claim. They are not extra conformance tests.
 
-SeedSpec packages intent and the context that helps an agent realize it. The
-protocol makes those materials portable, discoverable, composable, and
-verifiable without claiming control over agent execution or promising identical
-outputs.
+A SeedSpec names the destination. It does not name the route.
 
-SeedSpec also includes authoring and runtime tools that help people produce and
-use those packages. Protocol validity, authoring quality, and realization
-success remain separate claims.
+## Destination, not route
 
-These principles guide protocol, runtime, authoring, and adapter decisions.
+The package carries outcomes, invariants, authority, configuration, and
+how success would be observed. Skills may help an agent navigate.
+Connectors may bound what it can touch. Neither is the spec.
 
-## Increase fidelity without promising determinism
+A feature spec names required host concepts. It does not import the host's
+ontology, screens, or stack.
 
-SeedSpec gives authors progressively stronger ways to communicate what should
-be accomplished, why it matters, which context and resources are relevant, and
-how success should be judged. It cannot guarantee that different agents,
-environments, or implementation choices will produce identical results.
+## Minimum sufficient intent
 
-Specificity of intent is not prescription of execution. An author may describe
-a precise outcome while leaving the agent free to choose how to realize it. An
-author may also impose genuine constraints, but conformance proves that those
-constraints were packaged, not that a later agent followed them.
+The smallest portable meaning that preserves what is consequential and
+leaves legitimate implementation choices open. More text is not more
+authority. Restating what a capable model already knows makes the spec
+worse.
 
-## Define the target, not the route
+Absence is not a gap. Silence is not a reviewed delegation.
 
-Agent-ready intent should establish the desired end state, obligations,
-invariants, constraints, forbidden states, non-goals, success criteria, and
-decision latitude. Skills and tools provide capabilities; the model and harness
-choose actions and correct course against observed reality.
+## Three claims that do not imply each other
 
-An optional task sequence can preserve the author's ordered implementation
-reminders for an agent, but it is not a substitute for a target the agent can
-recognize. Its array order is enough; SeedSpec does not turn it into a workflow
-graph or infer that completing it proves success. Authoring should ask whether
-an otherwise capable agent could detect success, boundary violations, and a
-poor package-to-user fit—not whether every implementation step was anticipated.
+Validity, quality, and verification answer different questions. A digest
+identifies bytes. It does not prove the spec is good or that anyone built
+it. A receipt records that this digest was checked. It is not a reference
+implementation.
 
-## Give recurring concerns stable semantic owners
+## Honesty
 
-Product intent, adopter configuration, decision provenance, acceptance,
-implementation guidance, and observed evidence answer different questions.
-SeedSpec gives those concerns stable roles so their meaning can survive review,
-distribution, adaptation, and implementation.
+- Content is passive. Presence is not execution.
+- Authority is explicit. The package does not grant credentials, network,
+  spending, or mutation rights.
+- Declarations are not observations. The package does not know current
+  code.
+- An example is not a selection.
+- Ready is not complete, and complete is not verified.
+- Model inference is not accepted intent.
 
-A single Markdown document can express all of them clearly. Semantic structure
-becomes especially useful when material crosses people, agents, projects, or
-time: recipients should not have to rediscover which passage is authoritative,
-which value is only an example, which decision remains open, what applies to
-this adopter, or what constitutes evidence.
+## Author and adopter
 
-Stable ownership is not an excuse for fragmentation. Keep human-readable intent
-coherent, use structure where it preserves a meaningful boundary, and link
-rather than duplicate authority across files.
-
-## Make portability, independent verification, and neutrality universal
-
-These are baseline properties of every conforming package, not features
-reserved for a particular author, audience, or distribution channel. A
-package's identity, meaning, and validity must not depend on a particular
-service, account, catalog, or commercial relationship.
-
-Any recipient with the package bytes and a compatible implementation should be
-able to inspect its declared identity, validate its structure and integrity,
-and interpret its semantic roles. Those properties do not establish publisher
-identity, safety, quality, legal usability, or fit for a particular adopter.
-
-## Treat authoring quality separately from format validity
-
-File structure and schema validity do not create missing expertise. A valid
-SeedSpec may be sparse, ambiguous, or poorly suited to a particular adopter,
-while a carefully authored standalone document may communicate intent well.
-
-Guided authoring should help expose material ambiguity, clarify decision
-authority, preserve genuine unknowns, distinguish claims from evidence, and
-test the handoff an independent agent will receive. Those are quality
-opportunities and review judgments, not additional meanings of protocol
-conformance. See [why semantic structure matters](semantic-structure.md) and
-the [current evaluation findings](evaluations.md).
-
-## Keep evidence attached to the claim it proves
-
-SeedSpec distinguishes package evidence, verification plans, baseline
-observations, realization evidence, and outcome evidence. These have different
-subjects and moments in the lifecycle. Evidence for one must not be presented
-as proof of another merely because the claims are related.
-
-An author may ship evidence that a package or reference realization was tested.
-That evidence cannot prove the end user's future realization. Conversely, a
-successful realization cannot retroactively establish that the package is
-generally complete, safe, portable, or trustworthy. A verification plan defines
-what evidence should later be collected; it is not itself evidence.
+Author meaning is package bytes. Adopter choices — configuration, optional
+children, profile — are project state. They must not change the digest.
 
 ## One protocol, varied realizations
 
-A realization may be new software, a feature adapted into an existing product,
-configured state in an external system, a cross-system automation, a generated
-operational artifact, or a composite of those forms. These outcomes share the
-same need for identity, intent, configuration, context, resources, user choice,
-and evidence.
+The same package format can describe a new application, a feature in an
+existing product, configured state in another system, or an automation.
+Do not split the protocol by realization form.
 
-Do not create separate protocols merely because one realization writes code
-and another changes a SaaS account. Keep composition role separate from
-realization form: an automation may be a root outcome or a feature of a larger
-solution.
+## Handoff, not control
 
-## Agentically composable, user directed
+The protocol is a handoff. It does not keep the realized system
+synchronized with the package forever.
 
-SeedSpec is agentically composable: an agent can compare and combine packages,
-capabilities, artifacts, implementation profiles, implementation resources,
-and context modules against the actual environment. Composition is a reasoning
-affordance, not a claim of deterministic execution or autonomous authority.
-Consequential direction still belongs to the end user.
+## What may enter the protocol
 
-Manifest `kind` values are strong hints that help authoring and implementation
-tools choose useful questions and communicate expected scope. Resolution
-position, not kind, determines root versus addition. A hint may improve the
-agent's plan without becoming a structural gate.
+Ask:
 
-## Package ideas, not one universal specification
+1. Is this portable meaning independent implementations must share?
+2. Or is it one artifact format, one authoring UI, one harness, or one
+   catalog?
 
-A SeedSpec does not require one document format to completely define a
-solution. Product definitions, external intent formats, designs, API contracts,
-implementation plans, reference realizations, runbooks, evaluations, and
-infrastructure material may coexist as separate artifacts.
-
-The primary package definition may itself use a recognized external intent
-format. SeedSpec standardizes its role and provenance while an adapter preserves
-the external format's semantics and validation rules. Other artifacts remain
-supporting material unless explicitly referenced as the primary definition.
-
-## Keep concerns separate
-
-Product intent, technical design, execution planning, and infrastructure answer different questions:
-
-- **Intent** describes the outcome, behavior, constraints, and reasons for the work.
-- **Design** describes a technical approach for realizing that intent.
-- **Execution** describes tasks, progress, and implementation evidence.
-- **Infrastructure** describes how an implementation is built, operated, and deployed.
-
-A tool may derive one concern from another, but derivation does not make them the same artifact or give the derived artifact authority over its source.
-
-## Discovery is not activation
-
-Declaring an artifact or context module makes it discoverable. It does not:
-
-- execute the artifact;
-- load an artifact-provided skill or prompt;
-- activate an artifact-specific workflow;
-- make the artifact authoritative to an implementing agent;
-- authorize changes to the artifact, codebase, or external system.
-
-The module named by `definition.module` supplies the package's primary intent.
-Reading it as core intent does not activate its format adapter, bridge Skills,
-scripts, synchronization loop, or other native workflow.
-
-Runtimes may inspect descriptive metadata needed to explain material and locate
-compatible tooling. Integration discovery reads inert descriptors. Loading
-adapter code requires an explicit trusted integration source.
-
-Author-selected implementation resources use a narrower lifecycle. The runtime
-may resolve and verify their declared bytes through an explicit first-party
-command, but resolution still does not execute a tool or grant external-effect
-authority. Agents inspect compact summaries first and selectively consult bodies
-according to author intent, actual project state, and end-user direction.
-
-A packaged skill is scoped to the resolved SeedSpec handoff. SeedSpec does not
-install it into an agent's native skill registry or infer automatic invocation
-from its frontmatter. The implementing agent may explicitly consult the
-verified `SKILL.md` when relevant and records `consulted` or `skipped`. The
-skill supplies reusable implementation knowledge; it does not become solution
-intent or a success criterion.
-
-Context modules generalize discovery and progressive disclosure without
-flattening semantic formats. A native adapter can interpret a supported format
-directly. An explicit bridge Skill can teach a Skill-aware harness how to use
-another format. Neither path grants execution authority or proves that context
-was prepared, consulted, followed, or satisfied.
-
-## The end user directs the implementing agent
-
-SeedSpec authors describe an intended solution and may record decisions,
-constraints, relationships, alternatives, and evidence. They cannot guarantee
-that a later implementing agent will follow those materials.
-
-An execution engine should surface consequential choices, relevant artifacts,
-and material conflicts to its end user. The agent may compare alternatives and
-recommend reconsidering a choice, but the end user decides how the agent uses
-them. SeedSpec supplies context for that decision and does not silently choose
-on the user's behalf.
-
-The package author supplies reusable intent. Before consequential
-implementation, the end user affirms whether each selected package applies as
-authored, requires adaptation, or is only partially useful. The agent may draft
-local objectives, obligations, boundaries, observations, and evidence plans to
-reduce user effort, but must label unconfirmed inference and surface material
-conflict. Partial reuse is valid; silently claiming that a cherry-picked result
-satisfies the complete package is not.
-
-## Preserve alternative realizations as decision context
-
-A package may preserve several ways to realize the same intent. The selected
-direction receives primary attention; unselected approaches may still explain
-tradeoffs, prevent accidental drift, or help an agent recognize that the
-selected approach conflicts with the actual environment.
-
-The package's definition, configuration, capabilities, and success criteria are
-core intent. Candidate implementation directions belong in implementation
-profiles. The preferred profile is recorded in implementation profile state;
-unselected profiles remain decision context, not execution instructions. They must not
-silently override core intent, user-selected configuration, targets, or
-technical preferences.
-
-## Official integration does not create a dependency
-
-An official adapter means the SeedSpec toolchain recognizes an artifact type, points to its documentation, and can expose compatible inspection or validation tools. It does not make the artifact format part of SeedSpec core or require packages to contain it.
-
-Core package conformance and adapter-specific artifact conformance are separate results. A package can remain a valid SeedSpec when an optional adapter is unavailable or unused.
-
-## Adapters provide depth; the protocol provides breadth
-
-The protocol should know enough to identify, locate, relate, preserve, and safely hand off an artifact. Format-specific parsers, validators, generators, and workflows belong in separately versioned adapters.
-
-Adapters must not redefine core fields, relax core validation, or silently turn descriptive package content into executable agent policy.
-
-## Handoff, not permanent control
-
-The SeedSpec Protocol defines a handoff, not a continuing control plane. A realized
-solution may retain lineage to the packages and artifacts that informed it, but
-the protocol does not require code, configured external state, and source
-artifacts to remain synchronized forever.
-
-Maintenance, regeneration, drift reconciliation, and migration are optional workflows provided by tools and chosen by users.
-
-## Progressive elaboration
-
-Authoring may begin from a sentence, a detailed product document, a prototype,
-an architecture, a runbook, an existing system, or a working application. A
-sparse but honest idea is preferable to invented completeness.
-
-Authoring tools may help a user progressively:
-
-1. understand and clarify the source idea without enlarging its subject;
-2. resolve contradictions created by authored claims;
-3. define observable success aligned with the seed; and
-4. understand and refine configuration or supporting material the package
-   actually declares.
-
-The absence of a common domain topic is not a gap. Broader product exploration
-is available when the author explicitly requests it and remains optional until
-accepted.
-
-Not every author must complete every stage before using or sharing a SeedSpec.
-
-## Declarations are not implementation state
-
-Capability, compatibility, and conflict fields record what package authors
-designed, tested, or expect. SeedSpec does not continuously inspect the realized
-solution and cannot prove that a capability is present, absent, compatible,
-or conflicting. Composition preserves those declarations as review context; the
-implementing agent evaluates them against actual code, external state, and
-user intent.
-
-Implementation resources do not change this boundary. A resource associated
-with a capability is advice about authoring, implementation, or verification,
-not evidence that the actual realization provides the capability.
-
-A capability-conformance result is narrower: it is realization evidence that
-the exact declared suite ran with the recorded outcomes. Direction-aware
-revision severity and structured change history help prioritize what to run or
-inspect. Neither a package declaration nor a passing partial suite proves every
-meaning carried by the prose contract, and capability evidence does not replace
-project completion scope.
-
-Structured spec workflows demonstrate the value of making requirements, design, and implementation tasks separately inspectable; linking transformed outputs back to their sources; and checking requirements before expensive implementation begins. SeedSpec adopts those lessons as authoring and analysis capabilities. It does not require every package to pass through the same stages or make a task plan part of product intent.
-
-## Evidence over architectural enforcement
-
-SeedSpec records observable behavior, source identity, capability expectations,
-decisions, and verification evidence. It does not require a particular
-framework, repository layout, task system, agent, cloud, platform, or execution
-mechanism unless the intended outcome genuinely depends on one.
-
-## Extension without capture
-
-New artifact types, adapters, publishers, catalogs, and implementation environments should be able to participate without changing the core protocol. Namespaced identifiers and extensions prevent accidental collisions while keeping ecosystem policy outside the package format.
-
-## Influences, not dependencies
-
-[Kiro Specs](https://kiro.dev/docs/specs/) demonstrate the practical value of distinct requirements, design, and task artifacts; cross-requirement analysis; traceability into implementation; and workflows that can start requirements-first, design-first, or with a faster one-pass plan. SeedSpec applies these lessons to progressive authoring, artifact relationships, linters, and implementation skills. It does not require the Kiro file set, phase order, approval gates, or execution engine.
-
-## Decision test
-
-When considering a new field or feature, ask:
-
-1. Is this a portable fact needed to identify, configure, compose, or verify a package? It may belong in the protocol.
-2. Is this specific to one artifact format? It belongs in an adapter.
-3. Does this guide authoring, analysis, discovery, or implementation? It usually belongs in tooling or a skill.
-4. Does this execute code, modify a codebase or external system, or change agent behavior? It requires explicit user direction and does not activate from discovery alone.
-5. Is this externally managed discovery, payment, reputation, or publisher
-   policy? It belongs outside the neutral protocol.
+If (2), it does not belong in the package. A product adapter is the
+default. A new field requires a demonstrated interoperability failure.

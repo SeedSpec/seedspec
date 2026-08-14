@@ -21,6 +21,7 @@
   "files": [
     "protocol-release.json",
     "conformance-bundle.json",
+    "conformance",
     "documents",
     "schemas/v0.4",
     "src",

@@ -1,83 +1,36 @@
 # Contributing to SeedSpec
 
-SeedSpec welcomes authoring, protocol, runtime, CLI, documentation, and conformance
-contributions. Changes should remain understandable to an independent
-implementer without access to project history.
-
-## Repository scope
-
-This repository contains the SeedSpec authoring system, SeedSpec Protocol,
-normative schemas and conformance cases, first-party runtime and CLI tooling,
-and operational skills.
-Demonstration packages and realized solutions belong in the separate
-`SeedSpec/reference-solutions` repository unless they are minimal fixtures
-needed to test a protocol rule.
+This repository is the SeedSpec protocol, schemas, conformance suite,
+first-party runtime and CLI, and documentation. Demonstration packages belong
+in `SeedSpec/reference-solutions` unless they are fixtures for a protocol or
+check rule.
 
 ## Classify the change
 
-Before editing, identify the affected document class:
+- Normative: `docs/01-language.md`, `docs/protocol.md`, `docs/operations.md`,
+  versioned schemas, and the conformance suite.
+- Informative: architecture, principles, glossary, and topic guides.
+- Outside the contract: commercial distribution and product strategy.
 
-- `docs/protocol.md`, versioned schemas, and the conformance contract are
-  normative;
-- architecture, semantic-structure, evaluation, authoring, runtime, security,
-  and topic guides are informative;
-- architecture decision records are non-normative rationale; and
-- commercial distribution policy and product strategy are outside the protocol
-  contract.
+Editorial changes clarify the contract. Semantic changes alter what an
+implementation accepts, produces, preserves, rejects, or reports. Update
+normative prose, schemas, conformance, runtime behavior, tests, and version
+metadata together.
 
-An editorial change clarifies the existing contract. A semantic change alters
-what an implementation accepts, produces, preserves, rejects, or reports.
-Semantic changes must update normative prose, schemas, conformance coverage,
-reference behavior, tests, and version metadata together.
-
-## Protocol writing
-
-- State requirements impersonally and name the responsible actor.
-- Use BCP 14 keywords only for testable normative requirements.
-- Distinguish packages, core intent, implementation profiles, implementation
-  resources, resolved handoffs, and realizations.
-- Do not present author declarations as observed implementation state.
-- Do not imply that validation proves safety, compatibility, authorship, or
-  realization quality.
-- Keep provider-specific examples and design rationale out of normative rules.
-
-The project-scoped `$harden-seedspec-protocol` skill under `.agents/skills/`
-contains the complete editorial and publication checklist for agent-assisted
-reviews.
-
-## Documentation versions
-
-Repository documentation describes the source state in its repository context.
-Release metadata must not become narrative context.
-
-- Do not put release numbers in titles, headings, prose, installation examples,
-  or summary tables.
-- Refer to the protocol or named operation directly. Do not write "this
-  release" or "current release."
-- Keep release identities in `release.json`, package manifests,
-  `protocol-release.json`, schema identifiers, and Git tags.
-- Use versions for machine fields, compatibility, migrations, changelogs,
-  decisions, and evidence.
-- Use unpinned package commands in human-facing examples. Use placeholders when
-  exact pinning matters.
-- Add versioned documentation only when SeedSpec intentionally supports
-  multiple protocol lines.
-
-## Verify the change
-
-Install dependencies and run:
+## Verify
 
 ```bash
 npm run check
-npm run conformance
 git diff --check
 ```
 
-When a public command, schema URL, or package boundary changes, also test it as
-an external consumer. Pull requests should identify:
+`npm run check` includes conformance. When a public command, schema URL, or
+package boundary changes, also test it as an external consumer.
 
-- whether the change is editorial or semantic;
-- the normative surfaces affected;
-- compatibility and version impact;
-- conformance cases added or changed; and
-- any claims that remain informative rather than machine-verifiable.
+## Maintainer skills
+
+- `$audit-seedspec-surface` — leftover trees, stale commands, and drifted
+  README / CONTRIBUTING / RELEASING / docs.
+- `$harden-seedspec-protocol` — editorial language and claim boundaries.
+- `$prepare-seedspec-release` — exact version alignment, generate, verify,
+  publish.

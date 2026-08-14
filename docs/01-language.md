@@ -2,7 +2,7 @@
 
 SeedSpec packages combine authored specification prose with optional structured
 declarations. The prose preserves intent for any capable reader. The structure
-supports deterministic validation, composition, preparation, and inspection.
+supports deterministic validation, composition, and inspection.
 
 ## Authority
 
@@ -78,19 +78,3 @@ not prove:
 - that remote documentation is safe.
 
 Verification requires evidence independent of the claim being verified.
-
-## Grounding
-
-Ground material behavior in accepted package meaning, selected configuration,
-an author decision, or documented implementation necessity. Do not expand the
-intended capability surface. Use the smallest reversible choice for unspecified
-details. Escalate consequential ambiguity.
-
-## Release model
-
-Protocol 0.4 is an experimental lineage. Optional `target_protocol: "0.4"`
-identifies the intended family. The installed 0.4.x runtime supplies the exact
-schema when the field is absent.
-
-Patch releases can change accepted structure during the alpha. Revalidate on
-every runtime update. Protocol 0.4 does not parse Protocol 0.3 packages.

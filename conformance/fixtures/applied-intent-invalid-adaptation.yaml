@@ -1,5 +1,0 @@
-protocol_version: "0.3"
-packages:
-  - package: org.seedspec.fixtures.comprehensive-application
-    use: adapted
-contributions: []

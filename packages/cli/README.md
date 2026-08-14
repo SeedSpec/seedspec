@@ -23,5 +23,5 @@ workspace; it does not execute files from the package. `init` writes `SPEC.md`.
 `project` writes adopter selections outside the package. `skill` prints or
 copies the consumer implementation skill.
 
-Protocol 0.4 does not accept Protocol 0.3 packages. The CLI is experimental;
-pin exact versions.
+This family does not accept packages from a previous family. The CLI is
+experimental; pin exact versions.

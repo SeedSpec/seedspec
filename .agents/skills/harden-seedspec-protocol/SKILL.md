@@ -17,7 +17,7 @@ lexicon, claim boundaries, and publication checklist.
 ## Establish the change boundary
 
 1. Identify every affected surface: normative prose, schemas, conformance cases,
-   reference runtime behavior, generated agent text, informative guidance, ADRs,
+   reference runtime behavior, generated agent text, informative guidance,
    package READMEs, and public websites.
 2. Classify each document before editing it.
 3. Separate editorial clarification from semantic protocol change.
@@ -31,11 +31,12 @@ lexicon, claim boundaries, and publication checklist.
 
 Review in this order:
 
-1. `docs/protocol.md` and the affected JSON Schemas.
+1. `docs/01-language.md`, `docs/protocol.md`, `docs/operations.md`, and the
+   affected JSON Schemas.
 2. Conformance cases and reference-runtime behavior.
-3. Architecture, principles, security, authoring, runtime, and topic guides.
+3. Architecture, principles, glossary, security, versioning, and topic guides.
 4. Generated CLI and agent-facing instructions.
-5. ADRs and repository READMEs.
+5. Repository READMEs.
 6. Public sites, schema URLs, installation commands, and discovery files such as
    `llms.txt` when they are in scope.
 
@@ -46,16 +47,16 @@ Resolve the underlying contract and propagate the result outward.
 
 - State requirements impersonally and testably.
 - Use BCP 14 terms only for normative interoperability requirements.
-- Name the responsible actor: package author, runtime, registry, implementing
-  agent, or end user.
+- Name the responsible actor: package author, adopter, implementing agent,
+  runtime, or end user.
 - Distinguish what tooling validates from what an agent may infer or choose.
-- Distinguish a SeedSpec package, its core intent, its implementation profiles,
-  and its implementation resources.
+- Distinguish a SeedSpec package, destination intent, implementation profiles,
+  context modules, project state, and realizations.
 - Describe agent behavior as guidance unless the protocol can observe and test
   the behavior.
 - Keep provider and framework examples in informative material unless the
   provider is genuinely part of the portable contract.
-- Preserve useful rationale in clearly non-normative ADRs; remove diary-like
+- Keep useful rationale in informative documents. Remove diary-like
   deliberation, commercial speculation, and stale future-tense promises from
   public protocol guidance.
 
@@ -67,7 +68,7 @@ For every material claim, identify its evidence surface:
 - deterministic runtime behavior;
 - conformance case;
 - implementation evidence;
-- author or registry assertion; or
+- author or adopter assertion; or
 - non-normative recommendation.
 
 Narrow or relabel claims that lack the evidence they imply. Never equate
@@ -96,11 +97,10 @@ Run the narrowest relevant checks during iteration, then run before handoff:
 
 ```text
 npm run check
-npm run conformance
 git diff --check
 ```
 
-When public endpoints or npm instructions change, also test them from a clean,
-external-consumer perspective. Report editorial changes separately from
-semantic changes, identify any compatibility impact, and list unresolved policy
-decisions rather than hiding them in prose.
+`npm run check` includes conformance. When public endpoints or npm instructions
+change, also test them from a clean, external-consumer perspective. Report
+editorial changes separately from semantic changes, identify any compatibility
+impact, and list unresolved policy decisions rather than hiding them in prose.

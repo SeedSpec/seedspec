@@ -1,5 +1,0 @@
-protocol_version: "0.3"
-status: review
-items: []
-uncovered_packages:
-  - org.seedspec.fixtures.portable-feature

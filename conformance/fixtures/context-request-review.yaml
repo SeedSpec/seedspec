@@ -1,5 +1,0 @@
-request_version: "1"
-summary: Review refund-agent behavior against the package safety expectations.
-purpose: review
-audiences:
-  - reviewer

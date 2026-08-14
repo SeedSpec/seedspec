@@ -1,108 +1,33 @@
-# Security and trust model
+# Security
 
-> **Informative security guidance.** This document explains the reference threat
-> model and operational safeguards. Protocol validity is not a security
-> endorsement.
+> Informative. Protocol validity is not a security endorsement.
 
-SeedSpec packages are untrusted input. Validation is not a security endorsement.
+Packages are untrusted input.
 
-## Runtime requirements
+## What a runtime must not do
 
-A runtime must:
+- Execute package content because it was discovered, selected, or
+  validated.
+- Fetch URLs while validating.
+- Treat a digest as publisher identity, safety, or quality.
+- Write adopter selections into the package.
+- Accept credentials, tokens, or secrets as package bytes.
 
-- parse YAML without constructing language-specific objects or executing tags;
-- reject duplicate mapping keys;
-- reject absolute, traversal, backslash, hidden, control-character, non-ASCII, and case-colliding package paths;
-- reject symbolic links, devices, sockets, and other non-regular package entries;
-- resolve every manifest reference within the package root;
-- apply resource limits for file count, file size, aggregate size, YAML depth, and JSON Schema complexity appropriate to its environment;
-- treat Markdown, task instructions and references, artifacts, extension values,
-  evals, scripts, reference code, and deployment material as untrusted content;
-- treat implementation-resource manifests, skill bodies, instructions, tools,
-  verification material, target profiles, and catalogs as untrusted content;
-- treat context-module entrypoints, supporting files, and bridge Skills as
-  untrusted content, regardless of format validation;
-- require HTTPS for canonical resource manifests and files, apply strict file
-  count and byte limits, reject unsafe paths, and verify every file and aggregate
-  digest before exposing downloaded bytes;
-- reject literal loopback, link-local, and private-network resource hosts and
-  use environment-level egress controls where DNS can resolve public names to
-  private addresses;
-- report bundled fallback use and its reason rather than silently substituting
-  local content for an unavailable requested version;
-- avoid executing any optional component merely because the manifest discovers it;
-- avoid loading an artifact-provided skill, prompt, plugin, or lifecycle merely because the manifest declares it or an adapter recognizes it;
-- avoid selecting every context module merely because it is materialized;
-- enforce audience and purpose isolation in tooling rather than relying on
-  package prose or bridge instructions as a security boundary;
-- fetch remote artifact URLs only through an explicitly authorized, isolated acquisition step;
-- keep technical credentials and secrets outside packages and resolved configuration.
+## Paths and parsing
 
-## Changes to external systems
+Resolve every package path inside the package root. Reject traversal,
+absolute paths, symlinks, and duplicate YAML keys. Parse YAML as data,
+not as executable tags.
 
-A SeedSpec package may describe intended state in an authenticated external
-system. Package validation, artifact selection, resource resolution, and
-project readiness do not authorize an agent to sign in, create or modify
-resources, send messages, schedule work, incur cost, or change user data.
+## External effects
 
-Before external effects, an implementation environment should resolve the
-exact target account, workspace, organization, channel, recipients, and scope
-of change; use an approved credential provider or an explicitly authorized
-authenticated session; preview consequential or irreversible operations when
-possible; and obtain any direction required by the environment's safety model.
+A package may *describe* intended state in another system. Validation,
+profile selection, and project readiness do not authorize sign-in,
+writes, messages, spend, or data changes. Direction for those acts is
+environment policy, at action time.
 
-Packages may declare credential requirements and handling constraints, but must
-NOT contain live credentials, session tokens, private keys, recovery codes, or
-secrets. Execution receipts and verification evidence should record stable
-resource identifiers and observations without copying credentials or sensitive
-customer data.
+## Digest
 
-Agents should discover existing state before creating resources, avoid
-duplicates on retry, and record whether a requested result was created,
-updated, reused, skipped, or only partially realized. These are execution
-responsibilities; protocol conformance does not prove that an agent handled
-external state safely.
-
-The reference runtime enforces path and file-type rules and safe parsing. It does not yet impose configurable package-size limits, so callers operating a public ingestion service must place external limits around it.
-
-## Digest boundary
-
-The canonical digest detects byte changes and supports reproducible locks. It does not establish:
-
-- who authored the package;
-- whether a namespace is legitimately controlled;
-- whether content is malicious;
-- whether a definition is correct;
-- whether a package has been reviewed.
-
-The resolution receipt applies the same boundary. It binds package and input
-digests to deterministic resolved output, but it is not a signature or proof of
-publisher identity. The protocol does not transmit receipts. Any future
-telemetry transport must be separately opt-in and must not add package prose,
-absolute paths, credentials, or arbitrary project content to the receipt
-subject.
-
-Registries or publishers may attach signatures, transparency-log entries, or review attestations to a digest. Those claims must remain external until a future protocol version defines their verification semantics.
-
-## Generated specifications
-
-Resolved Markdown can contain instructions originating in third-party packages. An execution engine must treat that material as product input, not as authority to exfiltrate data, weaken policy, access unrelated files, or execute arbitrary commands.
-
-Package-authored tasks receive no additional authority from their ordered form.
-Following a task remains subject to end-user direction, execution-environment
-safety rules, and the actual project. Referencing a script or instruction file
-does not authorize executing or activating it.
-
-Passive artifacts do not register adapters or activate maintenance, drift,
-regeneration, or execution workflows. Before adopting any workflow described by
-an artifact, the agent should explain the choice and obtain direction from its
-end user.
-
-The same rule applies to context modules and bridge Skills. A module description
-supports discovery, not instruction authority. A bridge can explain how to
-consume a module, but it cannot weaken system policy, broaden scope, expose
-hidden evaluation material, or authorize a referenced script or tool.
-
-## Public hosting gate
-
-Before accepting arbitrary remote packages, an operator should add archive extraction limits, decompression-bomb protection, MIME/content scanning, request isolation, digest verification, rate limiting, and an abuse/security reporting channel. These are hosting controls, not proof of protocol conformance.
+The digest detects byte substitution. It does not authenticate a
+publisher. Namespacing, when used, reduces accidental collision. It does
+not prove ownership.

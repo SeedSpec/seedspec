@@ -24,19 +24,15 @@
   "documents": [
     {
       "path": "documents/01-language.md",
-      "digest": "sha256:76ed31e0f062b43ccbea7ff7742e4ea35726e1a3d6d33da34a2b956d570133f8"
+      "digest": "sha256:41e05ca227d8293b3879da965cd84f6e0e2aee9a258d5389bd3433f28aa577e0"
     },
     {
       "path": "documents/protocol.md",
-      "digest": "sha256:607600f56c7d5cce3e777e27a3a5430ffc15fc39a4cc4c7828a73ae949fbc19d"
+      "digest": "sha256:fd72deae4e68a901707bd3250af2af7ed5f986fd70fb5038ebe275c60e610d5d"
     },
     {
       "path": "documents/operations.md",
       "digest": "sha256:b541a79c1862dd8f9a3d5ccc333eab51d077c7d7fe910f0ad7cccce2f6da295f"
-    },
-    {
-      "path": "documents/migrations.md",
-      "digest": "sha256:0429ff1ed0f5cdd0b6f86a0c2f97f2bb7e8bc4192c33f1741b1b5d00f2adea40"
     }
   ],
   "operations": [
@@ -47,7 +43,7 @@
   ],
   "conformance": {
     "suite_version": "0.4.0",
-    "index": "conformance/v0.4/cases.yaml",
+    "index": "packages/protocol/conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
     "index_digest": "sha256:2fcb75d35364ca08c8431f5295c9dc6e54f94bc45cfac886ecc34673a29f3fe1",
     "bundle_digest": "sha256:6703b3d109efc3080f4e90a7a89df75d06dcefc076ba804602ec10cfbd9c39d3"
@@ -69,7 +65,7 @@
     {
       "from_release": "0.3.1",
       "status": "unsupported",
-      "notes": "Protocol 0.4 resets the package contract around SPEC.md. Reauthor 0.3 packages; no compatibility parser or automatic migration is provided."
+      "notes": "Protocol families are independent contracts. This family does not parse previous families."
     }
   ]
 }

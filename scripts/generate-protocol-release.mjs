@@ -72,7 +72,7 @@ async function directoryDigest(relativePath) {
 }
 
 async function createConformanceBundle(bundleDigest, release) {
-  const directory = path.join(root, "conformance/v0.4");
+  const directory = path.join(root, "packages/protocol/conformance");
   const files = await collectDirectoryFiles(directory);
   files.sort((left, right) => lexicalCompare(left.relativePath, right.relativePath));
   return {
@@ -103,8 +103,7 @@ const schemaNames = (await readdir(schemaDirectory))
 const sourceDocumentPaths = [
   "docs/01-language.md",
   "docs/protocol.md",
-  "docs/operations.md",
-  "docs/migrations.md"
+  "docs/operations.md"
 ];
 const documentDirectory = path.join(protocolDirectory, "documents");
 await mkdir(documentDirectory, { recursive: true });
@@ -120,7 +119,7 @@ if (/^[a-f0-9]{40}$/u.test(process.env.SEEDSPEC_SOURCE_REVISION ?? "")) {
   source.revision = process.env.SEEDSPEC_SOURCE_REVISION;
 }
 
-const conformanceBundleDigest = await directoryDigest("conformance/v0.4");
+const conformanceBundleDigest = await directoryDigest("packages/protocol/conformance");
 const release = {
   manifest_version: "1",
   protocol_family: releaseContract.protocol_family,
@@ -147,9 +146,9 @@ const release = {
   ],
   conformance: {
     suite_version: releaseContract.conformance_suite_version,
-    index: "conformance/v0.4/cases.yaml",
+    index: "packages/protocol/conformance/cases.yaml",
     bundle: "conformance-bundle.json",
-    index_digest: await digest("conformance/v0.4/cases.yaml"),
+    index_digest: await digest("packages/protocol/conformance/cases.yaml"),
     bundle_digest: conformanceBundleDigest
   },
   implementations: {
@@ -167,7 +166,7 @@ const release = {
     {
       from_release: "0.3.1",
       status: "unsupported",
-      notes: "Protocol 0.4 resets the package contract around SPEC.md. Reauthor 0.3 packages; no compatibility parser or automatic migration is provided."
+      notes: "Protocol families are independent contracts. This family does not parse previous families."
     }
   ]
 };

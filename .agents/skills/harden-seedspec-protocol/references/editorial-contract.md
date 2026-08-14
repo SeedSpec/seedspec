@@ -6,8 +6,9 @@ Use this checklist for every public protocol review.
 
 ### Normative
 
-Defines interoperable behavior. Current normative surfaces are the versioned
-protocol specification, JSON Schemas, and conformance contract.
+Defines interoperable behavior. Current normative surfaces are
+`docs/01-language.md`, `docs/protocol.md`, `docs/operations.md`, the versioned
+JSON Schemas, and the conformance suite.
 
 - Use BCP 14 terms deliberately.
 - Make requirements observable by an independent implementation.
@@ -18,21 +19,13 @@ protocol specification, JSON Schemas, and conformance contract.
 
 ### Informative
 
-Explains authoring, runtime use, security posture, examples, and design patterns.
+Explains architecture, principles, glossary, security, versioning, and how
+package material is used.
 
 - Label recommendations as guidance.
 - Do not introduce requirements absent from normative surfaces.
 - Permit concrete vendors and frameworks when they clarify an example.
 - Do not imply that one example is the required realization.
-
-### Rationale
-
-Records accepted architectural decisions and their consequences.
-
-- Keep ADRs explicitly non-normative.
-- Preserve rationale that helps future protocol work.
-- Exclude private commercial planning, conversation residue, and obsolete
-  speculation that does not explain the accepted contract.
 
 ### Private strategy
 
@@ -46,29 +39,22 @@ change introduces or materially changes a public concept, then keep the
 high-risk distinctions below aligned with it.
 
 - **SeedSpec Protocol**: the interoperability rules.
-- **SeedSpec package**: the portable container governed by the protocol.
-- **core intent**: the package's intended outcome, expressed collectively by its
-  definition, configuration surface, decisions, capability contracts,
-  constraints, and acceptance material.
-- **implementation profile**: one package-authored way to implement the core
-  intent, with conditions, tradeoffs, guidance, and resource references. A
-  package may contain zero or more profiles.
-- **implementation profile state**: project-local state recording candidates and
-  at most one preferred profile per selected package.
-- **implementation resource**: independently versioned agent guidance or tooling
-  declared by an author.
-- **package-scoped skill**: an implementation resource whose verified
-  `SKILL.md` is explicitly consulted from the handoff, not installed or
-  automatically invoked.
-- **artifact**: related material preserved in its native format; discovery and
-  disposition do not activate its workflow.
-- **resolved project specification** or **resolved handoff**: the project-local
-  result of combining selected packages with explicit user inputs and state.
-- **realization**: the software, configured system, workflow, operational
-  artifact, or composite outcome produced from the resolved intent.
-- **package author**, **end user**, **implementing agent**, **runtime**, and
-  **registry**: name the actor rather than using ambiguous `we`, `you`, or
-  `system` when responsibility matters.
+- **SeedSpec package**: a folder whose entrypoint is `SPEC.md`.
+- **destination / intent**: outcomes, invariants, authority, and latitude in
+  the `SPEC.md` prose.
+- **context module**: supporting readable material with a direct entrypoint.
+- **implementation profile**: a context module describing one legitimate way to
+  realize the intent.
+- **project state**: adopter selections bound to a package path and digest. It
+  must not be written into the package.
+- **realization**: the software, configured system, workflow, or composite
+  outcome produced from the destination.
+- **package author**, **adopter**, **implementing agent**, and **runtime**: name
+  the actor rather than using ambiguous `we`, `you`, or `system` when
+  responsibility matters.
+
+Do not use **applied intent**, **resolved handoff**, **capability contract**,
+**implementation resource**, or **profile state** as protocol terms.
 
 Use `buyer` only when a document genuinely describes a commercial transaction.
 Use `application` or `software` only when the statement does not also apply to
@@ -82,13 +68,10 @@ configured systems, workflows, integrations, or other solution kinds.
   contract; it does not mean every realization is correct.
 - **Declared** describes package-author material, not observed implementation
   state.
-- **Selected** records user or caller preference; it is not execution authority.
-- **Resolved** means exact material and state were produced or acquired as
-  recorded; it is not proof that guidance was followed.
+- **Selected** records adopter or caller preference; it is not execution
+  authority.
 - **Compatible** requires scoped evidence. A capability or version declaration
   alone is review context.
-- **Consulted** means an agent considered an implementation resource. It does not
-  mean installed, automatically invoked, followed, or effective.
 - **Verified** applies only to the recorded completion scope and evidence.
 - **Trusted**, **safe**, and **secure** require a named threat model and evidence;
   validation or a digest alone does not establish them.
@@ -111,27 +94,27 @@ Flag and evaluate:
   proves external state;
 - provider-specific examples in normative sections;
 - long comparisons with adjacent products in protocol documentation; and
-- rationale embedded in requirements instead of a linked ADR.
+- rationale embedded in requirements instead of an informative document.
 
 Do not mechanically delete every flagged word. Preserve it when the document
 class and meaning justify it; otherwise rewrite or relocate it.
 
 ## Publication checklist
 
-- State the protocol version and stability level consistently.
+- State the protocol family and experimental status consistently.
 - Define the normative release bundle and how defects among its parts are
   handled.
 - Ensure every schema `$id` resolves to the corresponding JSON document.
 - Ensure public repository, documentation, source, and installation links point
   to the current project.
-- Ensure unqualified and tagged npm commands install a version that supports the
+- Ensure unqualified npm commands install a version that supports the
   documented command.
-- Provide machine-readable CLI version and protocol compatibility information.
+- Provide machine-readable CLI version and protocol family information.
 - Keep the conformance suite self-contained and externally consumable.
-- Distinguish protocol releases from CLI, runtime, schema-package, and
-  conformance-suite versions.
-- Label informative guides and ADRs so their authority is unambiguous.
+- Keep first-party protocol, runtime, CLI, and conformance versions exact and
+  coordinated.
+- Label informative guides so their authority is unambiguous.
 - Verify generated agent instructions use the same terminology and trust
   boundaries as the protocol.
-- Run repository tests and conformance cases.
+- Run `npm run check`.
 - Test the public journey from a clean environment before announcing a release.
