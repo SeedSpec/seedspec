@@ -76,3 +76,17 @@ cases:
     package: fixtures/minimum
     expect:
       result: pass
+
+  - id: flatten-minimum
+    description: Flattened output is a valid standalone package.
+    operation: flatten
+    package: fixtures/minimum
+    expect:
+      result: pass
+
+  - id: flatten-merged-sections
+    description: Flattened merged sections remain a valid standalone package.
+    operation: flatten
+    package: fixtures/merged-sections
+    expect:
+      result: pass

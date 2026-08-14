@@ -22,6 +22,7 @@ import { SeedSpecError } from "./errors.js";
 import { readYamlFile } from "./files.js";
 import { lexicalCompare } from "./integrity.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
+import { flattenManifest } from "./manifest.js";
 import { validatePackage } from "./validate.js";
 
 const require = createRequire(import.meta.url);
@@ -102,6 +103,16 @@ async function executeCase(testCase, indexDirectory) {
       });
     }
     return { digest: first.digest };
+  }
+  if (testCase.operation === "flatten") {
+    const flattened = flattenManifest(await validatePackage(packagePath));
+    const outputRoot = await mkdtemp(path.join(tmpdir(), "seedspec-flatten-"));
+    try {
+      await writeFile(path.join(outputRoot, "SPEC.md"), flattened, "utf8");
+      return { digest: (await validatePackage(outputRoot)).digest };
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
   }
   throw new SeedSpecError(`Unsupported conformance operation: ${testCase.operation}`, {
     code: "INVALID_CONFORMANCE_SUITE"

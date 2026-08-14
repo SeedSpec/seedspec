@@ -146,7 +146,7 @@ const release = {
   ],
   conformance: {
     suite_version: releaseContract.conformance_suite_version,
-    index: "packages/protocol/conformance/cases.yaml",
+    index: "conformance/cases.yaml",
     bundle: "conformance-bundle.json",
     index_digest: await digest("packages/protocol/conformance/cases.yaml"),
     bundle_digest: conformanceBundleDigest

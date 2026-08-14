@@ -1,7 +1,7 @@
 # SeedSpec Protocol 0.4 operations
 
-The 0.4.0 structural release defines four package operations. Each operation is
-offline and treats package content as untrusted input.
+The protocol defines four package operations. Each operation is offline and
+treats package content as untrusted input.
 
 ## `validate`
 
@@ -96,6 +96,6 @@ its digest.
 
 ## Deferred protocol operations
 
-Authoring, resolution, preparation, and verification are not Protocol 0.4.0
-operations. Future implementations must use the 0.4 package structure instead
-of exposing earlier experimental APIs.
+Authoring, resolution, preparation, and verification are not protocol
+operations. Future implementations must use the current package structure
+instead of exposing earlier experimental APIs.

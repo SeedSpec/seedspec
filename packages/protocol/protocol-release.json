@@ -14,7 +14,7 @@
     },
     {
       "path": "packages/protocol/schemas/v0.4/conformance.schema.json",
-      "digest": "sha256:8f7bd41f88f3975b3e2401f5092075a630ba5f76cda022fd2144b64de306989b"
+      "digest": "sha256:fd9164afa06f759a2c490fdeb2dc8c9dd9d7e583e4e367da4115b3dc05030f8f"
     },
     {
       "path": "packages/protocol/schemas/v0.4/seedspec.schema.json",
@@ -32,7 +32,7 @@
     },
     {
       "path": "documents/operations.md",
-      "digest": "sha256:b541a79c1862dd8f9a3d5ccc333eab51d077c7d7fe910f0ad7cccce2f6da295f"
+      "digest": "sha256:b2dc63b9531f6ff938185b427463a650592d62eb21f6bec3bf6a1a6d72191ab2"
     }
   ],
   "operations": [
@@ -43,10 +43,10 @@
   ],
   "conformance": {
     "suite_version": "0.4.0",
-    "index": "packages/protocol/conformance/cases.yaml",
+    "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
-    "index_digest": "sha256:2fcb75d35364ca08c8431f5295c9dc6e54f94bc45cfac886ecc34673a29f3fe1",
-    "bundle_digest": "sha256:6703b3d109efc3080f4e90a7a89df75d06dcefc076ba804602ec10cfbd9c39d3"
+    "index_digest": "sha256:203d0c789d37632887581db6b822660258ad69f183605a0a3e695640f1061411",
+    "bundle_digest": "sha256:cb5ceb647ab7a0880a660b64e4af55dc4efbfdeace953a4d9daec2a9aefe3e44"
   },
   "implementations": {
     "runtime": {
