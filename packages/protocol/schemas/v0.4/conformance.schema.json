@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.4.0/schemas/conformance.schema.json",
+  "$id": "https://seedspec.dev/releases/0.4.1/schemas/conformance.schema.json",
   "title": "SeedSpec Protocol 0.4 conformance suite",
   "type": "object",
   "additionalProperties": false,
   "required": ["suite_version", "protocol_version", "cases"],
   "properties": {
-    "suite_version": { "const": "0.4.0" },
+    "suite_version": { "const": "0.4.1" },
     "protocol_version": { "const": "0.4" },
     "cases": {
       "type": "array",

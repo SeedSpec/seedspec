@@ -5,6 +5,38 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.4.1 — 2026-08-14
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.4` |
+| Exact protocol release / `@seedspec/protocol` | `0.4.1` |
+| Conformance suite | `0.4.1` |
+| `@seedspec/runtime` | `0.4.1` |
+| `@seedspec/cli` | `0.4.1` |
+
+Experimental. Same family as the Protocol 0.4 package contract. Pin this exact
+release for applications. Revalidate packages authored against an earlier 0.4
+runtime.
+
+### Package surface
+
+- Keep the repository to protocol, schemas, conformance, runtime, CLI, and
+  documentation. Authoring evals, examples, and harness residue are not part of
+  this release.
+- Ship language, protocol, and operations as the normative document set.
+- Add flatten-then-validate conformance cases. Flattened output must remain a
+  valid standalone package. The suite does not lock flattened bytes.
+- Record the exact release as installed-runtime identity. Validation establishes
+  structural validity. It does not prove conformance of a realization.
+
+### Exact-release relationship
+
+- Status remains `experimental`. `0.4.x` patches can change accepted structure.
+- Exact schemas are identified under
+  `https://seedspec.dev/releases/0.4.1/schemas/`. The family alias is
+  `https://seedspec.dev/schemas/v0.4/`.
+
 ## 0.4.0 — 2026-08-13
 
 | Surface | Version |

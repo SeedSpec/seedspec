@@ -1,24 +1,24 @@
 {
   "manifest_version": "1",
   "protocol_family": "0.4",
-  "release_id": "0.4.0",
+  "release_id": "0.4.1",
   "status": "experimental",
   "schema_package": {
     "name": "@seedspec/protocol",
-    "version": "0.4.0"
+    "version": "0.4.1"
   },
   "schemas": [
     {
       "path": "packages/protocol/schemas/v0.4/conformance-report.schema.json",
-      "digest": "sha256:2f014fa99afbfe18b6c38a5b69ffc56b0e3c3cc0d8d7f3337e216d781412e0e8"
+      "digest": "sha256:fd8d7f1146914bd7a9f81f1e7275300b2dbbbfb4ed7c7ba7174444d47b0b6df5"
     },
     {
       "path": "packages/protocol/schemas/v0.4/conformance.schema.json",
-      "digest": "sha256:fd9164afa06f759a2c490fdeb2dc8c9dd9d7e583e4e367da4115b3dc05030f8f"
+      "digest": "sha256:e6c0437a206779334fc88319579fb9d1fdcf0cfea3db8bae719e6df54021aecd"
     },
     {
       "path": "packages/protocol/schemas/v0.4/seedspec.schema.json",
-      "digest": "sha256:89bb374470fe0acd74314dce1d5e75f3d1c7e4b529748e7d3387454b778505b5"
+      "digest": "sha256:3e993c372248de60c7b5b5937785be0b4c03e4a9e47ea5964dd172a3ca3612a6"
     }
   ],
   "documents": [
@@ -42,20 +42,20 @@
     "flatten"
   ],
   "conformance": {
-    "suite_version": "0.4.0",
+    "suite_version": "0.4.1",
     "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
-    "index_digest": "sha256:203d0c789d37632887581db6b822660258ad69f183605a0a3e695640f1061411",
-    "bundle_digest": "sha256:cb5ceb647ab7a0880a660b64e4af55dc4efbfdeace953a4d9daec2a9aefe3e44"
+    "index_digest": "sha256:3f674e3ce0f1433758d7358a98ba070ad8245f3520b6bb03103d1291eaf55d60",
+    "bundle_digest": "sha256:15d329af4576e204986fe571695a1829505943645aba6564261262a7611cc05b"
   },
   "implementations": {
     "runtime": {
       "name": "@seedspec/runtime",
-      "version": "0.4.0"
+      "version": "0.4.1"
     },
     "cli": {
       "name": "@seedspec/cli",
-      "version": "0.4.0"
+      "version": "0.4.1"
     }
   },
   "source": {
