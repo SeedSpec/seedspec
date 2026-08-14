@@ -24,15 +24,15 @@
   "documents": [
     {
       "path": "documents/01-language.md",
-      "digest": "sha256:41e05ca227d8293b3879da965cd84f6e0e2aee9a258d5389bd3433f28aa577e0"
+      "digest": "sha256:b917070dc0886da4b172f0402281b7e5f0dc9f08819bc8fcbded3fa251a3c137"
     },
     {
       "path": "documents/protocol.md",
-      "digest": "sha256:fd72deae4e68a901707bd3250af2af7ed5f986fd70fb5038ebe275c60e610d5d"
+      "digest": "sha256:30183817b10522f9d0f1347ac493204ab66c05290d6f8d5295c5dbed04bb9e80"
     },
     {
       "path": "documents/operations.md",
-      "digest": "sha256:b2dc63b9531f6ff938185b427463a650592d62eb21f6bec3bf6a1a6d72191ab2"
+      "digest": "sha256:316ffc174f09108a48eebffc2c33a26da2decf428f2864c75c2b25746cca43a1"
     }
   ],
   "operations": [

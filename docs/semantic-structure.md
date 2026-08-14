@@ -12,7 +12,7 @@ informal document can contain everything and still leave every recipient
 to reconstruct what is authoritative, what is an example, and what would
 count as success.
 
-## Roles 0.4 actually has
+## Package roles
 
 | Role | Question |
 | --- | --- |
@@ -40,6 +40,6 @@ appearance, or proving that a realization exists.
 ## Authoring is a separate claim
 
 Protocol validity means the package can be interpreted. It does not mean
-the author found the important rules. Guided authoring can help. It does
-not become a conformance requirement, and its workspace is not package
-content.
+the author found the important rules. Authoring quality is a separate
+claim. It does not become a conformance requirement, and an authoring
+workspace is not package content.

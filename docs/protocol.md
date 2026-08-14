@@ -64,9 +64,10 @@ metadata:
   documentation: https://docs.example.com/daily-report
 ```
 
-When `target_protocol` is present, the runtime validates it against the selected
-protocol family. When absent, the tool uses its current protocol family. A
-validation or publication receipt records the exact protocol release used.
+When `target_protocol` is present, the runtime validates it against the
+installed protocol family. When absent, the installed runtime still supplies
+the exact schema. The exact release is an installed-runtime identity, not a
+package field.
 
 `kind` is an optional package-shape hint. Built-in values are:
 

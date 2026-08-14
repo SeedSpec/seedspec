@@ -89,7 +89,7 @@ for (const retiredPath of inventory.retiredPaths) {
 }
 
 const markdownLink = /\[(?:[^\]]+)\]\(([^)]+)\)/g;
-const seedspecCommand = /(?:npx (?:@seedspec\/cli|seedspec)|seedspec) ([a-z0-9-]+)/g;
+const seedspecCommand = /(?:npx (?:@seedspec\/cli|seedspec)|seedspec) ([a-z][a-z0-9-]*)/g;
 const npmScript = /npm run ([a-z0-9:-]+)/g;
 
 for (const relativePath of surfaceFiles) {

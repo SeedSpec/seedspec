@@ -97,5 +97,5 @@ its digest.
 ## Deferred protocol operations
 
 Authoring, resolution, preparation, and verification are not protocol
-operations. Future implementations must use the current package structure
-instead of exposing earlier experimental APIs.
+operations. A later family would define new operations rather than restore
+earlier experimental APIs.

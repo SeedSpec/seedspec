@@ -67,8 +67,8 @@ process.
 
 ## Claim boundaries
 
-Validation proves structural conformance to one exact runtime release. It does
-not prove:
+Validation establishes structural validity for one exact runtime release. It
+does not prove:
 
 - that the prose is complete;
 - that the author controls a namespace;
