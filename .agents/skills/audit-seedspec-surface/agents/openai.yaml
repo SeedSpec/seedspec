@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit SeedSpec surface"
+  short_description: "Sweep leftover trees, stale commands, and drifted docs"
+  default_prompt: "Use $audit-seedspec-surface to sweep leftover artifacts and drifted README, CONTRIBUTING, RELEASING, and docs before a release."

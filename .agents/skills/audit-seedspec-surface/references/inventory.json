@@ -1,0 +1,56 @@
+{
+  "currentSurfaces": [
+    "README.md",
+    "CONTRIBUTING.md",
+    "RELEASING.md",
+    "docs",
+    "packages/protocol/README.md",
+    "packages/runtime/README.md",
+    "packages/cli/README.md",
+    ".agents/skills"
+  ],
+  "allowTermFiles": [
+    "CHANGELOG.md",
+    "docs/glossary.md",
+    ".agents/skills/harden-seedspec-protocol/references/editorial-contract.md",
+    ".agents/skills/audit-seedspec-surface/SKILL.md",
+    ".agents/skills/audit-seedspec-surface/references/inventory.json"
+  ],
+  "retiredPaths": [
+    "ARCHITECTURE.md",
+    "authoring-evals",
+    "apps/think-harness",
+    "examples",
+    "conformance",
+    "docs/decisions",
+    "docs/migrations.md",
+    "docs/conformance.md",
+    "docs/README.md",
+    "experiments",
+    "scripts/bakeoff-daily-pipeline.mjs",
+    "scripts/bakeoff-daily-pipeline-described.mjs",
+    "scripts/test-pi-harness.mjs"
+  ],
+  "retiredCommands": [
+    "author",
+    "doctor",
+    "prepare",
+    "publish-check",
+    "review"
+  ],
+  "retiredNpmScripts": [
+    "bakeoff",
+    "test:harness"
+  ],
+  "retiredTerms": [
+    "applied intent",
+    "resolved handoff",
+    "capability contract",
+    "implementation resource",
+    "profile state",
+    "initialized seed",
+    "authoring system",
+    "conformance golden",
+    "digest-bound golden"
+  ]
+}
