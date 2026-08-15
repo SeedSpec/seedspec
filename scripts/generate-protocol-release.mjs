@@ -22,10 +22,10 @@ async function digest(relativePath) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
-async function digestedFile(relativePath) {
+async function digestedFile(sourcePath, releasePath = sourcePath) {
   return {
-    path: relativePath,
-    digest: await digest(relativePath)
+    path: releasePath,
+    digest: await digest(sourcePath)
   };
 }
 
@@ -93,6 +93,20 @@ const [releaseContract, protocolPackage, runtimePackage, cliPackage] = await Pro
   readJson("packages/runtime/package.json"),
   readJson("packages/cli/package.json")
 ]);
+let existingProtocolRelease = null;
+try {
+  existingProtocolRelease = await readJson("packages/protocol/protocol-release.json");
+} catch {
+  // A first release has no prior generated manifest.
+}
+const packageSchemaPrefix = `schemas/v${releaseContract.protocol_family}/`;
+const repositorySchemaPrefix = `packages/protocol/${packageSchemaPrefix}`;
+const preserveLegacySchemaPaths = (
+  existingProtocolRelease?.release_id === releaseContract.release_version
+  && existingProtocolRelease.schemas?.every(({ path: filePath }) => (
+    filePath.startsWith(repositorySchemaPrefix)
+  ))
+);
 const schemaDirectory = path.join(
   protocolDirectory,
   `schemas/v${releaseContract.protocol_family}`
@@ -131,7 +145,10 @@ const release = {
   },
   schemas: await Promise.all(schemaNames.map((name) => (
     digestedFile(
-      `packages/protocol/schemas/v${releaseContract.protocol_family}/${name}`
+      `${repositorySchemaPrefix}${name}`,
+      preserveLegacySchemaPaths
+        ? `${repositorySchemaPrefix}${name}`
+        : `${packageSchemaPrefix}${name}`
     )
   ))),
   documents: await Promise.all(documentPaths.map(async (releasePath) => ({
