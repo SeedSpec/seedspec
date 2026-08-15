@@ -93,16 +93,8 @@ async function executeCase(testCase, indexDirectory) {
     const record = await validatePackage(packagePath);
     return testCase.expect.digest ? { digest: record.digest } : {};
   }
-  if (testCase.operation === "digest-stability") {
-    const first = await validatePackage(packagePath);
-    const second = await validatePackage(packagePath);
-    if (first.digest !== second.digest) {
-      throw new SeedSpecError("Repeated package digests differ", {
-        code: "UNSTABLE_PACKAGE_DIGEST",
-        details: [first.digest, second.digest]
-      });
-    }
-    return { digest: first.digest };
+  if (testCase.operation === "digest") {
+    return { digest: (await validatePackage(packagePath)).digest };
   }
   if (testCase.operation === "flatten") {
     const flattened = flattenManifest(await validatePackage(packagePath));

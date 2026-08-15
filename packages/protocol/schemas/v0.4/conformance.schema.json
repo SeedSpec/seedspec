@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://seedspec.dev/releases/0.4.1/schemas/conformance.schema.json",
+  "$id": "https://seedspec.dev/releases/0.4.2/schemas/conformance.schema.json",
   "title": "SeedSpec Protocol 0.4 conformance suite",
   "type": "object",
   "additionalProperties": false,
   "required": ["suite_version", "protocol_version", "cases"],
   "properties": {
-    "suite_version": { "const": "0.4.1" },
+    "suite_version": { "const": "0.4.2" },
     "protocol_version": { "const": "0.4" },
     "cases": {
       "type": "array",
@@ -18,7 +18,7 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
           "description": { "type": "string", "minLength": 1 },
-          "operation": { "enum": ["validate", "digest-stability", "flatten"] },
+          "operation": { "enum": ["validate", "digest", "flatten"] },
           "package": { "type": "string", "minLength": 1 },
           "expect": {
             "type": "object",
@@ -36,7 +36,18 @@
               }
             ]
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "operation": { "const": "digest" } },
+              "required": ["operation"]
+            },
+            "then": {
+              "properties": { "expect": { "required": ["digest"] } }
+            }
+          }
+        ]
       }
     }
   }

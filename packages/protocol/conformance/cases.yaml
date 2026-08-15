@@ -1,4 +1,4 @@
-suite_version: "0.4.1"
+suite_version: "0.4.2"
 protocol_version: "0.4"
 
 cases:
@@ -70,12 +70,13 @@ cases:
       result: fail
       code: INVALID_SUCCESS_ANCHOR
 
-  - id: minimum-digest-is-stable
-    description: Repeated validation produces the same package digest.
-    operation: digest-stability
+  - id: minimum-digest-vector
+    description: The minimum package matches the normative package digest algorithm.
+    operation: digest
     package: fixtures/minimum
     expect:
       result: pass
+      digest: sha256:515bdd046144291104117c3ddca1da9f6b94e30d0f7d57cfd711107ab323830c
 
   - id: flatten-minimum
     description: Flattened output is a valid standalone package.

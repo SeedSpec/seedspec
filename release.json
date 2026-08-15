@@ -1,10 +1,10 @@
 {
-  "release_version": "0.4.1",
+  "release_version": "0.4.2",
   "protocol_family": "0.4",
   "status": "experimental",
-  "conformance_suite_version": "0.4.1",
+  "conformance_suite_version": "0.4.2",
   "schema_urls": {
-    "exact": "https://seedspec.dev/releases/0.4.1/schemas/",
+    "exact": "https://seedspec.dev/releases/0.4.2/schemas/",
     "family_alias": "https://seedspec.dev/schemas/v0.4/"
   },
   "packages": [

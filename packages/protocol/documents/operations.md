@@ -18,6 +18,24 @@ Validate the package. Return its lowercase `sha256:` content digest. Identical
 portable paths and file bytes produce the same digest. Timestamps, permissions,
 and empty directories do not affect it.
 
+Compute the digest as follows:
+
+1. Collect every regular file below the package root. Do not follow symbolic
+   links.
+2. Express each relative path as portable ASCII with `/` separators and no
+   package-root prefix.
+3. Sort the paths by their unsigned UTF-8 bytes in ascending lexical order.
+4. Hash each file's bytes with SHA-256. Encode that hash as 64 lowercase ASCII
+   hexadecimal characters. Do not normalize the file bytes.
+5. For each sorted file, append this byte record to the aggregate input:
+   `UTF8(path) || 0x00 || ASCII(file-hash) || 0x0A`.
+6. Hash the aggregate input with SHA-256. Return `sha256:` followed by the 64
+   lowercase hexadecimal characters of that hash.
+
+Reject symbolic links, non-regular files, non-portable paths, and paths that
+collide after ASCII case folding. The conformance suite supplies fixed package
+digest vectors for independent implementations.
+
 ## `inspect`
 
 Validate the package. Return normalized declarations, source paths, overrides,
