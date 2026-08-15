@@ -43,12 +43,17 @@ section expansion, success anchors, unanchored criteria, and bundled-child
 provenance. Write nothing.
 
 Inspection reports authored structure. It does not certify semantic quality.
+Conformance compares the resolved manifest and portable projections of source,
+override, section, anchor, and bundled-package provenance.
 
 ## `flatten`
 
 Validate the package. Emit one `SPEC.md` containing normalized frontmatter and
 the original Markdown body. Include the source package digest in a YAML
 comment.
+
+The flattened package must resolve to the same manifest as the source package.
+Its Markdown body must preserve the original body bytes.
 
 Flattening removes dependence on `seedspec.yaml` and external section files for
 manifest resolution. It does not inline context-module or bundled-package

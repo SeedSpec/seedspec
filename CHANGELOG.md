@@ -24,6 +24,13 @@ release for applications.
   for interoperable package digests.
 - Add a fixed digest vector to the conformance suite.
 
+### Operation conformance
+
+- Add an `inspect` case that compares resolved declarations and authored
+  provenance.
+- Require flatten cases to preserve the resolved manifest, original Markdown
+  body, and source-digest comment.
+
 ## 0.4.1 — 2026-08-14
 
 | Surface | Version |

@@ -14,7 +14,7 @@
     },
     {
       "path": "schemas/v0.4/conformance.schema.json",
-      "digest": "sha256:b766af2b30c368a413ba88d4ea2328671d33a2082b9fe99bcaa52b1b5f2eabc0"
+      "digest": "sha256:dc92814f56681ce3ec5ad677ad78f0a4578e4bf0dbf0bc8a19270f089a958914"
     },
     {
       "path": "schemas/v0.4/seedspec.schema.json",
@@ -32,7 +32,7 @@
     },
     {
       "path": "documents/operations.md",
-      "digest": "sha256:3c5f912b99e1bd675ab4abdc8bd37f26bb04e1aefa26882a30aec5b6df7fb761"
+      "digest": "sha256:26b49984a3f75bc3a05be54eaeab9ff858a7ea59451ec6f82dad4d4779ab1446"
     }
   ],
   "operations": [
@@ -45,8 +45,8 @@
     "suite_version": "0.4.2",
     "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
-    "index_digest": "sha256:049f88e712fd68af8ddace01a65dc6006439b29ba72e4c128743fe8f05d04349",
-    "bundle_digest": "sha256:d596ea18c643243d80a641e67bc315a35ed099f56351a858ac34d6ad4f4d351c"
+    "index_digest": "sha256:4625df87167b7db83f0cfe4b54cc421ea4040a53ecae0d99e097fd83c555dc8a",
+    "bundle_digest": "sha256:af3631b79f1161e37be68a30a9e9b5ec5fc7fe5aabad92b2d2c6ff3e7bd7a36d"
   },
   "implementations": {
     "runtime": {
