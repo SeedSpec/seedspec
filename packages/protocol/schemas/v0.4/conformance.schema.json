@@ -18,7 +18,7 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
           "description": { "type": "string", "minLength": 1 },
-          "operation": { "enum": ["validate", "digest", "flatten"] },
+          "operation": { "enum": ["validate", "digest", "inspect", "flatten"] },
           "package": { "type": "string", "minLength": 1 },
           "expect": {
             "type": "object",
@@ -27,7 +27,66 @@
             "properties": {
               "result": { "enum": ["pass", "fail"] },
               "code": { "type": "string", "minLength": 2 },
-              "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+              "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "inspection": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "resolved_manifest",
+                  "source_paths",
+                  "override_paths",
+                  "section_ids",
+                  "success_anchor_ids",
+                  "unanchored_success_criteria",
+                  "bundled_packages"
+                ],
+                "properties": {
+                  "resolved_manifest": { "type": "object" },
+                  "source_paths": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "override_paths": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "section_ids": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "success_anchor_ids": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "unanchored_success_criteria": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "bundled_packages": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "object" }
+                  }
+                }
+              },
+              "preserves": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "resolved-manifest",
+                    "markdown-body",
+                    "source-digest-comment"
+                  ]
+                }
+              }
             },
             "allOf": [
               {
@@ -45,6 +104,24 @@
             },
             "then": {
               "properties": { "expect": { "required": ["digest"] } }
+            }
+          },
+          {
+            "if": {
+              "properties": { "operation": { "const": "inspect" } },
+              "required": ["operation"]
+            },
+            "then": {
+              "properties": { "expect": { "required": ["inspection"] } }
+            }
+          },
+          {
+            "if": {
+              "properties": { "operation": { "const": "flatten" } },
+              "required": ["operation"]
+            },
+            "then": {
+              "properties": { "expect": { "required": ["preserves"] } }
             }
           }
         ]

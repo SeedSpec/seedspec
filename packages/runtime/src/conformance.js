@@ -12,6 +12,7 @@ import {
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import {
   conformanceBundlePath,
   conformanceSuiteVersion,
@@ -21,6 +22,7 @@ import {
 import { SeedSpecError } from "./errors.js";
 import { readYamlFile } from "./files.js";
 import { lexicalCompare } from "./integrity.js";
+import { inspectPackage } from "./inspect.js";
 import { compileProtocolSchema, formatSchemaErrors } from "./schema.js";
 import { flattenManifest } from "./manifest.js";
 import { validatePackage } from "./validate.js";
@@ -87,6 +89,33 @@ function resolveFixture(indexDirectory, relativePath) {
   return resolved;
 }
 
+function portableSourcePath(packageRoot, sourcePath) {
+  return path.relative(packageRoot, sourcePath).split(path.sep).join("/");
+}
+
+function inspectionProjection(packageRoot, inspection) {
+  const sourcePaths = new Set([
+    inspection.sources.spec,
+    inspection.sources.base_manifest,
+    ...Object.values(inspection.sources.values).map(({ file }) => file),
+    ...inspection.overrides.flatMap(({ base, override }) => [
+      base.source.file,
+      override.source.file
+    ]),
+    ...inspection.sections.map(({ source }) => source.file)
+  ].filter(Boolean).map((sourcePath) => portableSourcePath(packageRoot, sourcePath)));
+
+  return {
+    resolved_manifest: inspection.resolved_manifest,
+    source_paths: [...sourcePaths].sort(lexicalCompare),
+    override_paths: inspection.overrides.map(({ path: manifestPath }) => manifestPath),
+    section_ids: inspection.sections.map(({ subject, id }) => `${subject}:${id}`),
+    success_anchor_ids: inspection.success_anchors.map(({ id }) => id),
+    unanchored_success_criteria: inspection.unanchored_success_criteria,
+    bundled_packages: inspection.bundled_packages
+  };
+}
+
 async function executeCase(testCase, indexDirectory) {
   const packagePath = resolveFixture(indexDirectory, testCase.package);
   if (testCase.operation === "validate") {
@@ -96,12 +125,29 @@ async function executeCase(testCase, indexDirectory) {
   if (testCase.operation === "digest") {
     return { digest: (await validatePackage(packagePath)).digest };
   }
+  if (testCase.operation === "inspect") {
+    const info = await lstat(packagePath);
+    const packageRoot = info.isDirectory() ? packagePath : path.dirname(packagePath);
+    return {
+      inspection: inspectionProjection(packageRoot, await inspectPackage(packagePath))
+    };
+  }
   if (testCase.operation === "flatten") {
-    const flattened = flattenManifest(await validatePackage(packagePath));
+    const source = await validatePackage(packagePath);
+    const flattened = flattenManifest(source);
     const outputRoot = await mkdtemp(path.join(tmpdir(), "seedspec-flatten-"));
     try {
       await writeFile(path.join(outputRoot, "SPEC.md"), flattened, "utf8");
-      return { digest: (await validatePackage(outputRoot)).digest };
+      const output = await validatePackage(outputRoot);
+      return {
+        digest: output.digest,
+        preserves: {
+          "resolved-manifest": isDeepStrictEqual(output.manifest, source.manifest),
+          "markdown-body": output.definition === source.definition,
+          "source-digest-comment": flattened.split("\n")[1]
+            === `# Generated from ${source.digest}. Review before replacing authored sources.`
+        }
+      };
     } finally {
       await rm(outputRoot, { recursive: true, force: true });
     }
@@ -117,6 +163,25 @@ function assertExpectedOutput(testCase, output) {
       `Package digest mismatch; expected ${testCase.expect.digest}, received ${output.digest}`,
       { code: "CONFORMANCE_ASSERTION_FAILED" }
     );
+  }
+  if (
+    testCase.expect.inspection
+    && !isDeepStrictEqual(output.inspection, testCase.expect.inspection)
+  ) {
+    throw new SeedSpecError("Inspection output does not match the expected projection", {
+      code: "CONFORMANCE_ASSERTION_FAILED",
+      details: [
+        `expected ${JSON.stringify(testCase.expect.inspection)}`,
+        `received ${JSON.stringify(output.inspection)}`
+      ]
+    });
+  }
+  for (const invariant of testCase.expect.preserves ?? []) {
+    if (output.preserves?.[invariant] !== true) {
+      throw new SeedSpecError(`Flatten did not preserve ${invariant}`, {
+        code: "CONFORMANCE_ASSERTION_FAILED"
+      });
+    }
   }
 }
 

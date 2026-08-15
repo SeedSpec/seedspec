@@ -78,12 +78,89 @@ cases:
       result: pass
       digest: sha256:515bdd046144291104117c3ddca1da9f6b94e30d0f7d57cfd711107ab323830c
 
+  - id: inspect-merged-sections
+    description: Inspection reports resolved declarations and authored provenance.
+    operation: inspect
+    package: fixtures/merged-sections
+    expect:
+      result: pass
+      inspection:
+        resolved_manifest:
+          id: merged-sections
+          name: Resolved name
+          kind: workflow
+          version: "1.2.0"
+          target_protocol: "0.4"
+          success:
+            criteria:
+              - id: complete
+                description: The implementation is complete.
+          tasks:
+            items:
+              - id: inspect
+                instruction: Inspect the specification.
+              - id: implement
+                instruction: Implement the specification.
+                success_criteria: [complete]
+        source_paths:
+          - SPEC.md
+          - seedspec.yaml
+          - tasks/implementation.yaml
+        override_paths: ["$.name"]
+        section_ids: [tasks:preparation, tasks:implementation]
+        success_anchor_ids: [complete]
+        unanchored_success_criteria: []
+        bundled_packages: []
+
+  - id: inspect-bundled-provenance
+    description: Inspection reports unanchored criteria and bundled-child provenance.
+    operation: inspect
+    package: fixtures/inspect-provenance
+    expect:
+      result: pass
+      inspection:
+        resolved_manifest:
+          id: inspect-provenance
+          name: Inspect provenance
+          version: "1.0.0"
+          success:
+            criteria:
+              - id: anchored
+                description: The anchored outcome is visible.
+              - id: unanchored
+                description: The unanchored outcome is visible.
+          bundled_packages:
+            - id: inspect-child
+              version: "2.0.0"
+              digest: sha256:4dc5c67e8b09579b7e93ebf90ba86d59a9ce7708488a5625d86b74bda3dfa44a
+              path: bundled-packages/child/SPEC.md
+              optional: true
+        source_paths: [SPEC.md]
+        override_paths: []
+        section_ids: []
+        success_anchor_ids: [anchored]
+        unanchored_success_criteria: [unanchored]
+        bundled_packages:
+          - id: inspect-child
+            name: Inspect child
+            version: "2.0.0"
+            digest: sha256:4dc5c67e8b09579b7e93ebf90ba86d59a9ce7708488a5625d86b74bda3dfa44a
+            path: bundled-packages/child/SPEC.md
+            optional: true
+            capabilities:
+              items:
+                - id: ready
+                  name: Ready
+                  description: Reports readiness.
+            children: []
+
   - id: flatten-minimum
     description: Flattened output is a valid standalone package.
     operation: flatten
     package: fixtures/minimum
     expect:
       result: pass
+      preserves: [resolved-manifest, markdown-body, source-digest-comment]
 
   - id: flatten-merged-sections
     description: Flattened merged sections remain a valid standalone package.
@@ -91,3 +168,4 @@ cases:
     package: fixtures/merged-sections
     expect:
       result: pass
+      preserves: [resolved-manifest, markdown-body, source-digest-comment]
