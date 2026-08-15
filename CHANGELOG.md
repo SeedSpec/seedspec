@@ -5,7 +5,7 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
-## 0.4.2 — Unreleased
+## 0.4.2 — 2026-08-15
 
 | Surface | Version |
 | --- | --- |
