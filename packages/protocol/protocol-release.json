@@ -1,24 +1,24 @@
 {
   "manifest_version": "1",
   "protocol_family": "0.4",
-  "release_id": "0.4.1",
+  "release_id": "0.4.2",
   "status": "experimental",
   "schema_package": {
     "name": "@seedspec/protocol",
-    "version": "0.4.1"
+    "version": "0.4.2"
   },
   "schemas": [
     {
-      "path": "packages/protocol/schemas/v0.4/conformance-report.schema.json",
-      "digest": "sha256:fd8d7f1146914bd7a9f81f1e7275300b2dbbbfb4ed7c7ba7174444d47b0b6df5"
+      "path": "schemas/v0.4/conformance-report.schema.json",
+      "digest": "sha256:b34578102156364213f74a81264c4337e1437a216c82f8b06b33ee5ccde42ff9"
     },
     {
-      "path": "packages/protocol/schemas/v0.4/conformance.schema.json",
-      "digest": "sha256:e6c0437a206779334fc88319579fb9d1fdcf0cfea3db8bae719e6df54021aecd"
+      "path": "schemas/v0.4/conformance.schema.json",
+      "digest": "sha256:b766af2b30c368a413ba88d4ea2328671d33a2082b9fe99bcaa52b1b5f2eabc0"
     },
     {
-      "path": "packages/protocol/schemas/v0.4/seedspec.schema.json",
-      "digest": "sha256:3e993c372248de60c7b5b5937785be0b4c03e4a9e47ea5964dd172a3ca3612a6"
+      "path": "schemas/v0.4/seedspec.schema.json",
+      "digest": "sha256:9bcdebf14385510e5355b210712afa665dd921a9e8855c631376164c5f2e4491"
     }
   ],
   "documents": [
@@ -32,7 +32,7 @@
     },
     {
       "path": "documents/operations.md",
-      "digest": "sha256:316ffc174f09108a48eebffc2c33a26da2decf428f2864c75c2b25746cca43a1"
+      "digest": "sha256:3c5f912b99e1bd675ab4abdc8bd37f26bb04e1aefa26882a30aec5b6df7fb761"
     }
   ],
   "operations": [
@@ -42,20 +42,20 @@
     "flatten"
   ],
   "conformance": {
-    "suite_version": "0.4.1",
+    "suite_version": "0.4.2",
     "index": "conformance/cases.yaml",
     "bundle": "conformance-bundle.json",
-    "index_digest": "sha256:3f674e3ce0f1433758d7358a98ba070ad8245f3520b6bb03103d1291eaf55d60",
-    "bundle_digest": "sha256:15d329af4576e204986fe571695a1829505943645aba6564261262a7611cc05b"
+    "index_digest": "sha256:049f88e712fd68af8ddace01a65dc6006439b29ba72e4c128743fe8f05d04349",
+    "bundle_digest": "sha256:d596ea18c643243d80a641e67bc315a35ed099f56351a858ac34d6ad4f4d351c"
   },
   "implementations": {
     "runtime": {
       "name": "@seedspec/runtime",
-      "version": "0.4.1"
+      "version": "0.4.2"
     },
     "cli": {
       "name": "@seedspec/cli",
-      "version": "0.4.1"
+      "version": "0.4.2"
     }
   },
   "source": {

@@ -5,6 +5,25 @@ The protocol family, schema package, conformance suite, runtime, and CLI retain
 distinct identities but use one coordinated first-party release version; see
 [versioning](docs/versioning.md).
 
+## 0.4.2 — Unreleased
+
+| Surface | Version |
+| --- | --- |
+| Protocol family | `0.4` |
+| Exact protocol release / `@seedspec/protocol` | `0.4.2` |
+| Conformance suite | `0.4.2` |
+| `@seedspec/runtime` | `0.4.2` |
+| `@seedspec/cli` | `0.4.2` |
+
+Experimental. Same family as the Protocol 0.4 package contract. Pin this exact
+release for applications.
+
+### Package digest
+
+- Define path ordering, byte framing, per-file hashing, and aggregate hashing
+  for interoperable package digests.
+- Add a fixed digest vector to the conformance suite.
+
 ## 0.4.1 — 2026-08-14
 
 | Surface | Version |
