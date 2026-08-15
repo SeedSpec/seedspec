@@ -79,9 +79,10 @@ assert(manifest.implementations.runtime.version === release.release_version,
 assert(manifest.implementations.cli.version === release.release_version,
   "CLI release binding does not match release.json");
 
-const schemaPrefix = `packages/protocol/schemas/v${release.protocol_family}/`;
+const packageSchemaPrefix = `schemas/v${release.protocol_family}/`;
+const repositorySchemaPrefix = `packages/protocol/${packageSchemaPrefix}`;
 const exactSchemaPrefix = release.schema_urls.exact;
-const schemaNames = (await readdir(path.join(root, schemaPrefix)))
+const schemaNames = (await readdir(path.join(root, repositorySchemaPrefix)))
   .filter((name) => name.endsWith(".schema.json"))
   .sort();
 const releasedSchemaNames = manifest.schemas
@@ -89,12 +90,21 @@ const releasedSchemaNames = manifest.schemas
   .sort();
 assert(JSON.stringify(schemaNames) === JSON.stringify(releasedSchemaNames),
   "Protocol schema inventory does not match the release manifest");
+const hasLegacyRepositoryPaths = manifest.schemas.every(({ path: filePath }) => (
+  filePath.startsWith(repositorySchemaPrefix)
+));
+const hasPackagePaths = manifest.schemas.every(({ path: filePath }) => (
+  filePath.startsWith(packageSchemaPrefix)
+));
+assert(hasLegacyRepositoryPaths || hasPackagePaths,
+  "Released schema paths must use one consistent repository or package-local form");
 for (const entry of manifest.schemas) {
-  assert(entry.path.startsWith(schemaPrefix),
-    `Released schema path is outside ${schemaPrefix}: ${entry.path}`);
-  assert(await digest(entry.path) === entry.digest,
-    `Released schema digest does not match: ${entry.path}`);
-  const schema = await readJson(entry.path);
+  const sourcePath = hasLegacyRepositoryPaths
+    ? entry.path
+    : `packages/protocol/${entry.path}`;
+  assert(await digest(sourcePath) === entry.digest,
+    `Released schema digest does not match: ${sourcePath}`);
+  const schema = await readJson(sourcePath);
   assert(schema.$id === `${exactSchemaPrefix}${path.basename(entry.path)}`,
     `Schema does not use the exact release URL: ${entry.path}`);
 }
